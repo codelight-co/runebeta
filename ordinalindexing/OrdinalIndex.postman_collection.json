@@ -1,0 +1,844 @@
+{
+	"info": {
+		"_postman_id": "a0d036e7-0d42-4365-aee9-dc9dbe310f2b",
+		"name": "OrdinalIndex",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "23534245"
+	},
+	"item": [
+		{
+			"name": "BlockCount",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/blockcount",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"blockcount"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "BlockHash",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/blockhash",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"blockhash"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "BlockHeight",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/blockheight",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"blockheight"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "BlockQuery",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/block/{{BLOCK_QUERY}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"block",
+						"{{BLOCK_QUERY}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Clock",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/clock",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"clock"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "faq",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/faq",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"faq"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Feed",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/feed.xml",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"feed.xml"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Collections",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/collections",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"collections"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Output",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/output/{{OUTPUT}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"output",
+						"{{OUTPUT}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PreviewInscription",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/preview/{{INSCRIPTION_ID}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"preview",
+						"{{INSCRIPTION_ID}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "OrdinalSat",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/ordinal/{{SAT}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"ordinal",
+						"{{SAT}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Sat",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/sat/{{SAT}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"sat",
+						"{{SAT}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RSatNumberByIndex",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/r/sat/{{SAT_NUMBER}}/at/{{INDEX}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"r",
+						"sat",
+						"{{SAT_NUMBER}}",
+						"at",
+						"{{INDEX}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Status",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/status",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"status"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Rare",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/rare.txt",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"rare.txt"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Range",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/range/{{START}}/{{END}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"range",
+						"{{START}}",
+						"{{END}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Runes",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/runes",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"runes"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Rune",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/rune/{{RUNE}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"rune",
+						"{{RUNE}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RunesBalances",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/runes/balances",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"runes",
+						"balances"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "SearchByQuery",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/search/{{SEARCH_QUERY}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"search",
+						"{{SEARCH_QUERY}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "TransactionById",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/tx/{{TX_ID}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"tx",
+						"{{TX_ID}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CollectionsPage",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/collections/{{COLLECTION_PAGE}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"collections",
+						"{{COLLECTION_PAGE}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "BlockTime",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/blocktime",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"blocktime"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RBlockTime",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/r/blocktime",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"r",
+						"blocktime"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RBlockHeight",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/r/blockheight",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"r",
+						"blockheight"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RBlockHash",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/r/blockhash",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"r",
+						"blockhash"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "BlockHashHeight",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/blockhash/{{BLOCK_HEIGHT}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"blockhash",
+						"{{BLOCK_HEIGHT}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RBlockHashHeight",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/r/blockhash/{{BLOCK_HEIGHT}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"r",
+						"blockhash",
+						"{{BLOCK_HEIGHT}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RBlockInfoQuery",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/r/blockinfo/{{BLOCK_INFO_QUERY}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"r",
+						"blockinfo",
+						"{{BLOCK_INFO_QUERY}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RSatNumber",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/r/sat/{{SAT_NUMBER}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"r",
+						"sat",
+						"{{SAT_NUMBER}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RSatNumberPage",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/r/sat/{{SAT_NUMBER}}/{{PAGE}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"r",
+						"sat",
+						"{{SAT_NUMBER}}",
+						"{{PAGE}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ChildrenInscription",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/children/{{INSCRIPTION_ID}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"children",
+						"{{INSCRIPTION_ID}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RInscriptionMetadata",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/r/metadata/{{INSCRIPTION_ID}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"r",
+						"metadata",
+						"{{INSCRIPTION_ID}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ChildrenInscriptionPage",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/children/{{INSCRIPTION_ID}}/{{INSCRIPTION_PAGE}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"children",
+						"{{INSCRIPTION_ID}}",
+						"{{INSCRIPTION_PAGE}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RChildrenInscriptionPage",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/r/children/{{INSCRIPTION_ID}}/{{INSCRIPTION_PAGE}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"r",
+						"children",
+						"{{INSCRIPTION_ID}}",
+						"{{INSCRIPTION_PAGE}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RChildrenInscription",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/r/children/{{INSCRIPTION_ID}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"r",
+						"children",
+						"{{INSCRIPTION_ID}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Input",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/input/{{INPUT_BLOCK}}/{{INPUT_TRANSACTION}}/{{INPUT}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"input",
+						"{{INPUT_BLOCK}}",
+						"{{INPUT_TRANSACTION}}",
+						"{{INPUT}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ContentInscription",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/content/{{INSCRIPTION_ID}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"content",
+						"{{INSCRIPTION_ID}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Inscriptions",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/inscriptions",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"inscriptions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "InscriptionQuery",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/inscription/{{INSCRIPTION_QUERY}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"inscription",
+						"{{INSCRIPTION_QUERY}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RInscriptionQuery",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/r/inscription/{{INSCRIPTION_QUERY}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"r",
+						"inscription",
+						"{{INSCRIPTION_QUERY}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "InscriptionsPage",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/inscriptions/{{INSCRIPTIONS_PAGE}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"inscriptions",
+						"{{INSCRIPTIONS_PAGE}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "InscriptionsBlockHeight",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/inscriptions/block/{{BLOCK_HEIGHT}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"inscriptions",
+						"block",
+						"{{BLOCK_HEIGHT}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "InscriptionsBlockHeightPage",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/inscriptions/block/{{BLOCK_HEIGHT}}/{{PAGE}}",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"inscriptions",
+						"block",
+						"{{BLOCK_HEIGHT}}",
+						"{{PAGE}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Bounties",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/bounties",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"bounties"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Blocks",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/blocks",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"blocks"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
