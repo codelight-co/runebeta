@@ -1,14 +1,26 @@
 import { Injectable } from '@nestjs/common';
+import { RuneFilterDto } from './dto';
+import { HttpService } from '@nestjs/axios';
 
 @Injectable()
 export class RunesService {
-  async getRunes() {
-    // Get list of runes
-    return [];
+  constructor(private readonly httpService: HttpService) {}
+
+  async getRunes(runeFilterDto: RuneFilterDto) {
+    const res = await this.httpService
+      .get('https://api2.runealpha.xyz/rune', {
+        params: runeFilterDto,
+      })
+      .toPromise();
+
+    return res.data;
   }
 
-  async getRuneById() {
-    // Get rune by id
-    return {};
+  async getRuneById(id: string) {
+    const res = await this.httpService
+      .get(`https://api2.runealpha.xyz/rune/${id}`)
+      .toPromise();
+
+    return res.data;
   }
 }

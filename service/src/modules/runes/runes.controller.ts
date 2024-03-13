@@ -1,5 +1,6 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { RunesService } from './runes.service';
+import { RuneFilterDto } from './dto';
 
 @Controller('runes')
 export class RunesController {
@@ -7,13 +8,13 @@ export class RunesController {
 
   // Get list of runes
   @Get()
-  async getRunes() {
-    return this.runesService.getRunes();
+  async getRunes(@Query() runeFilterDto: RuneFilterDto) {
+    return this.runesService.getRunes(runeFilterDto);
   }
 
   // Get rune by id
   @Get(':id')
-  async getRuneById() {
-    return this.runesService.getRuneById();
+  async getRuneById(@Param('id') id: string) {
+    return this.runesService.getRuneById(id);
   }
 }

@@ -1,32 +1,47 @@
+import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class StatsService {
+  constructor(private readonly httpService: HttpService) {}
+
   async getBlockHeight() {
-    // Get block height
-    return 0;
+    const res = await this.httpService
+      .get('https://api2.runealpha.xyz/stats/block-height')
+      .toPromise();
+
+    return res.data;
   }
 
   async getDailyTransactionCount() {
-    // Get daily transaction count
-    return 0;
+    const res = await this.httpService
+      .get('https://api2.runealpha.xyz/stats/daily-tx-count')
+      .toPromise();
+
+    return res.data;
   }
 
   async getBlockSyncNumber() {
-    // Get block sync number
-    return 0;
+    const res = await this.httpService
+      .get('https://api2.runealpha.xyz/stats/block-sync-number')
+      .toPromise();
+
+    return res.data;
   }
 
   async getBtcPrice() {
-    // Get btc price
-    return 0;
+    const res = await this.httpService
+      .get('https://api2.runealpha.xyz/stats/btc-price')
+      .toPromise();
+
+    return res.data;
   }
 
   async getStats() {
-    // Get protocol stats
-    return {
-      blockHeight: await this.getBlockHeight(),
-      dailyTransactionCount: await this.getDailyTransactionCount(),
-    };
+    const res = await this.httpService
+      .get('https://api2.runealpha.xyz/stats')
+      .toPromise();
+
+    return res.data;
   }
 }
