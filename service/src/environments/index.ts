@@ -13,6 +13,11 @@ const DATABASE_PASSWORD: string =
   process.env.DATABASE_PASSWORD || NEED_TO_CONFIGURED;
 const DATABASE_PORT: number = +process.env.DATABASE_PORT || 5432;
 
+// Redis cache
+const REDIS_HOST: string = process.env.REDIS_HOST || 'localhost';
+const REDIS_PORT: number = +process.env.REDIS_PORT || 6379;
+const CACHE_TTL: number = +process.env.CACHE_TTL || 5;
+
 export {
   DATABASE_TYPE,
   DATABASE_HOST,
@@ -20,4 +25,7 @@ export {
   DATABASE_USER,
   DATABASE_PASSWORD,
   DATABASE_PORT,
+  REDIS_HOST,
+  REDIS_PORT,
+  CACHE_TTL,
 };
