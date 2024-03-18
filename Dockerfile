@@ -1,4 +1,4 @@
-FROM node:18-alpine AS builder
+FROM node:18-alpine
 
 WORKDIR /app
 
@@ -6,18 +6,15 @@ COPY service/package.json service/package-lock.json ./
 
 RUN npm install
 
+COPY service .
+COPY --from=builder /app/node_modules .
+RUN npm run build
+
 # remove unused dependencies
 RUN rm -rf node_modules/rxjs/src/
 RUN rm -rf node_modules/rxjs/bundles/
 RUN rm -rf node_modules/rxjs/_esm5/
 RUN rm -rf node_modules/rxjs/_esm2015/
-
-FROM node:18-alpine 
-
-WORKDIR /app
-COPY service .
-COPY --from=builder /app/node_modules .
-RUN npm run build
 
 EXPOSE 3000
 
