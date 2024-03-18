@@ -29,4 +29,4 @@ jobs:
         --network=host --name ${{ github.event.repository.name }} --env-file .env -d ${{ github.event.repository.name }}
       
     - name: health-check
-      run: curl localhost:3000
+      run: sleep 60 && curl localhost:3000
