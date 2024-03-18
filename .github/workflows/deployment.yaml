@@ -1,0 +1,38 @@
+name: Deployment
+permissions:
+  id-token: write 
+  contents: read  
+on:
+  push:
+    branches: [ "develop", "main" ]
+  workflow_dispatch:
+
+environment:
+  workdir: /usr/local/src/runebeta
+  port: 3000
+  
+jobs:
+  develop:
+    if: github.ref_name == 'develop' 
+    runs-on: [self-hosted] 
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.ref_name }}
+        path: ${{ env.workdir }}
+    - name: build
+      run: |
+        docker build . -f Dockerfile -t ${{ github.event.repository.name }}
+      working-directory: ${{ env.workdir }}
+    - name: stop container
+      run: docker stop ${{ github.event.repository.name }}
+    - name: running
+      run: docker run --rm -v ${{env.workdir}}/service/.env:/app/.env:ro -p ${{ env.port }}:3000 --network=host --name ${{ github.event.repository.name }} ${{ github.event.repository.name }}
+    - name: health-check
+      run: |
+        for i in {1..60}
+        do
+            curl localhost:${{ env.port }} -I -s | grep "200 OK"
+            [ $status -eq 0 ] && exit 1 || sleep 5;
+        done
+        exit 2
