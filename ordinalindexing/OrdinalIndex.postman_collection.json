@@ -130,7 +130,13 @@
 			"name": "Collections",
 			"request": {
 				"method": "GET",
-				"header": [],
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
 				"url": {
 					"raw": "{{BASE_URL}}/collections",
 					"host": [
@@ -310,7 +316,13 @@
 			"name": "Rune",
 			"request": {
 				"method": "GET",
-				"header": [],
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
 				"url": {
 					"raw": "{{BASE_URL}}/rune/{{RUNE}}",
 					"host": [
