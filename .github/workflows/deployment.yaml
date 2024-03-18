@@ -11,7 +11,7 @@ jobs:
   develop:
     if: github.ref_name == 'develop' || github.event_name == 'workflow_dispatch' 
     runs-on: [self-hosted]
-    environments:
+    environment:
       workdir: /usr/local/src/runebeta
       port: 3000 
     steps:
