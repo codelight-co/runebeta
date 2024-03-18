@@ -15,20 +15,24 @@ jobs:
     - uses: actions/checkout@v4
       with:
         ref: ${{ github.ref_name }}
-        path: /usr/local/src/runebeta
     - name: build
       run: |
         docker build . -f Dockerfile -t ${{ github.event.repository.name }}
-      working-directory: /usr/local/src/runebeta
     - name: stop container
       run: docker stop ${{ github.event.repository.name }}
     - name: running
-      run: docker run --rm -v /usr/local/src/runebeta/service/.env:/app/.env:ro -p 3000:3000 --network=host --name ${{ github.event.repository.name }} ${{ github.event.repository.name }}
+      env:
+        SUPER_SECRET: ${{ secrets.ENV_FILE }}
+      run: |
+        echo "$env:SUPER_SECRET" > .env
+        docker run --rm -p 3000:3000 \
+        --network=host --name ${{ github.event.repository.name }} --env-file .env ${{ github.event.repository.name }}
+      
     - name: health-check
       run: |
         for i in {1..60}
         do
             curl localhost:3000 -I -s | grep "200 OK"
-            [ $status -eq 0 ] && exit 1 || sleep 5;
+            [ $status -eq 0 ] && exit 0 || sleep 5;
         done
         exit 2
