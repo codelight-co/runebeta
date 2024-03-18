@@ -20,4 +20,8 @@ export class TransactionFilterDto {
   ignoreInvalid?: boolean = false;
 
   text?: string;
+
+  sortBy?: string;
+
+  sortOrder?: string;
 }

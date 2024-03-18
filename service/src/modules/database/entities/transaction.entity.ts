@@ -5,6 +5,8 @@ import {
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { TransactionIns } from './transaction-ins.entity';
+import { TransactionOut } from './transaction-out.entity';
 
 @Entity()
 export class Transaction {
@@ -19,6 +21,10 @@ export class Transaction {
 
   @Column({ nullable: true, type: 'integer' })
   locktime?: number;
+
+  vin: TransactionIns[];
+
+  vout: TransactionOut[];
 
   @Column()
   @CreateDateColumn()
