@@ -4,7 +4,7 @@
     "checkJs": false,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["ES2019", "DOM"],
+    "lib": ["ES2020", "DOM"],
     "strict": true,
     "module": "commonjs",
     "target": "es2020",
