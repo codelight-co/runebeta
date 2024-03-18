@@ -1,6 +1,6 @@
 import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import * as redisStore from 'cache-manager-redis-store';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -11,6 +11,7 @@ import { RunesModule } from './modules/runes/runes.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
 import { TransfersModule } from './modules/transfers/transfers.module';
+import { AllExceptionsFilter } from './common/filters/exception.filter';
 
 @Module({
   imports: [
@@ -31,6 +32,10 @@ import { TransfersModule } from './modules/transfers/transfers.module';
   controllers: [AppController],
   providers: [
     AppService,
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter,
+    },
     {
       provide: APP_INTERCEPTOR,
       useClass: CacheInterceptor,

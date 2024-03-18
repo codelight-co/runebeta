@@ -4,6 +4,8 @@ dotenv.config();
 
 const NEED_TO_CONFIGURED = '';
 
+const ENV: string = process.env.ENV || 'development';
+
 // Database
 const DATABASE_TYPE: string = process.env.DATABASE_TYPE || NEED_TO_CONFIGURED;
 const DATABASE_HOST: string = process.env.DATABASE_HOST || NEED_TO_CONFIGURED;
@@ -28,4 +30,5 @@ export {
   REDIS_HOST,
   REDIS_PORT,
   CACHE_TTL,
+  ENV,
 };

@@ -1,8 +1,10 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseInterceptors } from '@nestjs/common';
 import { MarketsService } from './markets.service';
 import { MarketRuneFilterDto, MarketRuneOrderFilterDto } from './dto';
+import { CoreTransformInterceptor } from 'src/common/interceptors/coreTransform.interceptor';
 
 @Controller('markets')
+@UseInterceptors(CoreTransformInterceptor)
 export class MarketsController {
   constructor(private readonly marketsService: MarketsService) {}
 
