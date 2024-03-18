@@ -7,7 +7,7 @@ COPY service/package.json service/package-lock.json ./
 RUN npm install
 
 COPY service .
-COPY --from=builder /app/node_modules .
+
 RUN npm run build
 
 # remove unused dependencies
