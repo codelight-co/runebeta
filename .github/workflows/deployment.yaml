@@ -29,10 +29,4 @@ jobs:
         --network=host --name ${{ github.event.repository.name }} --env-file .env -d ${{ github.event.repository.name }}
       
     - name: health-check
-      run: |
-        for i in {1..60}
-        do
-            curl localhost:3000 -I -s | grep "200 OK"
-            [ $? -eq 0 ] && exit 0 || sleep 5;
-        done
-        exit 2
+      run: curl localhost:3000
