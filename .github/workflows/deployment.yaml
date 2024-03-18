@@ -19,7 +19,7 @@ jobs:
       run: |
         docker build . -f Dockerfile -t ${{ github.event.repository.name }}
     - name: stop container
-      run: docker stop ${{ github.event.repository.name }}
+      run: docker stop ${{ github.event.repository.name }} || echo 
     - name: running
       env:
         SUPER_SECRET: ${{ secrets.ENV_FILE }}
