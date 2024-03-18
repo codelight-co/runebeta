@@ -1,10 +1,10 @@
-name: Deployment
+name: Deployment runebeta
 permissions:
   id-token: write 
   contents: read  
 on:
   push:
-    branches: [ "develop", "main" ]
+    branches: [ "develop", "master" ]
   workflow_dispatch:
   
 jobs:
@@ -33,6 +33,6 @@ jobs:
         for i in {1..60}
         do
             curl localhost:3000 -I -s | grep "200 OK"
-            [ $status -eq 0 ] && exit 0 || sleep 5;
+            [ $? -eq 0 ] && exit 0 || sleep 5;
         done
         exit 2
