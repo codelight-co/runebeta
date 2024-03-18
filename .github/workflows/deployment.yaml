@@ -1,38 +1,32 @@
-name: Deployment
+name: Deployment runebeta
 permissions:
   id-token: write 
   contents: read  
 on:
   push:
-    branches: [ "develop", "main" ]
+    branches: [ "master" ]
   workflow_dispatch:
-
-environment:
-  workdir: /usr/local/src/runebeta
-  port: 3000
   
 jobs:
-  develop:
-    if: github.ref_name == 'develop' 
-    runs-on: [self-hosted] 
+  release:
+    if: github.ref_name == 'master' || github.event_name == 'workflow_dispatch' 
+    runs-on: [self-hosted]
     steps:
     - uses: actions/checkout@v4
       with:
         ref: ${{ github.ref_name }}
-        path: ${{ env.workdir }}
-    - name: build
+    - name: Build docker image
       run: |
         docker build . -f Dockerfile -t ${{ github.event.repository.name }}
-      working-directory: ${{ env.workdir }}
     - name: stop container
-      run: docker stop ${{ github.event.repository.name }}
-    - name: running
-      run: docker run --rm -v ${{env.workdir}}/service/.env:/app/.env:ro -p ${{ env.port }}:3000 --network=host --name ${{ github.event.repository.name }} ${{ github.event.repository.name }}
-    - name: health-check
+      run: docker stop ${{ github.event.repository.name }} || echo 
+    - name: Running container
+      env:
+        SUPER_SECRET: ${{ secrets.ENV_FILE }}
       run: |
-        for i in {1..60}
-        do
-            curl localhost:${{ env.port }} -I -s | grep "200 OK"
-            [ $status -eq 0 ] && exit 1 || sleep 5;
-        done
-        exit 2
+        echo "$SUPER_SECRET" > .env
+        docker run --rm -p 3000:3000 \
+        --network=host --name ${{ github.event.repository.name }} --env-file .env -d ${{ github.event.repository.name }}
+      
+    - name: Health-check
+      run: sleep 60 && curl localhost:3000
