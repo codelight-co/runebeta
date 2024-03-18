@@ -24,7 +24,7 @@ jobs:
       env:
         SUPER_SECRET: ${{ secrets.ENV_FILE }}
       run: |
-        echo "$env:SUPER_SECRET" > .env
+        echo "$SUPER_SECRET" > .env
         docker run --rm -p 3000:3000 \
         --network=host --name ${{ github.event.repository.name }} --env-file .env ${{ github.event.repository.name }}
       
