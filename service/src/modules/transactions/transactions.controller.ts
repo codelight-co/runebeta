@@ -19,16 +19,4 @@ export class TransactionsController {
   async getTransactionById(@Param('id') id: string) {
     return this.transactionsService.getTransactionById(id);
   }
-
-  // Get transaction by rune id
-  @Get('rune/:id')
-  async getListTransactionByRuneId(
-    @Param('id') id: string,
-    @Query() transactionFilterDto: TransactionFilterDto,
-  ) {
-    return this.transactionsService.getListTransactionByRuneId(
-      id,
-      transactionFilterDto,
-    );
-  }
 }

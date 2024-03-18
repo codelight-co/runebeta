@@ -24,4 +24,6 @@ export class TransactionFilterDto {
   sortBy?: string;
 
   sortOrder?: string;
+
+  runeId?: string;
 }

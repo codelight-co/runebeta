@@ -43,26 +43,6 @@ export class TransactionsService {
       .getOne();
   }
 
-  getListTransactionByRuneId(
-    runeid: string,
-    transactionFilterDto: TransactionFilterDto,
-  ): Promise<Transaction[]> {
-    const builder = this.transactionRepository
-      .createQueryBuilder()
-      .leftJoinAndSelect('Transaction.vin', 'TransactionIns')
-      .leftJoinAndSelect('Transaction.vout', 'TransactionOut')
-      .innerJoin(
-        'TxidRune',
-        'txid_rune',
-        'txid_rune.tx_hash = Transaction.tx_hash',
-      )
-      .where('txid_rune.runeid = :runeid', { runeid });
-
-    this.addTransactionFilter(builder, transactionFilterDto);
-
-    return builder.getMany();
-  }
-
   private async addTransactionFilter(
     builder: SelectQueryBuilder<Transaction>,
     filter: TransactionFilterDto,
@@ -73,6 +53,15 @@ export class TransactionsService {
 
     if (filter.limit) {
       builder.limit(filter.limit);
+    }
+
+    if (filter.runeId) {
+      builder.innerJoin(
+        'TxidRune',
+        'txid_rune',
+        'txid_rune.tx_hash = Transaction.tx_hash',
+      );
+      builder.where('txid_rune.runeid = :runeid', { runeid: filter.runeId });
     }
 
     if (filter.sortBy) {
