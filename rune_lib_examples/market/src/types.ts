@@ -53,7 +53,7 @@ export interface IRuneListingState {
     unsignedBuyingPSBTBase64?: string;
     unsignedBuyingPSBTInputSize?: number;
     signedBuyingPSBTBase64?: string;
-    itemMapping?: { index: number; id: string }[];
+    itemMapping?: { index: number; id: number }[];
     buyerPaymentUTXOs?: IRuneUTXO[]; // after the selection
     mergedSignedBuyingPSBTBase64?: string;
   };

@@ -12,13 +12,13 @@ import { Edict, RuneStone } from 'rune_lib';
 bitcoin.initEccLib(ecc);
 
 export interface TokenOutput {
-  id: string;
+  id: number;
   value: number;
   address: string;
 }
 
 export interface SellerOutput {
-  id?: string;
+  id: number;
   value: number;
   address: string;
 }
@@ -246,6 +246,12 @@ export namespace BuyerSigner {
 
     buyer_state.buyer.unsignedBuyingPSBTBase64 = psbt.toBase64();
     buyer_state.buyer.unsignedBuyingPSBTInputSize = psbt.data.inputs.length;
+    buyer_state.buyer.itemMapping = _seller_outputs.map((e, i) => {
+      return {
+        index: i,
+        id: e.id!,
+      };
+    });
     return buyer_state;
   }
 
@@ -281,6 +287,7 @@ export namespace BuyerSigner {
     const ret = {
       sellerInput,
       sellerOutput: {
+        id: listing.seller.runeItem.id,
         address: listing.seller.sellerReceiveAddress,
         value: getSellerRuneOutputValue(listing.seller.price, listing.seller.makerFeeBp, listing.seller.runeItem.outputValue),
       },
