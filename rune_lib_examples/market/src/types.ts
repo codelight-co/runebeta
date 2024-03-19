@@ -1,0 +1,119 @@
+import * as bitcoin from 'bitcoinjs-lib';
+import { IEdict } from 'rune_lib';
+
+export interface ListRunesResponse {
+  entries: Map<RuneId, RuneItem>[];
+}
+
+export type RuneString = string;
+export type RuneId = string;
+
+// temporily use any
+export interface RuneItem {
+  burned: number;
+  divisibility: number;
+  etching: string;
+  mint: any; // temporily use any
+  mints: number;
+  number: number;
+  rune: RuneString;
+  spacers: number;
+  supply: number;
+  symbol: string | null;
+  timestamp: number;
+}
+
+export interface RuneResopnse {
+  id: RuneId;
+  parent: RuneItem | null;
+  entry: RuneItem;
+}
+
+// market types
+
+export interface SellerListingState {
+  seller: {
+    makerFeeBp: number;
+    sellerRuneAddress: string;
+    price: number;
+    runeItem: IRuneItem;
+    sellerReceiveAddress: string;
+    unsignedListingPSBTBase64?: string;
+    signedListingPSBTBase64?: string;
+    tapInternalKey?: string;
+    publicKey?: string;
+  };
+}
+
+export interface IRunePostPSBTListing {
+  price: number;
+  id: string;
+  sellerReceiveAddress: string;
+  signedListingPSBTBase64: string;
+  publicKey?: string;
+  tapInternalKey?: string;
+}
+
+export interface IRuneItem {
+  id: string;
+  chain: string;
+  owner: string;
+  rune_utxo?: IRuneUTXO;
+  mempool_utxo?: MempoolUtxo;
+
+  outputValue: number;
+  txid: string;
+  vout: number;
+  output: string;
+  // listing
+  // listed: boolean;
+  // listedAt?: string;
+  // listedPrice?: number;
+  // listedMakerFeeBp?: number;
+  // listedSellerReceiveAddress?: string;
+}
+
+export interface IRuneUTXO {
+  txid: string;
+  vout: number;
+  value: number;
+  script?: string;
+  height?: number;
+  runes?: IEdict[];
+  ticker?: string;
+  tx?: bitcoin.Transaction;
+}
+
+export interface MempoolUtxo {
+  txid: string;
+  vout: number;
+  status: {
+    confirmed: true;
+    block_height: number;
+    block_hash: string;
+    block_time: number;
+  };
+  value: number;
+}
+
+export interface utxo {
+  txid: string;
+  vout: number;
+  value: number;
+  status: TxStatus;
+  tx: bitcoin.Transaction;
+}
+
+export interface TxStatus {
+  confirmed: boolean;
+  block_height: number;
+  block_hash: string;
+  block_time: number;
+}
+
+export class InvalidArgumentError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidArgumentError';
+  }
+}
