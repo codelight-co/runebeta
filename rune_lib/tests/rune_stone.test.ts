@@ -1,4 +1,4 @@
-import { CLAIM_BIT, Edict, Etching, MAX_DIVISIBILITY, Rune, RuneId, RuneStone } from '../src/index';
+import { CLAIM_BIT, Edict, Etching, MAX_DIVISIBILITY, Rune, RuneId, RuneStone, decodeOpReturn } from '../src/index';
 import * as bitcoin from 'bitcoinjs-lib';
 import * as varint from '../src/index';
 import { Tag, tagInto } from '../src/tag';
@@ -499,4 +499,17 @@ describe('rune_stone', () => {
   //   console.log(d);
   //   expect(d?.etching).toStrictEqual(new Etching(0, null, new Rune(BigInt(4)), null, BigInt(0)));
   // });
+});
+
+// test decode op_return
+describe('decode op return', () => {
+  test('decode op_return', () => {
+    const rs = decodeOpReturn(
+      '6a0952554e455f544553544c710083f4d5aeff5882240100e45c02008c10030088eb0004008f34050085480600b6640700b66408008f34090084f47c0a0082240b0082240c0085480d00ba080e0082240f00854810008c101100ac78120085481300822414008548150082fefefefefefefefefefefefefefefed49e1816',
+      'RUNE_TEST',
+    );
+    rs?.edicts.map(d => {
+      console.log(d);
+    });
+  });
 });
