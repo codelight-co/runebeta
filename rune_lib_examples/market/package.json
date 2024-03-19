@@ -4,15 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build:swc": "swc src --out-dir dist",
-    "build:2": "tsc --build",
-    "start": "rm -rf dist && pnpm run build:swc && NODE_ENV=production node --experimental-specifier-resolution=node  ./dist/main.js",
-    "watch:2": "tsc --watch",
+    "build:swc": "swc src --out-dir dist --strip-leading-paths",
+    "start": "pnpm run clean && pnpm run build:swc && NODE_ENV=production node ./dist/main.js",
     "watch": "tsc --project './tsconfig.json' --watch",
     "clean": "rm -rf dist node_modules/.cache tsconfig.tsbuildinfo",
     "format": "prettier --write  '*.{json,js}' 'src/**/*.{js,ts}'",
-    "test": "jest --runInBand",
-    "build": "pnpm run clean && tsc --emitDeclarationOnly && swc src -d dist --strip-leading-paths && tsc-alias"
+    "test": "jest --runInBand"
   },
   "keywords": [],
   "author": "",

@@ -1,7 +1,6 @@
+import { BASE_URL } from '../src/configs/constant';
 import { RPCService } from '../src/utils/rpc';
 import * as bitcoin from 'bitcoinjs-lib';
-
-const BASE_URL = 'http://222.253.82.244:8088';
 
 describe('Services', () => {
   test('fetches runes', async () => {
