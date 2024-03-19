@@ -82,7 +82,7 @@ export namespace BuyerHandler {
         continue;
       }
 
-      // TODO - check if the utxo contains atomicals
+      // TODO - check if the utxo contains runes
 
       selectedUtxos.push(utxo);
       selectedAmount += utxo.value;
@@ -137,8 +137,8 @@ export namespace BuyerHandler {
       /// push all seller item as inputs to psbt
 
       //   const _token_output: TokenOutput = {
-      //     id: seller.seller.runeItem.id, // atomicals ID
-      //     value: seller.seller.runeItem.outputValue, // atomicals value
+      //     id: seller.seller.runeItem.id, // runes ID
+      //     value: seller.seller.runeItem.outputValue, // runes value
       //     address: buyer_state.buyer.buyerTokenReceiveAddress, // buyer receiveAddress
       //   };
       _seller_outputs.push(sellerOutput);
@@ -256,8 +256,8 @@ export namespace BuyerHandler {
   }
 
   async function getSellerInputAndOutput(listing: IRuneListingState) {
-    const [atomicalsUtxoTxId, atomicalsUtxoVout] = [listing.seller.runeItem.txid, listing.seller.runeItem.vout];
-    const tx = bitcoin.Transaction.fromHex(await FullnodeRPC.getrawtransaction(atomicalsUtxoTxId));
+    const [runesUtxoTxId, runesUtxoVout] = [listing.seller.runeItem.txid, listing.seller.runeItem.vout];
+    const tx = bitcoin.Transaction.fromHex(await FullnodeRPC.getrawtransaction(runesUtxoTxId));
     // No need to add this witness if the seller is using taproot
 
     if (!listing.seller.tapInternalKey && !listing.seller.publicKey) {
@@ -269,11 +269,11 @@ export namespace BuyerHandler {
     }
 
     const sellerInput: any = {
-      hash: atomicalsUtxoTxId,
-      index: atomicalsUtxoVout,
+      hash: runesUtxoTxId,
+      index: runesUtxoVout,
       nonWitnessUtxo: tx.toBuffer(),
       // No problem in always adding a witnessUtxo here
-      witnessUtxo: tx.outs[atomicalsUtxoVout],
+      witnessUtxo: tx.outs[runesUtxoVout],
     };
     // If taproot is used, we need to add the internal key
 
