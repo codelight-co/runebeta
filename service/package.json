@@ -24,6 +24,7 @@
     "dbm:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d ormconfig.ts"
   },
   "dependencies": {
+    "@mempool/mempool.js": "^2.3.0",
     "@nestjs-modules/ioredis": "^2.0.2",
     "@nestjs/axios": "^3.0.2",
     "@nestjs/cache-manager": "^2.2.1",

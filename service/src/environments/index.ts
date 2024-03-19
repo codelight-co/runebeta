@@ -23,6 +23,9 @@ const REDIS_HOST: string = process.env.REDIS_HOST || 'localhost';
 const REDIS_PORT: number = +process.env.REDIS_PORT || 6379;
 const CACHE_TTL: number = +process.env.CACHE_TTL || 5;
 
+// Bitcoin
+const BITCOIN_NETWORK: string = process.env.BITCOIN_NETWORK || 'testnet';
+
 export {
   DATABASE_TYPE,
   DATABASE_HOST,
@@ -34,5 +37,6 @@ export {
   REDIS_PORT,
   CACHE_TTL,
   JWT_SECRET,
+  BITCOIN_NETWORK,
   ENV,
 };
