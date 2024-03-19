@@ -1,6 +1,6 @@
-import { BTC_NETWORK } from './constant';
+import { BTC_NETWORK } from '../configs/constant';
 import * as bitcoin from 'bitcoinjs-lib';
-import { ListRunesResponse, RuneResopnse } from './types';
+import { ListRunesResponse, RuneResopnse } from '../runes/types';
 
 export const network = BTC_NETWORK === 'mainnet' ? bitcoin.networks.bitcoin : bitcoin.networks.testnet;
 export const headers = {

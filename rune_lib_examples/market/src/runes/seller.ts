@@ -1,9 +1,9 @@
-import { network } from './services';
+import { network } from '../utils/rpc';
 import { IRuneItem, IRunePostPSBTListing, InvalidArgumentError, IRuneListingState } from './types';
 import * as bitcoin from 'bitcoinjs-lib';
-import { generateTxidFromHash, toXOnly } from './util';
-import { getSellerRuneOutputValue } from './vendors/feeprovider';
-import { FullnodeRPC } from './vendors/fullnoderpc';
+import { generateTxidFromHash, toXOnly } from '../utils/util';
+import { getSellerRuneOutputValue } from '../vendors/feeprovider';
+import { FullnodeRPC } from '../vendors/fullnoderpc';
 
 export namespace SellerHandler {
   export async function generateUnsignedPsbt(listing: IRuneListingState): Promise<IRuneListingState> {

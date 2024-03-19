@@ -1,11 +1,5 @@
 import { RPCClient } from 'rpc-bitcoin';
-import {
-  BITCOIN_RPC_HOST,
-  BITCOIN_RPC_PASS,
-  BITCOIN_RPC_PORT,
-  BITCOIN_RPC_TIMEOUT,
-  BITCOIN_RPC_USER,
-} from '../constant';
+import { BITCOIN_RPC_HOST, BITCOIN_RPC_PASS, BITCOIN_RPC_PORT, BITCOIN_RPC_TIMEOUT, BITCOIN_RPC_USER } from '../configs/constant';
 
 let client: RPCClient | undefined;
 
@@ -70,9 +64,7 @@ export class FullnodeRPC {
     return res as string;
   }
 
-  static async getrawtransactionVerbose(
-    txid: string,
-  ): Promise<IGetRawTransactionVerboseResult> {
+  static async getrawtransactionVerbose(txid: string): Promise<IGetRawTransactionVerboseResult> {
     const client = this.getClient();
     const res = await client.getrawtransaction({ txid, verbose: true });
     return res;
@@ -90,9 +82,7 @@ export class FullnodeRPC {
     return res as { hex: string; complete: boolean };
   }
 
-  static async testmempoolaccept(
-    rawtxs: string[],
-  ): Promise<ITestMempoolAcceptResult> {
+  static async testmempoolaccept(rawtxs: string[]): Promise<ITestMempoolAcceptResult> {
     const client = this.getClient();
     const res = await client.testmempoolaccept({ rawtxs });
     return res as ITestMempoolAcceptResult;

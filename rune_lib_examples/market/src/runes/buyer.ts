@@ -1,12 +1,12 @@
 import * as bitcoin from 'bitcoinjs-lib';
 import * as ecc from 'tiny-secp256k1';
 import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
-import { FullnodeRPC } from './vendors/fullnoderpc';
+import { FullnodeRPC } from '../vendors/fullnoderpc';
 import { IRuneListingState, InvalidArgumentError, WitnessUtxo } from './types';
-import { isP2SHAddress, satToBtc, toXOnly } from './util';
-import { calculateTxBytesFee, getSellerRuneOutputValue } from './vendors/feeprovider';
-import { DUST_AMOUNT, PLATFORM_FEE_ADDRESS, BTC_NETWORK, RUNE_TAG } from './constant';
-import { RPCService, network } from './services';
+import { isP2SHAddress, satToBtc, toXOnly } from '../utils/util';
+import { calculateTxBytesFee, getSellerRuneOutputValue } from '../vendors/feeprovider';
+import { DUST_AMOUNT, PLATFORM_FEE_ADDRESS, BTC_NETWORK, RUNE_TAG } from '../configs/constant';
+import { RPCService, network } from '../utils/rpc';
 import { Edict, RuneStone } from 'rune_lib';
 
 bitcoin.initEccLib(ecc);
@@ -31,7 +31,7 @@ export interface SellerInput {
   witnessUtxo?: Buffer;
 }
 
-export namespace BuyerSigner {
+export namespace BuyerHandler {
   async function doesUtxoContainRunes(utxo: AddressTxsUtxo, service: RPCService): Promise<boolean> {
     // If it's confirmed, we check the indexing db for that output
     if (utxo.status.confirmed) {

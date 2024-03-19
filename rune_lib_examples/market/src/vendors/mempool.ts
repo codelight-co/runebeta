@@ -1,5 +1,5 @@
 import mempoolJS from '@mempool/mempool.js';
-import { BTC_NETWORK } from '../constant';
+import { BTC_NETWORK } from '../configs/constant';
 
 const { bitcoin } = mempoolJS({
   hostname: 'mempool.space',
