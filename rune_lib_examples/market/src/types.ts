@@ -31,7 +31,7 @@ export interface RuneResopnse {
 
 // market types
 
-export interface SellerListingState {
+export interface IRuneListingState {
   seller: {
     makerFeeBp: number;
     sellerRuneAddress: string;
@@ -43,11 +43,25 @@ export interface SellerListingState {
     tapInternalKey?: string;
     publicKey?: string;
   };
+  buyer?: {
+    takerFeeBp: number;
+    buyerAddress: string;
+    buyerTokenReceiveAddress: string;
+    feeRateTier: string;
+    mergeTokenValue: boolean;
+    buyerPublicKey?: string;
+    unsignedBuyingPSBTBase64?: string;
+    unsignedBuyingPSBTInputSize?: number;
+    signedBuyingPSBTBase64?: string;
+    itemMapping?: { index: number; id: string }[];
+    buyerPaymentUTXOs?: IRuneUTXO[]; // after the selection
+    mergedSignedBuyingPSBTBase64?: string;
+  };
 }
 
 export interface IRunePostPSBTListing {
   price: number;
-  id: string;
+  id: number;
   sellerReceiveAddress: string;
   signedListingPSBTBase64: string;
   publicKey?: string;
@@ -55,7 +69,7 @@ export interface IRunePostPSBTListing {
 }
 
 export interface IRuneItem {
-  id: string;
+  id: number;
   chain: string;
   owner: string;
   rune_utxo?: IRuneUTXO;
@@ -65,6 +79,7 @@ export interface IRuneItem {
   txid: string;
   vout: number;
   output: string;
+  tokenValue: bigint;
   // listing
   // listed: boolean;
   // listedAt?: string;
@@ -81,7 +96,7 @@ export interface IRuneUTXO {
   height?: number;
   runes?: IEdict[];
   ticker?: string;
-  tx?: bitcoin.Transaction;
+  tx: bitcoin.Transaction;
 }
 
 export interface MempoolUtxo {
@@ -102,6 +117,11 @@ export interface utxo {
   value: number;
   status: TxStatus;
   tx: bitcoin.Transaction;
+}
+
+export interface WitnessUtxo {
+  script: Buffer;
+  value: number;
 }
 
 export interface TxStatus {

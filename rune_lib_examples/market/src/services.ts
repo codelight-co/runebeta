@@ -21,4 +21,10 @@ export class RPCService {
 
     return rune;
   }
+  public async getRuneByTxIdAndIndex(txId: string, index: number): Promise<RuneResopnse> {
+    const response = await fetch(`${this.baseUrl}/rune/getRuneByTxIdAndIndex/${txId}:${index}`, { headers });
+    const rune = (await response.json()) as RuneResopnse;
+
+    return rune;
+  }
 }

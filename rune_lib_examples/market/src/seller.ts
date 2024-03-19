@@ -1,12 +1,12 @@
 import { network } from './services';
-import { IRuneItem, IRunePostPSBTListing, InvalidArgumentError, SellerListingState } from './types';
+import { IRuneItem, IRunePostPSBTListing, InvalidArgumentError, IRuneListingState } from './types';
 import * as bitcoin from 'bitcoinjs-lib';
 import { generateTxidFromHash, toXOnly } from './util';
 import { getSellerRuneOutputValue } from './vendors/feeprovider';
 import { FullnodeRPC } from './vendors/fullnoderpc';
 
 export namespace SellerHandler {
-  export async function generateUnsignedPsbt(listing: SellerListingState): Promise<SellerListingState> {
+  export async function generateUnsignedPsbt(listing: IRuneListingState): Promise<IRuneListingState> {
     // NOTE:
     // Before calling this method,
     // We should verify that the seller rune utxo is still unspent and valid
@@ -92,7 +92,7 @@ export namespace SellerHandler {
     }
     const utxoOutput = generateTxidFromHash(psbt.txInputs[0].hash) + ':' + psbt.txInputs[0].index;
 
-    // verify that the ordItem is the same as the seller wants
+    // verify that the runId is the same as the seller wants
     // const runeItem = await itemProvider.getTokenByOutput(utxoOutput);
     if (runeItem?.id !== req.id || utxoOutput !== `${runeItem.txid}:${runeItem.vout}`) {
       throw new InvalidArgumentError(`Invalid tokenId`);
