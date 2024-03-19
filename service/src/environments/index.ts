@@ -6,6 +6,9 @@ const NEED_TO_CONFIGURED = '';
 
 const ENV: string = process.env.ENV || 'development';
 
+// JWT
+const JWT_SECRET: string = process.env.JWT_SECRET || 'JWT_SECRET';
+
 // Database
 const DATABASE_TYPE: string = process.env.DATABASE_TYPE || NEED_TO_CONFIGURED;
 const DATABASE_HOST: string = process.env.DATABASE_HOST || NEED_TO_CONFIGURED;
@@ -30,5 +33,6 @@ export {
   REDIS_HOST,
   REDIS_PORT,
   CACHE_TTL,
+  JWT_SECRET,
   ENV,
 };
