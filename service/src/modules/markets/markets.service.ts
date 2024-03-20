@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import {
   CreateOrderDto,
   MarketRuneFilterDto,
@@ -10,6 +10,7 @@ import { Repository } from 'typeorm';
 import { Order } from '../database/entities/order.entity';
 import * as crypto from 'crypto';
 import { ENCRYPTION_ALGORITHM, ENCRYPTION_KEY } from 'src/environments';
+import { IRuneListingState } from 'src/common/interfaces/rune.interface';
 
 @Injectable()
 export class MarketsService {
@@ -75,5 +76,14 @@ export class MarketsService {
     } as Order);
 
     return { ...order, signedTx: null };
+  }
+
+  async generateUnsignedListingPSBT(body: IRuneListingState, user: User) {
+    console.log('body :>> ', body);
+    console.log('user :>> ', user);
+    const { seller } = body;
+    if (!seller) {
+      throw new BadRequestException('No Seller data found');
+    }
   }
 }

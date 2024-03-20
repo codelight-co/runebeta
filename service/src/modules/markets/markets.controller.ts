@@ -18,6 +18,7 @@ import { CoreTransformInterceptor } from 'src/common/interceptors/coreTransform.
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { UserDecorator } from 'src/common/decorators/user.decorator';
 import { User } from '../database/entities/user.entity';
+import { IRuneListingState } from 'src/common/interfaces/rune.interface';
 
 @Controller('markets')
 @UseInterceptors(CoreTransformInterceptor)
@@ -53,5 +54,15 @@ export class MarketsController {
     @UserDecorator() user: User,
   ) {
     return this.marketsService.createSellOrder(body, user);
+  }
+
+  // Generate unsigned listing PSBT
+  @Post('orders/sell/unsigned-psbt')
+  @UseGuards(AuthGuard)
+  async generateUnsignedListingPSBT(
+    @Body() body: IRuneListingState,
+    @UserDecorator() user: User,
+  ) {
+    return this.marketsService.generateUnsignedListingPSBT(body, user);
   }
 }

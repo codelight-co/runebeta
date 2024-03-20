@@ -23,14 +23,24 @@ const REDIS_HOST: string = process.env.REDIS_HOST || 'localhost';
 const REDIS_PORT: number = +process.env.REDIS_PORT || 6379;
 const CACHE_TTL: number = +process.env.CACHE_TTL || 5;
 
-// Bitcoin
-const BITCOIN_NETWORK: string = process.env.BITCOIN_NETWORK || 'testnet';
-
-// En
+// Env
 const ENCRYPTION_KEY: string = process.env.ENCRYPTION_KEY || 'secret';
 const ENCRYPTION_ALGORITHM: string =
   process.env.ENCRYPTION_ALGORITHM || 'aes-256-cbc';
 const ENCRYPTION_IV_LENGTH: number = +process.env.ENCRYPTION_IV_LENGTH || 16;
+
+// Bitcoin config
+const BITCOIN_NETWORK: string = process.env.BITCOIN_NETWORK || 'testnet';
+const BTC_NETWORK: 'testnet' | 'mainnet' | 'livenet' = 'testnet';
+const PLATFORM_FEE_ADDRESS = '';
+const DUST_AMOUNT = 546;
+const RUNE_TAG = 'RUNE_TEST';
+const BASE_URL = 'http://222.253.82.244:8088';
+const BITCOIN_RPC_HOST = process.env.BITCOIN_RPC_HOST || 'http://localhost';
+const BITCOIN_RPC_PORT = Number(process.env.BITCOIN_RPC_PORT ?? 38332);
+const BITCOIN_RPC_USER = process.env.BITCOIN_RPC_USER || '__cookie__';
+const BITCOIN_RPC_PASS = process.env.BITCOIN_RPC_PASS || '';
+const BITCOIN_RPC_TIMEOUT = Number(process.env.BITCOIN_RPC_TIMEOUT ?? 120000);
 
 export {
   DATABASE_TYPE,
@@ -48,4 +58,14 @@ export {
   ENCRYPTION_ALGORITHM,
   ENCRYPTION_IV_LENGTH,
   ENV,
+  BTC_NETWORK,
+  PLATFORM_FEE_ADDRESS,
+  DUST_AMOUNT,
+  RUNE_TAG,
+  BASE_URL,
+  BITCOIN_RPC_HOST,
+  BITCOIN_RPC_PORT,
+  BITCOIN_RPC_USER,
+  BITCOIN_RPC_PASS,
+  BITCOIN_RPC_TIMEOUT,
 };
