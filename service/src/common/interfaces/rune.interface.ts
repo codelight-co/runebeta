@@ -1,3 +1,4 @@
+import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
 import * as bitcoin from 'bitcoinjs-lib';
 import { IEdict } from 'rune_lib';
 
@@ -129,6 +130,14 @@ export interface TxStatus {
   block_height: number;
   block_hash: string;
   block_time: number;
+}
+
+export interface ISelectPaymentUtxo {
+  utxos: AddressTxsUtxo[];
+  amount: number; // amount is expected total output (except tx fee)
+  vinsLength: number;
+  voutsLength: number;
+  feeRateTier: string;
 }
 
 export class InvalidArgumentError extends Error {

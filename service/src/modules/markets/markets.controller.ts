@@ -18,7 +18,10 @@ import { CoreTransformInterceptor } from 'src/common/interceptors/coreTransform.
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { UserDecorator } from 'src/common/decorators/user.decorator';
 import { User } from '../database/entities/user.entity';
-import { IRuneListingState } from 'src/common/interfaces/rune.interface';
+import {
+  IRuneListingState,
+  ISelectPaymentUtxo,
+} from 'src/common/interfaces/rune.interface';
 
 @Controller('markets')
 @UseInterceptors(CoreTransformInterceptor)
@@ -50,7 +53,7 @@ export class MarketsController {
   @Post('orders/sell')
   @UseGuards(AuthGuard)
   async createSellOrder(
-    @Body() body: CreateOrderDto,
+    @Body() body: IRuneListingState,
     @UserDecorator() user: User,
   ) {
     return this.marketsService.createSellOrder(body, user);
@@ -62,7 +65,17 @@ export class MarketsController {
   async generateUnsignedListingPSBT(
     @Body() body: IRuneListingState,
     @UserDecorator() user: User,
-  ) {
+  ): Promise<IRuneListingState> {
     return this.marketsService.generateUnsignedListingPSBT(body, user);
+  }
+
+  // Select payment UTXOs for buying
+  @Post('orders/buy/select-payment-utxos')
+  @UseGuards(AuthGuard)
+  async selectPaymentUTXOs(
+    @Body() body: ISelectPaymentUtxo,
+    @UserDecorator() user: User,
+  ): Promise<any> {
+    return this.marketsService.selectPaymentUTXOs(body, user);
   }
 }

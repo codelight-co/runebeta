@@ -1,24 +1,38 @@
 import { HttpService } from '@nestjs/axios';
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import {
-  CreateOrderDto,
-  MarketRuneFilterDto,
-  MarketRuneOrderFilterDto,
-} from './dto';
+  BadRequestException,
+  Inject,
+  Injectable,
+  OnModuleInit,
+} from '@nestjs/common';
+import { MarketRuneFilterDto, MarketRuneOrderFilterDto } from './dto';
 import { User } from '../database/entities/user.entity';
 import { Repository } from 'typeorm';
 import { Order } from '../database/entities/order.entity';
-import * as crypto from 'crypto';
-import { ENCRYPTION_ALGORITHM, ENCRYPTION_KEY } from 'src/environments';
-import { IRuneListingState } from 'src/common/interfaces/rune.interface';
+import {
+  IRuneListingState,
+  IRunePostPSBTListing,
+  ISelectPaymentUtxo,
+} from 'src/common/interfaces/rune.interface';
+import { SellerHandler } from 'src/common/handlers/runes/seller';
+import { BuyerHandler } from 'src/common/handlers/runes/buyer';
+import { RPCService, network } from 'src/common/utils/rpc';
+import { BASE_URL } from 'src/environments';
+import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
 
 @Injectable()
-export class MarketsService {
+export class MarketsService implements OnModuleInit {
   constructor(
     private readonly httpService: HttpService,
     @Inject('ORDER_REPOSITORY')
     private orderRepository: Repository<Order>,
   ) {}
+
+  private rpcService: RPCService;
+
+  async onModuleInit() {
+    this.rpcService = new RPCService(BASE_URL, network);
+  }
 
   async getRunes(marketRuneFilterDto: MarketRuneFilterDto) {
     const res = await this.httpService
@@ -51,39 +65,78 @@ export class MarketsService {
     return res.data;
   }
 
-  async createSellOrder(body: CreateOrderDto, user: User) {
-    // 1. Verify order data
-    // 2. Verify signature
-
-    // 3. Encode order signature
-    const algorithm = ENCRYPTION_ALGORITHM;
-    const key = Buffer.from(ENCRYPTION_KEY, 'hex');
-    const iv = crypto.randomBytes(16);
-
-    const cipher = crypto.createCipheriv(algorithm, key, iv);
-    let encrypted = cipher.update(body.signedTx, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-
-    // 4. Save order to database
-    const order = await this.orderRepository.save({
-      txHash: '',
-      symbol: '',
-      runeId: '',
-      amount: body.amount,
-      price: body.price,
-      userId: user.id,
-      signedTx: encrypted,
-    } as Order);
-
-    return { ...order, signedTx: null };
-  }
-
-  async generateUnsignedListingPSBT(body: IRuneListingState, user: User) {
-    console.log('body :>> ', body);
-    console.log('user :>> ', user);
+  async createSellOrder(body: IRuneListingState, user: User): Promise<Order> {
     const { seller } = body;
     if (!seller) {
       throw new BadRequestException('No Seller data found');
     }
+    const listing: IRunePostPSBTListing = {
+      id: seller.runeItem.id,
+      price: seller.price,
+      sellerReceiveAddress: seller.sellerReceiveAddress,
+      signedListingPSBTBase64: seller.signedListingPSBTBase64,
+    };
+    const makerFeeBp = seller.makerFeeBp;
+    const runeItem = seller.runeItem;
+
+    // 1. Verify signature
+    const isPass = await SellerHandler.verifySignedListingPSBTBase64(
+      listing,
+      makerFeeBp,
+      runeItem,
+    );
+    if (!isPass) {
+      throw new BadRequestException('Invalid signature');
+    }
+
+    // 3. Encode order signature
+    // const algorithm = ENCRYPTION_ALGORITHM;
+    // const key = Buffer.from(ENCRYPTION_KEY, 'hex');
+    // const iv = crypto.randomBytes(16);
+
+    // const cipher = crypto.createCipheriv(algorithm, key, iv);
+    // let encrypted = cipher.update(body.signedTx, 'utf8', 'hex');
+    // encrypted += cipher.final('hex');
+
+    return this.orderRepository.save({
+      userId: user.id,
+      ...body.seller,
+    } as Order);
+  }
+
+  async generateUnsignedListingPSBT(
+    body: IRuneListingState,
+    user: User,
+  ): Promise<IRuneListingState> {
+    if (!user) {
+      throw new BadRequestException('No user found');
+    }
+
+    const { seller } = body;
+    if (!seller) {
+      throw new BadRequestException('No Seller data found');
+    }
+
+    return SellerHandler.generateUnsignedPsbt(body);
+  }
+
+  async selectPaymentUTXOs(
+    body: ISelectPaymentUtxo,
+    user: User,
+  ): Promise<AddressTxsUtxo[]> {
+    if (!user) {
+      throw new BadRequestException('No user found');
+    }
+
+    const { utxos, amount, vinsLength, voutsLength, feeRateTier } = body;
+
+    return BuyerHandler.selectPaymentUTXOs(
+      utxos,
+      amount,
+      vinsLength,
+      voutsLength,
+      feeRateTier,
+      this.rpcService,
+    );
   }
 }

@@ -2,7 +2,6 @@ import * as bitcoin from 'bitcoinjs-lib';
 import * as ecc from 'tiny-secp256k1';
 import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
 import { IRuneListingState, InvalidArgumentError, WitnessUtxo } from './types';
-import { Edict, RuneStone } from 'rune_lib';
 import { RPCService, network } from 'src/common/utils/rpc';
 import { satToBtc, isP2SHAddress, toXOnly } from 'src/common/utils/util';
 import { RUNE_TAG, DUST_AMOUNT, PLATFORM_FEE_ADDRESS } from 'src/environments';
@@ -11,6 +10,7 @@ import {
   getSellerRuneOutputValue,
 } from 'src/vendors/feeprovider';
 import { FullnodeRPC } from 'src/vendors/fullnoderpc';
+import { Edict, RuneStone } from 'rune_lib';
 
 bitcoin.initEccLib(ecc);
 

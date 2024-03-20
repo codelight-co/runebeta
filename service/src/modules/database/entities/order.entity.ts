@@ -1,3 +1,4 @@
+import { IRuneItem } from 'src/common/handlers/runes/types';
 import {
   Column,
   CreateDateColumn,
@@ -16,26 +17,32 @@ export class Order {
   @Index()
   userId: number;
 
-  @Column({ type: 'varchar' })
-  @Index()
-  txHash: string;
-
-  @Column({ type: 'varchar' })
-  @Index()
-  symbol: string;
-
-  @Column({ type: 'varchar' })
-  @Index()
-  runeId: string;
-
-  @Column({ type: 'varchar' })
-  signedTx: string;
-
   @Column({ type: 'integer' })
-  amount: number;
+  makerFeeBp: number;
+
+  @Column({ type: 'varchar' })
+  sellerRuneAddress: string;
 
   @Column({ type: 'integer' })
   price: number;
+
+  @Column({ type: 'jsonb' })
+  runeItem: IRuneItem;
+
+  @Column({ type: 'varchar' })
+  sellerReceiveAddress: string;
+
+  @Column({ type: 'text' })
+  unsignedListingPSBTBase64: string;
+
+  @Column({ type: 'text', nullable: true })
+  signedListingPSBTBase64: string;
+
+  @Column({ type: 'text', nullable: true })
+  tapInternalKey: string;
+
+  @Column({ type: 'text', nullable: true })
+  publicKey: string;
 
   @Column()
   @CreateDateColumn()
