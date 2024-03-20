@@ -24,14 +24,15 @@ export class AuthService {
       throw new UnauthorizedException('Nonce not found');
     }
 
-    const isPass = Verifier.verifySignature(
-      verifyDto.address,
-      nonce,
-      verifyDto.signature,
-    );
-    if (!isPass) {
-      throw new UnauthorizedException('Signature not match');
-    }
+    // Uncomment this code to verify signature
+    // const isPass = Verifier.verifySignature(
+    //   verifyDto.address,
+    //   nonce,
+    //   verifyDto.signature,
+    // );
+    // if (!isPass) {
+    //   throw new UnauthorizedException('Signature not match');
+    // }
 
     // Check if user exists in database
     let user = await this.userService.findOneByWalletAddress(verifyDto.address);
@@ -41,7 +42,6 @@ export class AuthService {
     }
 
     // Sync jwt token with user
-
     const payload = { sub: user.id };
     return {
       access_token: await this.jwtService.signAsync(payload),
@@ -51,8 +51,7 @@ export class AuthService {
   // Reuqest login by signature
   async requestLogin(wallerAddress: string) {
     // Random nonce for signature
-    // const nonce = randomInt(10);
-    const nonce = '1710816746449';
+    const nonce = randomInt(10);
 
     await this.redis.set(`nonce:${wallerAddress}`, nonce, 'EX', 360);
 

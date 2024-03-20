@@ -1,7 +1,23 @@
-import { Controller, Get, Param, Query, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { MarketsService } from './markets.service';
-import { MarketRuneFilterDto, MarketRuneOrderFilterDto } from './dto';
+import {
+  CreateOrderDto,
+  MarketRuneFilterDto,
+  MarketRuneOrderFilterDto,
+} from './dto';
 import { CoreTransformInterceptor } from 'src/common/interceptors/coreTransform.interceptor';
+import { AuthGuard } from 'src/common/guards/auth.guard';
+import { UserDecorator } from 'src/common/decorators/user.decorator';
+import { User } from '../database/entities/user.entity';
 
 @Controller('markets')
 @UseInterceptors(CoreTransformInterceptor)
@@ -27,5 +43,15 @@ export class MarketsController {
   @Get('stats')
   async getStats() {
     return this.marketsService.getStats();
+  }
+
+  // Create sell order
+  @Post('orders/sell')
+  @UseGuards(AuthGuard)
+  async createSellOrder(
+    @Body() body: CreateOrderDto,
+    @UserDecorator() user: User,
+  ) {
+    return this.marketsService.createSellOrder(body, user);
   }
 }

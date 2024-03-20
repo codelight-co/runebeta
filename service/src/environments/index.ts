@@ -26,6 +26,12 @@ const CACHE_TTL: number = +process.env.CACHE_TTL || 5;
 // Bitcoin
 const BITCOIN_NETWORK: string = process.env.BITCOIN_NETWORK || 'testnet';
 
+// En
+const ENCRYPTION_KEY: string = process.env.ENCRYPTION_KEY || 'secret';
+const ENCRYPTION_ALGORITHM: string =
+  process.env.ENCRYPTION_ALGORITHM || 'aes-256-cbc';
+const ENCRYPTION_IV_LENGTH: number = +process.env.ENCRYPTION_IV_LENGTH || 16;
+
 export {
   DATABASE_TYPE,
   DATABASE_HOST,
@@ -38,5 +44,8 @@ export {
   CACHE_TTL,
   JWT_SECRET,
   BITCOIN_NETWORK,
+  ENCRYPTION_KEY,
+  ENCRYPTION_ALGORITHM,
+  ENCRYPTION_IV_LENGTH,
   ENV,
 };
