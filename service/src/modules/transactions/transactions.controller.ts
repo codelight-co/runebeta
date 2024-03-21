@@ -1,6 +1,13 @@
-import { Controller, Get, Param, Query, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Query,
+  UseInterceptors,
+} from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
-import { TransactionFilterDto } from './dto';
+import { BroadcastTransactionDto, TransactionFilterDto } from './dto';
 import { CoreTransformInterceptor } from 'src/common/interceptors/coreTransform.interceptor';
 
 @Controller('transactions')
@@ -22,7 +29,7 @@ export class TransactionsController {
 
   // Broadcast transaction
   @Get('broadcast')
-  async broadcastTransaction(@Query('rawTx') rawTx: string) {
-    return this.transactionsService.broadcastTransaction(rawTx);
+  async broadcastTransaction(@Body() txDto: BroadcastTransactionDto) {
+    return this.transactionsService.broadcastTransaction(txDto);
   }
 }

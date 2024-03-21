@@ -1,11 +1,17 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { TransactionFilterDto } from './dto';
+import { BroadcastTransactionDto, TransactionFilterDto } from './dto';
 import { HttpService } from '@nestjs/axios';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Transaction } from '../database/entities/transaction.entity';
 import { TransactionIns } from '../database/entities/transaction-ins.entity';
 import { TransactionOut } from '../database/entities/transaction-out.entity';
 import { TxidRune } from '../database/entities/txid-rune.entity';
+import {
+  BITCOIN_RPC_HOST,
+  BITCOIN_RPC_PASS,
+  BITCOIN_RPC_PORT,
+  BITCOIN_RPC_USER,
+} from 'src/environments';
 
 @Injectable()
 export class TransactionsService {
@@ -72,11 +78,23 @@ export class TransactionsService {
     }
   }
 
-  async broadcastTransaction(rawTx: string) {
+  async broadcastTransaction(txDto: BroadcastTransactionDto) {
     const response = await this.httpService
-      .post('https://api.blockcypher.com/v1/btc/main/txs/push', {
-        tx: rawTx,
-      })
+      .post(
+        `${BITCOIN_RPC_HOST}:${BITCOIN_RPC_PORT}`,
+        {
+          jsonrpc: '1.0',
+          id: 'codelight',
+          method: 'sendrawtransaction',
+          params: [txDto.rawTransaction],
+        },
+        {
+          auth: {
+            username: BITCOIN_RPC_USER,
+            password: BITCOIN_RPC_PASS,
+          },
+        },
+      )
       .toPromise();
 
     return response.data;
