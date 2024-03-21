@@ -22,6 +22,7 @@ import {
   IRuneListingState,
   ISelectPaymentUtxo,
 } from 'src/common/interfaces/rune.interface';
+import { BuyerOrderDto } from './dto/buyer-order.dto';
 
 @Controller('markets')
 @UseInterceptors(CoreTransformInterceptor)
@@ -77,5 +78,25 @@ export class MarketsController {
     @UserDecorator() user: User,
   ): Promise<any> {
     return this.marketsService.selectPaymentUTXOs(body, user);
+  }
+
+  // Generate unsigned buying PSBT
+  @Post('orders/buy/unsigned-psbt')
+  @UseGuards(AuthGuard)
+  async generateUnsignedBuyingPSBT(
+    @Body() body: BuyerOrderDto,
+    @UserDecorator() user: User,
+  ): Promise<any> {
+    return this.marketsService.generateUnsignedBuyingPSBT(body, user);
+  }
+
+  // Merge signed buying PSBT and excute order
+  @Post('orders/buy/merge-signed-psbt')
+  @UseGuards(AuthGuard)
+  async mergeSignedBuyingPSBT(
+    @Body() body: BuyerOrderDto,
+    @UserDecorator() user: User,
+  ): Promise<any> {
+    return this.marketsService.mergeSignedBuyingPSBT(body, user);
   }
 }

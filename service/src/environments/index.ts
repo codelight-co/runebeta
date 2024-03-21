@@ -37,7 +37,6 @@ const DUST_AMOUNT = 546;
 const RUNE_TAG = 'RUNE_TEST';
 const BASE_URL = 'http://222.253.82.244:8088';
 const BITCOIN_RPC_HOST = process.env.BITCOIN_RPC_HOST || 'http://localhost';
-const BITCOIN_RPC_PROTOCOL = process.env.BITCOIN_RPC_PROTOCOL || 'http';
 const BITCOIN_RPC_PORT = Number(process.env.BITCOIN_RPC_PORT ?? 38332);
 const BITCOIN_RPC_USER = process.env.BITCOIN_RPC_USER || '__cookie__';
 const BITCOIN_RPC_PASS = process.env.BITCOIN_RPC_PASS || '';
@@ -69,5 +68,4 @@ export {
   BITCOIN_RPC_USER,
   BITCOIN_RPC_PASS,
   BITCOIN_RPC_TIMEOUT,
-  BITCOIN_RPC_PROTOCOL,
 };
