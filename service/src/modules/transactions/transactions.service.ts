@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { BroadcastTransactionDto, TransactionFilterDto } from './dto';
 import { HttpService } from '@nestjs/axios';
 import { Repository, SelectQueryBuilder } from 'typeorm';
@@ -79,24 +79,30 @@ export class TransactionsService {
   }
 
   async broadcastTransaction(txDto: BroadcastTransactionDto) {
-    const response = await this.httpService
-      .post(
-        `${BITCOIN_RPC_HOST}:${BITCOIN_RPC_PORT}`,
-        {
-          jsonrpc: '1.0',
-          id: 'codelight',
-          method: 'sendrawtransaction',
-          params: [txDto.rawTransaction],
-        },
-        {
-          auth: {
-            username: BITCOIN_RPC_USER,
-            password: BITCOIN_RPC_PASS,
+    try {
+      const response = await this.httpService
+        .post(
+          `${BITCOIN_RPC_HOST}:${BITCOIN_RPC_PORT}`,
+          {
+            jsonrpc: '1.0',
+            id: 'codelight',
+            method: 'sendrawtransaction',
+            params: [txDto.rawTransaction],
           },
-        },
-      )
-      .toPromise();
-
-    return response.data;
+          {
+            auth: {
+              username: BITCOIN_RPC_USER,
+              password: BITCOIN_RPC_PASS,
+            },
+          },
+        )
+        .toPromise();
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        // throw status 400 with error message
+        return error.response.data;
+      }
+    }
   }
 }

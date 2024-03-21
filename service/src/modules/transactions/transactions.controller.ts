@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Post,
   Query,
   UseInterceptors,
 } from '@nestjs/common';
@@ -28,7 +29,7 @@ export class TransactionsController {
   }
 
   // Broadcast transaction
-  @Get('broadcast')
+  @Post('broadcast')
   async broadcastTransaction(@Body() txDto: BroadcastTransactionDto) {
     return this.transactionsService.broadcastTransaction(txDto);
   }
