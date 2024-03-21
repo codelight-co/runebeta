@@ -4,6 +4,9 @@
 //     pub output: u128,
 //   }
 
+import { Transaction } from 'bitcoinjs-lib';
+import { RuneId } from './rune_id';
+
 export interface IEdict {
   id: bigint;
   amount: bigint;
@@ -11,11 +14,41 @@ export interface IEdict {
 }
 
 export class Edict {
-  constructor(
-    public id: bigint,
-    public amount: bigint,
-    public output: bigint,
-  ) {}
+  constructor(public id: bigint, public amount: bigint, public output: bigint) {}
+
+  static fromIntegers(tx: Transaction, id: bigint, amount: bigint, output: bigint): Edict | null {
+    let _id = RuneId.tryFrom(id);
+
+    if (_id instanceof Error) {
+      return null;
+    } else {
+      if (_id.block === BigInt(0) && _id.tx > 0) {
+        return null;
+      }
+
+      if (output > BigInt(tx.outs.length)) {
+        return null;
+      }
+      return new Edict(id, amount, output);
+    }
+  }
+
+  static fromOpReturn(id: bigint, amount: bigint, output: bigint): Edict | null {
+    let _id = RuneId.tryFrom(id);
+
+    if (_id instanceof Error) {
+      return null;
+    } else {
+      if (_id.block === BigInt(0) && _id.tx > 0) {
+        return null;
+      }
+
+      if (output > BigInt(1)) {
+        return null;
+      }
+      return new Edict(id, amount, output);
+    }
+  }
 
   static fromJson(json: IEdict): Edict {
     return new Edict(json.id, json.amount, json.output);

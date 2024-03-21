@@ -3,7 +3,7 @@ import { Etching } from './etching';
 import * as bitcoin from 'bitcoinjs-lib';
 import { Transaction } from 'bitcoinjs-lib';
 import * as varint from './varint';
-import { MAX_DIVISIBILITY, MAX_SPACERS, Rune } from './rune';
+import { MAGIC_NUMBER, MAX_DIVISIBILITY, MAX_SPACERS, Rune } from './rune';
 import assert from 'assert';
 import { Flag, FlagTypes } from './flag';
 import { tagEncoder } from './tag';
@@ -12,7 +12,7 @@ import { Mint } from './mint';
 const TAG_BODY: bigint = BigInt(0);
 const TAG_DIVISIBILITY: bigint = BigInt(1);
 const TAG_FLAGS: bigint = BigInt(2);
-const TAG_SPACERS: bigint = BigInt(5);
+const TAG_SPACERS: bigint = BigInt(3);
 const TAG_RUNE: bigint = BigInt(4);
 const TAG_SYMBOL: bigint = BigInt(5);
 const TAG_LIMIT: bigint = BigInt(6);
@@ -20,30 +20,24 @@ const TAG_TERM: bigint = BigInt(8);
 const TAG_DEADLINE: bigint = BigInt(10);
 const TAG_DEFAULT_OUTPUT: bigint = BigInt(12);
 const TAG_CLAIM: bigint = BigInt(14);
+const TAG_CENOTAPH: bigint = BigInt(126);
 const TAG_BURN: bigint = BigInt(126);
 const TAG_NOP: bigint = BigInt(127);
 
 // pub struct Runestone {
 //     pub edicts: Vec<Edict>,
 //     pub etching: Option<Etching>,
-//     pub burn: bool,
+//     pub cenotaph: bool,
 //   }
 
 export class RuneStone {
-  public TAG = 'RUNE_TEST';
-
   constructor(
     public edicts: Edict[],
     public etching: Etching | null,
-    public burn: boolean,
+    public cenotaph: boolean,
     public claim: bigint | null,
     public defaultOutput: bigint | null,
   ) {}
-
-  public setTag(tag: string): string {
-    this.TAG = tag;
-    return this.TAG;
-  }
 
   static fromTransaction(transaction: Transaction): RuneStone | null {
     const rune = new RuneStone([], null, false, null, null);
@@ -103,8 +97,8 @@ export class RuneStone {
     if (this.defaultOutput) {
       payload = tagEncoder(TAG_DEFAULT_OUTPUT, this.defaultOutput, payload);
     }
-    if (this.burn) {
-      payload = tagEncoder(TAG_BURN, BigInt(0), payload);
+    if (this.cenotaph) {
+      payload = tagEncoder(TAG_CENOTAPH, BigInt(0), payload);
     }
 
     if (this.edicts.length > 0) {
@@ -124,7 +118,7 @@ export class RuneStone {
 
     let buffers = chunkBuffer(Buffer.from(new Uint8Array(payload)), 520);
 
-    let script = bitcoin.script.compile([bitcoin.opcodes.OP_RETURN, Buffer.from(this.TAG), ...buffers]);
+    let script = bitcoin.script.compile([bitcoin.opcodes.OP_RETURN, bitcoin.opcodes.OP_PUSHNUM_13, ...buffers]);
 
     return script;
   }
@@ -145,17 +139,17 @@ export class RuneStone {
       i += length;
     }
 
-    const message = Message.fromIntegers(integers);
+    const message = Message.fromIntegers(transaction, integers);
 
     let fields = message.fields;
 
+    let cenotaph = message.cenotaph;
     let etching: Etching | null | undefined = null;
 
     let claim = fields.has(TAG_CLAIM) ? fields.get(TAG_CLAIM) : null;
     fields.delete(TAG_CLAIM);
 
     let deadline = fields.has(TAG_DEADLINE) ? fields.get(TAG_DEADLINE) : null;
-
     fields.delete(TAG_DEADLINE);
 
     let defaultOutput = fields.has(TAG_DEFAULT_OUTPUT) ? fields.get(TAG_DEFAULT_OUTPUT) : null;
@@ -185,9 +179,14 @@ export class RuneStone {
     if (fields.has(TAG_FLAGS)) {
       flags = fields.get(TAG_FLAGS);
       if (flags) {
-        etch = new Flag(FlagTypes.Etch).take(flags);
-        mint = new Flag(FlagTypes.Mint).take(flags);
+        let _etch = new Flag(FlagTypes.Etch).take(flags);
+        etch = _etch[0];
+        flags = _etch[1];
+        let _mint = new Flag(FlagTypes.Mint).take(flags);
+        mint = _mint[0];
+        flags = _mint[1];
       }
+      fields.delete(TAG_FLAGS);
     }
 
     if (etch) {
@@ -214,7 +213,7 @@ export class RuneStone {
     return new RuneStone(
       message.edicts,
       etching,
-      (flags !== undefined && flags !== 0) || Array.from(message.fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
+      cenotaph || (flags !== undefined && flags !== BigInt(0)) || Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
       claim !== undefined && claim !== null ? claim : null,
       defaultOutput !== undefined && defaultOutput !== null ? defaultOutput : null,
     );
@@ -222,12 +221,18 @@ export class RuneStone {
 
   public payload(transaction: bitcoin.Transaction): Buffer | null {
     let solution: Buffer | null = null;
+
     for (const output of transaction.outs) {
       const script = bitcoin.script.decompile(output.script);
       // 检查是否以 OP_RETURN 开始
       if (script && script[0] === bitcoin.opcodes.OP_RETURN) {
         // 检查是否包含特定标记 "RUNE_TEST"
-        if (script.length > 1 && Buffer.isBuffer(script[1]) && script[1].toString() === this.TAG) {
+        if (
+          script.length > 1 &&
+          !Buffer.isBuffer(script[1]) &&
+          script[1] === MAGIC_NUMBER
+          // && script[1].toString() === this.TAG
+        ) {
           // 提取随后的数据
           let payload = Buffer.alloc(0);
           for (let i = 2; i < script.length; i++) {
@@ -237,9 +242,14 @@ export class RuneStone {
           }
           solution = payload;
           break;
+        } else {
+          continue;
         }
+      } else {
+        continue;
       }
     }
+
     return solution;
   }
 }
@@ -273,7 +283,7 @@ export function decodeOpReturn(scriptHex: string | Buffer, tag: String) {
       i += length;
     }
 
-    const message = Message.fromIntegers(integers);
+    const message = Message.fromOpReturn(integers);
 
     let fields = message.fields;
 
@@ -352,11 +362,52 @@ export function decodeOpReturn(scriptHex: string | Buffer, tag: String) {
 }
 
 export class Message {
-  constructor(public fields: Map<bigint, bigint>, public edicts: Edict[]) {}
+  constructor(public cenotaph: boolean, public fields: Map<bigint, bigint>, public edicts: Edict[]) {}
 
-  static fromIntegers(payload: bigint[]): Message {
+  static fromIntegers(tx: Transaction, payload: bigint[]): Message {
     const fields = new Map<bigint, bigint>();
     const edicts: Edict[] = [];
+    let cenotaph = false;
+    for (let i = 0; i < payload.length; i += 2) {
+      const tag = payload[i];
+
+      if (tag === TAG_BODY) {
+        let id = BigInt(0);
+        for (let j = i + 1; j < payload.length; j += 3) {
+          id += payload[j];
+          // if (id > BigInt(2) ** BigInt(128) - BigInt(1)) {
+          //   id = BigInt(2) ** BigInt(128) - BigInt(1);
+          // }
+          const _fromIntegers = Edict.fromIntegers(tx, id, payload[j + 1], payload[j + 2]);
+
+          if (_fromIntegers !== null) {
+            edicts.push(_fromIntegers);
+          } else {
+            cenotaph = true;
+          }
+        }
+        break;
+      }
+
+      let value: bigint | undefined;
+      if (payload[i + 1] !== undefined) {
+        value = payload[i + 1];
+      } else {
+        break;
+      }
+
+      if (!fields.get(tag)) {
+        fields.set(tag, value);
+      }
+    }
+
+    return new Message(cenotaph, fields, edicts);
+  }
+
+  static fromOpReturn(payload: bigint[]): Message {
+    const fields = new Map<bigint, bigint>();
+    const edicts: Edict[] = [];
+    let cenotaph = false;
     for (let i = 0; i < payload.length; i += 2) {
       const tag = payload[i];
 
@@ -367,7 +418,12 @@ export class Message {
           if (id > BigInt(2) ** BigInt(128) - BigInt(1)) {
             id = BigInt(2) ** BigInt(128) - BigInt(1);
           }
-          edicts.push(new Edict(id, payload[j + 1], payload[j + 2]));
+          const _fromIntegers = Edict.fromOpReturn(id, payload[j + 1], payload[j + 2]);
+          if (_fromIntegers !== null) {
+            edicts.push(_fromIntegers);
+          } else {
+            cenotaph = true;
+          }
         }
         break;
       }
@@ -378,7 +434,7 @@ export class Message {
       }
     }
 
-    return new Message(fields, edicts);
+    return new Message(cenotaph, fields, edicts);
   }
 }
 

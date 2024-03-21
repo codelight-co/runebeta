@@ -10,6 +10,7 @@ export enum Tag {
   DefaultOutput = 12,
   Claim = 14,
   Burn = 126,
+  Cenotaph = 126,
   Divisibility = 1,
   Spacers = 3,
   Symbol = 5,

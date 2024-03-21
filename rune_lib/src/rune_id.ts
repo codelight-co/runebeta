@@ -1,27 +1,31 @@
 export class RuneId {
-  public height: number;
-  public index: number;
+  public block: bigint;
+  public tx: number;
 
-  constructor(height: number, index: number) {
-    this.height = height;
-    this.index = index;
+  constructor(block: bigint, tx: number) {
+    this.block = block;
+    this.tx = tx;
   }
 
   static tryFrom(n: bigint): RuneId | Error {
-    const height = Number(n >> BigInt(16));
-    const index = Number(n & BigInt(0xffff));
-    if (!Number.isSafeInteger(height) || !Number.isSafeInteger(index)) {
+    const block = n >> BigInt(16);
+    const tx = Number(n & BigInt(0xffff));
+    if (!Number.isSafeInteger(tx)) {
       return new Error('Conversion error');
     }
-    return new RuneId(height, index);
+    return new RuneId(block, tx);
   }
 
   static toBigInt(id: RuneId): bigint {
-    return (BigInt(id.height) << BigInt(16)) | BigInt(id.index);
+    return (id.block << BigInt(16)) | BigInt(id.tx);
+  }
+
+  public toBigInt(): bigint {
+    return (this.block << BigInt(16)) | BigInt(this.tx);
   }
 
   public toString(): string {
-    return `${this.height}/${this.index}`;
+    return `${this.block.toString()}:${this.tx}`;
   }
 
   static fromString(s: string): RuneId | Error {
@@ -29,12 +33,12 @@ export class RuneId {
     if (parts.length !== 2) {
       return new Error('Invalid rune ID format');
     }
-    const height = parseInt(parts[0]);
-    const index = parseInt(parts[1]);
-    if (isNaN(height) || isNaN(index)) {
+    const block = BigInt(parts[0]);
+    const tx = parseInt(parts[1]);
+    if (isNaN(tx)) {
       return new Error('Invalid number format');
     }
-    return new RuneId(height, index);
+    return new RuneId(block, tx);
   }
 }
 
