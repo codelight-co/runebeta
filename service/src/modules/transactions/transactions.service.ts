@@ -1,4 +1,9 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { BroadcastTransactionDto, TransactionFilterDto } from './dto';
 import { HttpService } from '@nestjs/axios';
 import { Repository, SelectQueryBuilder } from 'typeorm';
@@ -26,6 +31,7 @@ export class TransactionsService {
     @Inject('TXID_RUNE_REPOSITORY')
     private txidRuneRepository: Repository<TxidRune>,
   ) {}
+  private logger = new Logger(TransactionsService.name);
 
   async getTransactions(
     transactionFilterDto: TransactionFilterDto,
@@ -103,6 +109,10 @@ export class TransactionsService {
         // throw status 400 with error message
         return error.response.data;
       }
+
+      this.logger.error('Error broadcasting transaction', error);
+
+      throw new BadRequestException('Error broadcasting transaction');
     }
   }
 }

@@ -36,7 +36,7 @@ export class StatsService {
       .get('https://api2.runealpha.xyz/stats/btc-price')
       .toPromise();
 
-    return res.data;
+    return res.data?.data;
   }
 
   async getStats() {
