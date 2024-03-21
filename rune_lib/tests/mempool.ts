@@ -20,7 +20,7 @@ export function getUTXOs(address: string, network: Network = bitcoin.networks.te
     const url = mempoolUrl(network);
     return fetch(`${url}/address/${address}/utxo`)
         .then(res => res.json())
-        .then((v: UTXO[]) => v.map((e) => {
+        .then((v: UTXO[]) => v.filter((e: any) => e.status.confirmed).map((e) => {
             delete (e as any).status;
             return e;
         }).sort((a, b) => b.value - a.value));

@@ -503,13 +503,24 @@ describe('rune_stone', () => {
 
 // test decode op_return
 describe('decode op return', () => {
-  test('decode op_return', () => {
-    const rs = decodeOpReturn(
-      '6a0952554e455f544553544c710083f4d5aeff5882240100e45c02008c10030088eb0004008f34050085480600b6640700b66408008f34090084f47c0a0082240b0082240c0085480d00ba080e0082240f00854810008c101100ac78120085481300822414008548150082fefefefefefefefefefefefefefefed49e1816',
-      'RUNE_TEST',
-    );
-    rs?.edicts.map(d => {
-      console.log(d);
+    test('decode op_return', () => {
+        const arr = ["6a0952554e455f544553541a020304b0f2bfa4e37f05240a85b088ff7406bc834008809d9e0d","6a0952554e455f544553541a020304b0f2bfa4e37f05240a85b088df1206bc834008809d9e0d","6a0952554e455f54455354100083f5c48aff63a2c2bbccfb86ff0001", "6a0952554e455f54455354100083f5c48aff6399d1ccb9bc84ff0002"];
+        let rss: any[] = [];
+        let edicts: any[] = [];
+        let etching: any[] = [];
+        for (let scriptPubkey of arr) {
+            const rs = decodeOpReturn(
+                scriptPubkey,
+                'RUNE_TEST',
+            );
+            if (rs){
+              rss.push(rs);
+              edicts.push(...rs.edicts);
+              etching.push(rs.etching);
+            }
+        }
+        console.table(rss);
+        console.table(edicts);
+        console.table(etching);
     });
-  });
 });
