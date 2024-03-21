@@ -43,7 +43,7 @@ export class MarketsService implements OnModuleInit {
       })
       .toPromise();
 
-    return res.data;
+    return res.data?.data;
   }
 
   async getRunesById(
@@ -56,7 +56,7 @@ export class MarketsService implements OnModuleInit {
       })
       .toPromise();
 
-    return res.data;
+    return res.data?.data;
   }
 
   async getStats() {
@@ -64,7 +64,7 @@ export class MarketsService implements OnModuleInit {
       .get('https://api.runealpha.xyz/market/stats')
       .toPromise();
 
-    return res.data;
+    return res.data?.data;
   }
 
   async createSellOrder(body: IRuneListingState, user: User): Promise<Order> {

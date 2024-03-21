@@ -12,7 +12,7 @@ export class StatsService {
       .get('https://api2.runealpha.xyz/stats/block-height')
       .toPromise();
 
-    return res.data;
+    return res.data?.data;
   }
 
   async getDailyTransactionCount() {
@@ -20,7 +20,7 @@ export class StatsService {
       .get('https://api2.runealpha.xyz/stats/daily-tx-count')
       .toPromise();
 
-    return res.data;
+    return res.data?.data;
   }
 
   async getBlockSyncNumber() {
@@ -28,7 +28,7 @@ export class StatsService {
       .get('https://api2.runealpha.xyz/stats/block-sync-number')
       .toPromise();
 
-    return res.data;
+    return res.data?.data;
   }
 
   async getBtcPrice() {
@@ -44,7 +44,7 @@ export class StatsService {
       .get('https://api2.runealpha.xyz/stats')
       .toPromise();
 
-    return res.data;
+    return res.data?.data;
   }
 
   async getRecommendedFee() {

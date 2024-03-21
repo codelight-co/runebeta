@@ -42,6 +42,6 @@ export class RunesService {
       .get(`https://api2.runealpha.xyz/rune/${id}`)
       .toPromise();
 
-    return res.data;
+    return res.data?.data;
   }
 }
