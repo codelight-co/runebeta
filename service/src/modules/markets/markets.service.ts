@@ -19,6 +19,8 @@ import { BuyerHandler } from 'src/common/handlers/runes/buyer';
 import { RPCService, network } from 'src/common/utils/rpc';
 import { BASE_URL } from 'src/environments';
 import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
+import { BuyerOrderDto } from './dto/buyer-order.dto';
+import { MergeSingers } from 'src/common/handlers/runes/merge';
 
 @Injectable()
 export class MarketsService implements OnModuleInit {
@@ -137,6 +139,95 @@ export class MarketsService implements OnModuleInit {
       voutsLength,
       feeRateTier,
       this.rpcService,
+    );
+  }
+
+  async generateUnsignedBuyingPSBT(
+    body: BuyerOrderDto,
+    user: User,
+  ): Promise<IRuneListingState> {
+    if (!user) {
+      throw new BadRequestException('No user found');
+    }
+
+    const { buyer } = body.buyerState;
+    if (!buyer) {
+      throw new BadRequestException('No Buyer data found');
+    }
+
+    // Get order by ids
+    const orders = await this.orderRepository
+      .createQueryBuilder('order')
+      .where('order.id IN (:...ids)', { ids: body.orderIds })
+      .getMany();
+    if (orders.length !== body.orderIds.length) {
+      throw new BadRequestException('Invalid order ids');
+    }
+
+    const seller_items = orders.map(
+      (order) =>
+        ({
+          buyer: {},
+          seller: {
+            makerFeeBp: order.makerFeeBp,
+            price: order.price,
+            runeItem: order.runeItem,
+            sellerReceiveAddress: order.sellerReceiveAddress,
+            signedListingPSBTBase64: order.signedListingPSBTBase64,
+            unsignedListingPSBTBase64: order.unsignedListingPSBTBase64,
+            sellerRuneAddress: order.sellerRuneAddress,
+            publicKey: order.publicKey,
+            tapInternalKey: order.tapInternalKey,
+          },
+        }) as IRuneListingState,
+    );
+
+    return BuyerHandler.generateUnsignedBuyingPSBTBase64(
+      body.buyerState,
+      seller_items,
+    );
+  }
+
+  async mergeSignedBuyingPSBT(body: BuyerOrderDto, user: User): Promise<any> {
+    if (!user) {
+      throw new BadRequestException('No user found');
+    }
+
+    const { buyer } = body.buyerState;
+    if (!buyer) {
+      throw new BadRequestException('No Buyer data found');
+    }
+
+    // Get order by ids
+    const orders = await this.orderRepository
+      .createQueryBuilder('order')
+      .where('order.id IN (:...ids)', { ids: body.orderIds })
+      .getMany();
+    if (orders.length !== body.orderIds.length) {
+      throw new BadRequestException('Invalid order ids');
+    }
+
+    const seller_items = orders.map(
+      (order) =>
+        ({
+          buyer: {},
+          seller: {
+            makerFeeBp: order.makerFeeBp,
+            price: order.price,
+            runeItem: order.runeItem,
+            sellerReceiveAddress: order.sellerReceiveAddress,
+            signedListingPSBTBase64: order.signedListingPSBTBase64,
+            unsignedListingPSBTBase64: order.unsignedListingPSBTBase64,
+            sellerRuneAddress: order.sellerRuneAddress,
+            publicKey: order.publicKey,
+            tapInternalKey: order.tapInternalKey,
+          },
+        }) as IRuneListingState,
+    );
+
+    return MergeSingers.mergeSignedBuyingPSBTBase64(
+      body.buyerState,
+      seller_items,
     );
   }
 }
