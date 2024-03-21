@@ -1,7 +1,9 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseInterceptors } from '@nestjs/common';
 import { StatsService } from './stats.service';
+import { CoreTransformInterceptor } from 'src/common/interceptors/coreTransform.interceptor';
 
 @Controller('stats')
+@UseInterceptors(CoreTransformInterceptor)
 export class StatsController {
   constructor(private readonly statsService: StatsService) {}
 
@@ -33,5 +35,11 @@ export class StatsController {
   @Get('block-sync-number')
   async getBlockSyncNumber() {
     return this.statsService.getBlockSyncNumber();
+  }
+
+  // Get recommended fee
+  @Get('recommended-fee')
+  async getRecommendedFee() {
+    return this.statsService.getRecommendedFee();
   }
 }

@@ -1,7 +1,9 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable } from '@nestjs/common';
+import { CacheInterceptor } from '@nestjs/cache-manager';
+import { Injectable, UseInterceptors } from '@nestjs/common';
 
 @Injectable()
+@UseInterceptors(CacheInterceptor)
 export class StatsService {
   constructor(private readonly httpService: HttpService) {}
 
@@ -40,6 +42,14 @@ export class StatsService {
   async getStats() {
     const res = await this.httpService
       .get('https://api2.runealpha.xyz/stats')
+      .toPromise();
+
+    return res.data;
+  }
+
+  async getRecommendedFee() {
+    const res = await this.httpService
+      .get('https://mempool.space/api/v1/fees/recommended')
       .toPromise();
 
     return res.data;
