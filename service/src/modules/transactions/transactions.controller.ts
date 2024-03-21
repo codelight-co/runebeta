@@ -19,4 +19,10 @@ export class TransactionsController {
   async getTransactionById(@Param('id') id: string) {
     return this.transactionsService.getTransactionById(id);
   }
+
+  // Broadcast transaction
+  @Get('broadcast')
+  async broadcastTransaction(@Query('rawTx') rawTx: string) {
+    return this.transactionsService.broadcastTransaction(rawTx);
+  }
 }

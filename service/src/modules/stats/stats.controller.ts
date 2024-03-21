@@ -36,4 +36,10 @@ export class StatsController {
   async getBlockSyncNumber() {
     return this.statsService.getBlockSyncNumber();
   }
+
+  // Get recommended fee
+  @Get('recommended-fee')
+  async getRecommendedFee() {
+    return this.statsService.getRecommendedFee();
+  }
 }

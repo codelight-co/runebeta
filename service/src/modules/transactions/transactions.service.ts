@@ -71,4 +71,14 @@ export class TransactionsService {
       );
     }
   }
+
+  async broadcastTransaction(rawTx: string) {
+    const response = await this.httpService
+      .post('https://api.blockcypher.com/v1/btc/main/txs/push', {
+        tx: rawTx,
+      })
+      .toPromise();
+
+    return response.data;
+  }
 }
