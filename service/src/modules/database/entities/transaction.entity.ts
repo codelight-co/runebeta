@@ -1,14 +1,17 @@
 import {
+  AfterLoad,
   Column,
-  CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
   PrimaryColumn,
-  UpdateDateColumn,
 } from 'typeorm';
 import { TransactionIns } from './transaction-ins.entity';
 import { TransactionOut } from './transaction-out.entity';
+import { Block } from './block.entity';
 
-@Entity()
+@Entity({ synchronize: false })
 export class Transaction {
   @PrimaryColumn()
   id!: string;
@@ -20,17 +23,34 @@ export class Transaction {
   tx_hash?: string;
 
   @Column({ nullable: true, type: 'integer' })
-  locktime?: number;
+  lock_time?: number;
 
+  @Column({ type: 'int8' })
+  block_height: number;
+
+  block_number: number;
+  timestamp: number;
+
+  @ManyToOne(() => Block, (block) => block.transactions)
+  @JoinColumn({ name: 'block_height', referencedColumnName: 'block_height' })
+  block: Block;
+
+  @OneToMany(
+    () => TransactionIns,
+    (transactionIns) => transactionIns.transaction,
+  )
+  @JoinColumn({ name: 'tx_hash', referencedColumnName: 'tx_hash' })
   vin: TransactionIns[];
 
+  @OneToMany(
+    () => TransactionOut,
+    (transactionOut) => transactionOut.transaction,
+  )
+  @JoinColumn({ name: 'tx_hash', referencedColumnName: 'tx_hash' })
   vout: TransactionOut[];
 
-  @Column()
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @Column()
-  @UpdateDateColumn()
-  updatedAt: Date;
+  @AfterLoad()
+  afterLoad() {
+    this.block_number = this.block_height ? +this.block_height : 0;
+  }
 }

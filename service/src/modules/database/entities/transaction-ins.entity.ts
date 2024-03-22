@@ -1,12 +1,7 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  PrimaryColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { Transaction } from './transaction.entity';
 
-@Entity()
+@Entity({ synchronize: false })
 export class TransactionIns {
   @PrimaryColumn()
   id!: string;
@@ -29,11 +24,7 @@ export class TransactionIns {
   @Column({ type: 'varchar' })
   witness: string;
 
-  @Column()
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @Column()
-  @UpdateDateColumn()
-  updatedAt: Date;
+  @ManyToOne(() => Transaction, (transaction) => transaction.vin)
+  @JoinColumn({ name: 'tx_hash', referencedColumnName: 'tx_hash' })
+  transaction: Transaction;
 }

@@ -1,12 +1,7 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  PrimaryColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { Transaction } from './transaction.entity';
 
-@Entity()
+@Entity({ synchronize: false })
 export class TransactionOut {
   @PrimaryColumn()
   id!: string;
@@ -20,11 +15,7 @@ export class TransactionOut {
   @Column({ type: 'text' })
   script_pubkey: string;
 
-  @Column()
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @Column()
-  @UpdateDateColumn()
-  updatedAt: Date;
+  @ManyToOne(() => Transaction, (transaction) => transaction.vout)
+  @JoinColumn({ name: 'tx_hash', referencedColumnName: 'tx_hash' })
+  transaction: Transaction;
 }
