@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity()
+@Entity({ synchronize: false })
 export class Satpoint {
   @PrimaryColumn()
   id!: number;

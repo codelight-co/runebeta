@@ -5,12 +5,15 @@ import mempoolJS from '@mempool/mempool.js';
 import { BITCOIN_NETWORK } from 'src/environments';
 import { MempoolReturn } from '@mempool/mempool.js/lib/interfaces/index';
 import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
+import { TransactionOut } from '../database/entities/transaction-out.entity';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
   constructor(
     @Inject('USER_REPOSITORY')
     private userRepository: Repository<User>,
+    @Inject('TRANSACTION_OUT_REPOSITORY')
+    private transactionOutRepository: Repository<TransactionOut>,
   ) {}
 
   private mempoolClient: MempoolReturn['bitcoin'];
@@ -40,5 +43,15 @@ export class UsersService implements OnModuleInit {
     return this.mempoolClient.addresses.getAddressTxsUtxo({
       address: user.walletAddress,
     });
+  }
+
+  async getMyRunes(user: User) {
+    const utxo = await this.transactionOutRepository
+      .createQueryBuilder('transaction_out')
+      .where('address = :address', { address: user.walletAddress })
+      .andWhere('spent = false')
+      .getMany();
+
+    return utxo;
   }
 }

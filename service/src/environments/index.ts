@@ -12,7 +12,8 @@ const JWT_SECRET: string = process.env.JWT_SECRET || 'JWT_SECRET';
 // Database
 const DATABASE_TYPE: string = process.env.DATABASE_TYPE || NEED_TO_CONFIGURED;
 const DATABASE_HOST: string = process.env.DATABASE_HOST || NEED_TO_CONFIGURED;
-const DATABASE_NAME: string = process.env.DATABASE_NAME || NEED_TO_CONFIGURED;
+// const DATABASE_NAME: string = process.env.DATABASE_NAME || NEED_TO_CONFIGURED;
+const DATABASE_NAME: string = 'runebeta_debug';
 const DATABASE_USER: string = process.env.DATABASE_USER || NEED_TO_CONFIGURED;
 const DATABASE_PASSWORD: string =
   process.env.DATABASE_PASSWORD || NEED_TO_CONFIGURED;

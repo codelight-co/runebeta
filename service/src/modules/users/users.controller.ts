@@ -23,4 +23,11 @@ export class UsersController {
   getUtxo(@UserDecorator() user: User): Promise<AddressTxsUtxo[]> {
     return this.usersService.getMyUtxo(user);
   }
+
+  // Get my runes
+  @UseGuards(AuthGuard)
+  @Get('my-runes')
+  getMyRunes(@UserDecorator() user: User) {
+    return this.usersService.getMyRunes(user);
+  }
 }
