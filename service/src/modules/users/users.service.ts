@@ -45,13 +45,26 @@ export class UsersService implements OnModuleInit {
     });
   }
 
-  async getMyRunes(user: User) {
-    const utxo = await this.transactionOutRepository
-      .createQueryBuilder('transaction_out')
-      .where('address = :address', { address: user.walletAddress })
-      .andWhere('spent = false')
-      .getMany();
+  async getMyRunes() {
+    // const utxo = await this.transactionOutRepository
+    //   .createQueryBuilder('transaction_out')
+    //   .where('address = :address', { address: user.walletAddress })
+    //   .andWhere('spent = false')
+    //   .getMany();
 
-    return utxo;
+    // return utxo;
+    return {
+      availableBalance: 1000,
+      availableUTXOs: [
+        {
+          txid: '49638daaaacf7092f059431de4caaea5ca3f7d73591b606b9dc2fce620ab2391',
+          vout: 0,
+          value: 546,
+          amount: '1000',
+          type: 'payment',
+          address: 'bc1qufsll34tmz8r02mg6yupkmefmvaxzk27x99qz0',
+        },
+      ],
+    };
   }
 }
