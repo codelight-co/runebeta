@@ -71,11 +71,11 @@ export class TransactionsService {
     filter: TransactionFilterDto,
   ) {
     if (filter.offset) {
-      builder.offset(filter.offset);
+      builder.skip(filter.offset);
     }
 
     if (filter.limit) {
-      builder.limit(filter.limit);
+      builder.take(filter.limit);
     }
 
     if (filter.runeId) {
@@ -92,6 +92,8 @@ export class TransactionsService {
         filter.sortBy,
         filter.sortOrder?.toLocaleUpperCase() === 'DESC' ? 'DESC' : 'ASC',
       );
+    } else {
+      builder.orderBy('Transaction.block_height', 'DESC');
     }
   }
 
