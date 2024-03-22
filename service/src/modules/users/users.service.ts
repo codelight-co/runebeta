@@ -45,7 +45,7 @@ export class UsersService implements OnModuleInit {
     });
   }
 
-  async getMyRunes() {
+  async getMyRunes(user: User) {
     // const utxo = await this.transactionOutRepository
     //   .createQueryBuilder('transaction_out')
     //   .where('address = :address', { address: user.walletAddress })
