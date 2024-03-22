@@ -35,15 +35,26 @@ export class TransactionsService {
 
   async getTransactions(
     transactionFilterDto: TransactionFilterDto,
-  ): Promise<Transaction[]> {
+  ): Promise<any> {
     const builder = this.transactionRepository
       .createQueryBuilder()
       .leftJoinAndSelect('Transaction.vin', 'TransactionIns')
-      .leftJoinAndSelect('Transaction.vout', 'TransactionOut');
+      .leftJoinAndSelect('Transaction.vout', 'TransactionOut')
+      .innerJoinAndMapOne(
+        'Transaction.block',
+        'Transaction.block',
+        'Block',
+        'Block.block_height = Transaction.block_height',
+      );
 
     this.addTransactionFilter(builder, transactionFilterDto);
 
-    return builder.getMany();
+    return {
+      total: await builder.getCount(),
+      limit: transactionFilterDto.limit,
+      offset: transactionFilterDto.offset,
+      transactions: await builder.getMany(),
+    };
   }
 
   async getTransactionById(tx_hash: string): Promise<Transaction> {

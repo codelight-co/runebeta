@@ -10,9 +10,6 @@ export class Block {
   previous_hash?: string;
 
   @Column({ type: 'varchar' })
-  tx_hash?: string;
-
-  @Column({ type: 'varchar' })
   block_hash?: string;
 
   @Column({ type: 'int8' })
