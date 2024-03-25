@@ -36,8 +36,10 @@ export class TransactionsService {
   async getTransactions(
     transactionFilterDto: TransactionFilterDto,
   ): Promise<any> {
-    const builder = this.transactionRepository
-      .createQueryBuilder()
+    const builder = this.transactionRepository.createQueryBuilder();
+    const total = await builder.getCount();
+
+    builder
       .leftJoinAndSelect('Transaction.vin', 'TransactionIns')
       .leftJoinAndSelect('Transaction.vout', 'TransactionOut')
       .innerJoinAndMapOne(
@@ -50,7 +52,7 @@ export class TransactionsService {
     this.addTransactionFilter(builder, transactionFilterDto);
 
     return {
-      total: await builder.getCount(),
+      total,
       limit: transactionFilterDto.limit,
       offset: transactionFilterDto.offset,
       transactions: await builder.getMany(),
@@ -62,6 +64,12 @@ export class TransactionsService {
       .createQueryBuilder()
       .leftJoinAndSelect('Transaction.vin', 'TransactionIns')
       .leftJoinAndSelect('Transaction.vout', 'TransactionOut')
+      .innerJoinAndMapOne(
+        'Transaction.block',
+        'Transaction.block',
+        'Block',
+        'Block.block_height = Transaction.block_height',
+      )
       .where('tx_hash = :tx_hash', { tx_hash })
       .getOne();
   }
