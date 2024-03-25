@@ -26,7 +26,7 @@ jobs:
       run: |
         echo "$SUPER_SECRET" > .env
         docker run --rm -p 3000:3000 \
-        --network=host --name ${{ github.event.repository.name }} --env-file .env -d ${{ github.event.repository.name }}
+        --network=host --name ${{ github.event.repository.name }} --env-file .env.dev -d ${{ github.event.repository.name }}
       
     - name: Health-check
-      run: sleep 60 && curl localhost:3000
+      run: sleep 30 && curl localhost:3000
