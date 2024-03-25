@@ -2,9 +2,11 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  ManyToOne,
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { TransactionOut } from './transaction-out.entity';
 
 @Entity({ synchronize: false })
 export class OutpointRuneBalance {
@@ -30,4 +32,7 @@ export class OutpointRuneBalance {
   @Column()
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @ManyToOne(() => TransactionOut, (transactionOut) => transactionOut.txidRunes)
+  vout: TransactionOut;
 }

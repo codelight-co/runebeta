@@ -1,5 +1,14 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryColumn,
+} from 'typeorm';
 import { Transaction } from './transaction.entity';
+import { TxidRune } from './txid-rune.entity';
+import { OutpointRuneBalance } from './sequence-number-runeid.entity';
 
 @Entity({ synchronize: false })
 export class TransactionOut {
@@ -33,4 +42,15 @@ export class TransactionOut {
   @ManyToOne(() => Transaction, (transaction) => transaction.vout)
   @JoinColumn({ name: 'tx_hash', referencedColumnName: 'tx_hash' })
   transaction: Transaction;
+
+  @OneToMany(() => TxidRune, (txidRune) => txidRune.vout)
+  @JoinColumn({ name: 'tx_hash', referencedColumnName: 'tx_hash' })
+  txidRunes: TxidRune[];
+
+  @OneToMany(
+    () => OutpointRuneBalance,
+    (outpointRuneBalance) => outpointRuneBalance.vout,
+  )
+  @JoinColumn({ name: 'tx_hash', referencedColumnName: 'tx_hash' })
+  OutpointRuneBalances: OutpointRuneBalance[];
 }

@@ -1,4 +1,10 @@
-import { Controller, Get, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { UserDecorator } from 'src/common/decorators/user.decorator';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { CoreTransformInterceptor } from 'src/common/interceptors/coreTransform.interceptor';
@@ -29,5 +35,12 @@ export class UsersController {
   @Get('my-runes')
   getMyRunes(@UserDecorator() user: User) {
     return this.usersService.getMyRunes(user);
+  }
+
+  // Get my rune by id
+  @UseGuards(AuthGuard)
+  @Get('my-runes/:id')
+  getMyRuneById(@UserDecorator() user: User, @Param('id') id: string) {
+    return this.usersService.getMyRuneById(user, id);
   }
 }
