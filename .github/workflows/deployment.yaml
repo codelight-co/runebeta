@@ -4,12 +4,15 @@ permissions:
   contents: read  
 on:
   push:
-    branches: [ "master" ]
+    branches:
+      - '*'         # matches every branch that doesn't contain a '/'
+      - '*/*'       # matches every branch containing a single '/'
+      - '**' 
   workflow_dispatch:
   
 jobs:
   release:
-    if: github.ref_name == 'master' || github.event_name == 'workflow_dispatch' 
+    # if: github.ref_name == 'master' || github.event_name == 'workflow_dispatch' 
     runs-on: [self-hosted]
     steps:
     - uses: actions/checkout@v4
@@ -21,10 +24,7 @@ jobs:
     - name: stop container
       run: docker stop ${{ github.event.repository.name }} || echo 
     - name: Running container
-      env:
-        SUPER_SECRET: ${{ secrets.ENV_FILE }}
       run: |
-        echo "$SUPER_SECRET" > .env
         docker run --rm -p 3000:3000 \
         --network=host --name ${{ github.event.repository.name }} --env-file .env.dev -d ${{ github.event.repository.name }}
       
