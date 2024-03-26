@@ -1,4 +1,13 @@
-import {bitcoin, ECPair, signTaprootPSBT, toP2TRAddress, toTaprootPSBT, tryTaprootTxInputs} from "./bitcoin";
+import {
+    addressToOutputScript,
+    AddressType,
+    bitcoin,
+    ECPair, logToJSON,
+    prepareTx,
+    publicKeyToAddress,
+    toPsbt,
+    Wallet
+} from "./bitcoin";
 import {getUTXOs} from "./mempool";
 import {Etching, Rune, RuneId, RuneStone} from "../src";
 import {Mint} from "../src/mint";
@@ -12,18 +21,18 @@ describe('Issue/Mint/Transfer/Burn', () => {
     const feeRate = 1;
     const signer = ECPair.fromWIF(wif, network);
     let pubkey = signer.publicKey;
-    let address = toP2TRAddress(pubkey, network)!;
-    const output = bitcoin.address.toOutputScript(address, network);
+    let addressType = AddressType.P2TR;
+    let address = publicKeyToAddress(pubkey, addressType, network)!;
+    const output = addressToOutputScript(address);
     console.log({
         pubkey: pubkey.toString('hex'),
         address
     });
-
     it('test issue tokens(fixedcap)', async () => {
         let utxos = await getUTXOs(address, network);
         console.table(utxos);
         // the name of the token
-        let rune = Rune.fromString("HELLOFIXEDCAP");
+        let rune = Rune.fromString("NEWHELLOFIXEDCAP");
         const runeStone = new RuneStone(
             [
                 // if you want to mint tokens when issuing a token, then you need to pass this parameter.
@@ -64,16 +73,22 @@ describe('Issue/Mint/Transfer/Burn', () => {
             }
         ];
         let amount = outputs.reduce((a, b) => a + b.value, 0);
-        const {inputs, fee, change} = tryTaprootTxInputs(utxos, amount, feeRate, 0, outputs.length);
-        console.table({amount, fee, change});
-        if (change) {
-            outputs.push({
-                script: output,
-                value: change
-            });
+        const txResult = prepareTx({
+            regularUTXOs: utxos,
+            inputs: [],
+            outputs,
+            feeRate,
+            address,
+            amount,
+        });
+        if (txResult.error) {
+            console.error(txResult.error);
+            return;
         }
-        let psbt = toTaprootPSBT(inputs, outputs, output, pubkey, network);
-        let signed = signTaprootPSBT(signer, psbt, pubkey);
+        logToJSON(txResult.ok);
+        let psbt = toPsbt({tx: txResult.ok!, pubkey, rbf: true});
+        let wallet = new Wallet(wif, network, addressType);
+        let signed = wallet.signPsbt(psbt);
         let tx = signed.extractTransaction();
         console.table({
             txid: tx.getId(),
@@ -128,16 +143,22 @@ describe('Issue/Mint/Transfer/Burn', () => {
             }
         ];
         let amount = outputs.reduce((a, b) => a + b.value, 0);
-        const {inputs, fee, change} = tryTaprootTxInputs(utxos, amount, feeRate, 0, outputs.length);
-        console.table({amount, fee, change});
-        if (change) {
-            outputs.push({
-                script: output,
-                value: change
-            });
+        const txResult = prepareTx({
+            regularUTXOs: utxos,
+            inputs: [],
+            outputs,
+            feeRate,
+            address,
+            amount,
+        });
+        if (txResult.error) {
+            console.error(txResult.error);
+            return;
         }
-        let psbt = toTaprootPSBT(inputs, outputs, output, pubkey, network);
-        let signed = signTaprootPSBT(signer, psbt, pubkey);
+        logToJSON(txResult.ok);
+        let psbt = toPsbt({tx: txResult.ok!, pubkey, rbf: true});
+        let wallet = new Wallet(wif, network, addressType);
+        let signed = wallet.signPsbt(psbt);
         let tx = signed.extractTransaction();
         console.table({
             txid: tx.getId(),
@@ -177,18 +198,22 @@ describe('Issue/Mint/Transfer/Burn', () => {
             }
         ];
         let amount = outputs.reduce((a, b) => a + b.value, 0);
-        const {inputs, fee, change} = tryTaprootTxInputs(utxos, amount, feeRate, 0, outputs.length);
-        console.table({amount, fee, change});
-        if (change) {
-            outputs.push({
-                script: output,
-                value: change
-            });
+        const txResult = prepareTx({
+            regularUTXOs: utxos,
+            inputs: [],
+            outputs,
+            feeRate,
+            address,
+            amount,
+        });
+        if (txResult.error) {
+            console.error(txResult.error);
+            return;
         }
-        console.table(inputs);
-        console.table(outputs);
-        let psbt = toTaprootPSBT(inputs, outputs, output, pubkey, network);
-        let signed = signTaprootPSBT(signer, psbt, pubkey);
+        logToJSON(txResult.ok);
+        let psbt = toPsbt({tx: txResult.ok!, pubkey, rbf: true});
+        let wallet = new Wallet(wif, network, addressType);
+        let signed = wallet.signPsbt(psbt);
         let tx = signed.extractTransaction();
         console.table({
             txid: tx.getId(),
@@ -211,11 +236,13 @@ describe('Issue/Mint/Transfer/Burn', () => {
         // etching block height | etching transaction index
         let runeId = new RuneId(2582645, 839);
         const runeStone = new RuneStone(
-            [{
-                id: RuneId.toBigInt(runeId),
-                amount: BigInt(100),
-                output: BigInt(1),
-            } as any], // edicts
+            [
+                {
+                    id: RuneId.toBigInt(runeId),
+                    amount: BigInt(100),
+                    output: BigInt(1),
+                } as any,
+            ], // edicts
             null, // etching
             false, // is burning? true/false
             null, // claim
@@ -231,25 +258,29 @@ describe('Issue/Mint/Transfer/Burn', () => {
             {
                 script: output,
                 value: 1,
-            }, {
+            },
+            {
                 script: output,
                 value: input.value,
             }
         ];
         let amount = outputs.reduce((a, b) => a + b.value, 0) - input.value;
-        const {inputs, fee, change} = tryTaprootTxInputs(utxos, amount, feeRate, 1, outputs.length);
-        console.table({amount, fee, change});
-        if (change) {
-            outputs.push({
-                script: output,
-                value: change
-            });
+        const txResult = prepareTx({
+            regularUTXOs: utxos,
+            inputs: [input],
+            outputs,
+            feeRate,
+            address,
+            amount,
+        });
+        if (txResult.error) {
+            console.error(txResult.error);
+            return;
         }
-        let finalInputs = [input, ...inputs];
-        console.table(finalInputs);
-        console.table(outputs);
-        let psbt = toTaprootPSBT(finalInputs, outputs, output, pubkey, network);
-        let signed = signTaprootPSBT(signer, psbt, pubkey);
+        logToJSON(txResult.ok);
+        let psbt = toPsbt({tx: txResult.ok!, pubkey, rbf: true});
+        let wallet = new Wallet(wif, network, addressType);
+        let signed = wallet.signPsbt(psbt);
         let tx = signed.extractTransaction();
         console.table({
             txid: tx.getId(),
@@ -286,19 +317,22 @@ describe('Issue/Mint/Transfer/Burn', () => {
             },
         ];
         let amount = outputs.reduce((a, b) => a + b.value, 0) - input!.value;
-        const {inputs, fee, change} = tryTaprootTxInputs(utxos, amount, feeRate, 1, outputs.length);
-        console.table({amount, fee, change});
-        if (change) {
-            outputs.push({
-                script: output,
-                value: change
-            });
+        const txResult = prepareTx({
+            regularUTXOs: utxos,
+            inputs: [input],
+            outputs,
+            feeRate,
+            address,
+            amount,
+        });
+        if (txResult.error) {
+            console.error(txResult.error);
+            return;
         }
-        let finalInputs = [input, ...inputs];
-        console.table(finalInputs);
-        console.table(outputs);
-        let psbt = toTaprootPSBT(finalInputs, outputs, output, pubkey, network);
-        let signed = signTaprootPSBT(signer, psbt, pubkey);
+        logToJSON(txResult.ok);
+        let psbt = toPsbt({tx: txResult.ok!, pubkey, rbf: true});
+        let wallet = new Wallet(wif, network, addressType);
+        let signed = wallet.signPsbt(psbt);
         let tx = signed.extractTransaction();
         console.table({
             txid: tx.getId(),
