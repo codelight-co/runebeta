@@ -222,6 +222,7 @@ export class RuneStone {
         let _etch = new Flag(FlagTypes.Etch).take(flags);
         etch = _etch[0];
         flags = _etch[1];
+
         let _mint = new Flag(FlagTypes.Mint).take(flags);
         mint = _mint[0];
         flags = _mint[1];
