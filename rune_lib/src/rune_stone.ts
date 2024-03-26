@@ -8,6 +8,7 @@ import assert from 'assert';
 import { Flag, FlagTypes } from './flag';
 import { tagEncoder } from './tag';
 import { Mint } from './mint';
+import { RuneId } from './rune_id';
 
 const TAG_BODY: bigint = BigInt(0);
 const TAG_DIVISIBILITY: bigint = BigInt(1);
@@ -20,9 +21,29 @@ const TAG_TERM: bigint = BigInt(8);
 const TAG_DEADLINE: bigint = BigInt(10);
 const TAG_DEFAULT_OUTPUT: bigint = BigInt(12);
 const TAG_CLAIM: bigint = BigInt(14);
+const TAG_CAP: bigint = BigInt(16);
+const TAG_PREMINE: bigint = BigInt(18);
 const TAG_CENOTAPH: bigint = BigInt(126);
 const TAG_BURN: bigint = BigInt(126);
 const TAG_NOP: bigint = BigInt(127);
+
+const U128_MAX = BigInt(2) ** BigInt(128) - BigInt(1);
+
+function addU128(a: bigint, b: bigint) {
+  let result = a + b;
+  if (result > U128_MAX) {
+    throw new Error('Overflow error');
+  }
+  return result;
+}
+
+function mulU128(a: bigint, b: bigint) {
+  let result = a * b;
+  if (result > U128_MAX) {
+    throw new Error('Overflow error');
+  }
+  return result;
+}
 
 // pub struct Runestone {
 //     pub edicts: Vec<Edict>,
@@ -77,6 +98,10 @@ export class RuneStone {
         payload = tagEncoder(TAG_SYMBOL, BigInt(this.etching.symbol.charCodeAt(0)), payload);
       }
 
+      if (this.etching.premine !== null) {
+        payload = tagEncoder(TAG_SYMBOL, this.etching.premine, payload);
+      }
+
       if (this.etching.mint !== null) {
         if (this.etching.mint.deadline !== null) {
           payload = tagEncoder(TAG_DEADLINE, this.etching.mint.deadline, payload);
@@ -86,6 +111,9 @@ export class RuneStone {
         }
         if (this.etching.mint.term !== null) {
           payload = tagEncoder(TAG_TERM, this.etching.mint.term, payload);
+        }
+        if (this.etching.mint.cap !== null) {
+          payload = tagEncoder(TAG_CAP, this.etching.mint.cap, payload);
         }
       }
     }
@@ -107,12 +135,17 @@ export class RuneStone {
       const edicts = this.edicts.slice();
       edicts.sort((a, b) => (a.id < b.id ? -1 : 1));
 
-      let id = BigInt(0);
+      let previous = new RuneId(BigInt(0), BigInt(0));
+
       for (const edict of edicts) {
-        payload = varint.encodeToVec(edict.id - id, payload);
+        let d = previous.delta(edict.id);
+        let block = d![0];
+        let tx = d![1];
+        payload = varint.encodeToVec(block, payload);
+        payload = varint.encodeToVec(tx, payload);
         payload = varint.encodeToVec(edict.amount, payload);
         payload = varint.encodeToVec(edict.output, payload);
-        id = edict.id;
+        previous = edict.id;
       }
     }
 
@@ -165,6 +198,13 @@ export class RuneStone {
 
     let rune = fields.get(TAG_RUNE);
 
+    let cap = fields.has(TAG_CAP) ? fields.get(TAG_CAP) : null;
+
+    fields.delete(TAG_CAP);
+
+    let premine = fields.has(TAG_PREMINE) ? fields.get(TAG_PREMINE) : null;
+    fields.delete(TAG_PREMINE);
+
     let spacers = fields.has(TAG_SPACERS) ? Number(fields.get(TAG_SPACERS)! < BigInt(MAX_SPACERS) ? fields.get(TAG_SPACERS) : 0) : 0;
     fields.delete(TAG_SPACERS);
 
@@ -192,11 +232,26 @@ export class RuneStone {
     if (etch) {
       etching = new Etching(
         divisibility,
-        mint ? new Mint(deadline ?? null, limit ?? null, term !== null ? BigInt(term) : null) : null,
+        mint ? new Mint(cap ?? null, deadline ?? null, limit ?? null, term !== null ? BigInt(term) : null) : null,
         rune ? new Rune(rune) : null,
         symbol,
         BigInt(spacers),
       );
+    }
+
+    let premineValue = BigInt(premine || 0); // 使用适当的默认值
+    let capValue = BigInt(cap || 0);
+    let limitValue = BigInt(limit || 0);
+
+    let overflow = false;
+
+    try {
+      // 尝试执行操作
+      addU128(premineValue, mulU128(capValue, limitValue));
+      // 如果这里没有抛出错误，意味着没有溢出
+    } catch (e) {
+      // 如果捕获到错误，说明发生了溢出
+      overflow = true;
     }
 
     // if (fields.has(TAG_RUNE)) {
@@ -210,10 +265,15 @@ export class RuneStone {
     //   );
     // }
 
+    console.log({ overflow, cenotaph, flags });
+
     return new RuneStone(
       message.edicts,
       etching,
-      cenotaph || (flags !== undefined && flags !== BigInt(0)) || Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
+      overflow ||
+        cenotaph ||
+        (flags !== undefined && flags !== BigInt(0)) ||
+        Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
       claim !== undefined && claim !== null ? claim : null,
       defaultOutput !== undefined && defaultOutput !== null ? defaultOutput : null,
     );
@@ -287,6 +347,8 @@ export function decodeOpReturn(scriptHex: string | Buffer, tag: String) {
 
     let fields = message.fields;
 
+    let cenotaph = message.cenotaph;
+
     let etching: Etching | null | undefined = null;
 
     let claim = fields.has(TAG_CLAIM) ? fields.get(TAG_CLAIM) : null;
@@ -309,6 +371,13 @@ export function decodeOpReturn(scriptHex: string | Buffer, tag: String) {
 
     let rune = fields.get(TAG_RUNE);
 
+    let cap = fields.has(TAG_CAP) ? fields.get(TAG_CAP) : null;
+
+    fields.delete(TAG_CAP);
+
+    let premine = fields.has(TAG_PREMINE) ? fields.get(TAG_PREMINE) : null;
+    fields.delete(TAG_PREMINE);
+
     let spacers = fields.has(TAG_SPACERS) ? Number(fields.get(TAG_SPACERS)! < BigInt(MAX_SPACERS) ? fields.get(TAG_SPACERS) : 0) : 0;
     fields.delete(TAG_SPACERS);
 
@@ -323,19 +392,40 @@ export function decodeOpReturn(scriptHex: string | Buffer, tag: String) {
     if (fields.has(TAG_FLAGS)) {
       flags = fields.get(TAG_FLAGS);
       if (flags) {
-        etch = new Flag(FlagTypes.Etch).take(flags);
-        mint = new Flag(FlagTypes.Mint).take(flags);
+        let _etch = new Flag(FlagTypes.Etch).take(flags);
+        etch = _etch[0];
+        flags = _etch[1];
+        let _mint = new Flag(FlagTypes.Mint).take(flags);
+        mint = _mint[0];
+        flags = _mint[1];
       }
+      fields.delete(TAG_FLAGS);
     }
 
     if (etch) {
       etching = new Etching(
         divisibility,
-        mint ? new Mint(deadline ?? null, limit ?? null, term !== null ? BigInt(term) : null) : null,
+        mint ? new Mint(cap ?? null, deadline ?? null, limit ?? null, term !== null ? BigInt(term) : null) : null,
         rune ? new Rune(rune) : null,
         symbol,
         BigInt(spacers),
       );
+    }
+
+    // 假设 premine, cap, limit 可能是 undefined 或 null
+    let premineValue = BigInt(premine || 0); // 使用适当的默认值
+    let capValue = BigInt(cap || 0);
+    let limitValue = BigInt(limit || 0);
+
+    let overflow = false;
+
+    try {
+      // 尝试执行操作
+      addU128(premineValue, mulU128(capValue, limitValue));
+      // 如果这里没有抛出错误，意味着没有溢出
+    } catch (e) {
+      // 如果捕获到错误，说明发生了溢出
+      overflow = true;
     }
 
     // if (fields.has(TAG_RUNE)) {
@@ -352,7 +442,10 @@ export function decodeOpReturn(scriptHex: string | Buffer, tag: String) {
     return new RuneStone(
       message.edicts,
       etching,
-      (flags !== undefined && flags !== 0) || Array.from(message.fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
+      overflow ||
+        cenotaph ||
+        (flags !== undefined && flags !== BigInt(0)) ||
+        Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
       claim !== undefined && claim !== null ? claim : null,
       defaultOutput !== undefined && defaultOutput !== null ? defaultOutput : null,
     );
@@ -372,19 +465,32 @@ export class Message {
       const tag = payload[i];
 
       if (tag === TAG_BODY) {
-        let id = BigInt(0);
-        for (let j = i + 1; j < payload.length; j += 3) {
-          id += payload[j];
-          // if (id > BigInt(2) ** BigInt(128) - BigInt(1)) {
-          //   id = BigInt(2) ** BigInt(128) - BigInt(1);
-          // }
-          const _fromIntegers = Edict.fromIntegers(tx, id, payload[j + 1], payload[j + 2]);
+        let id = new RuneId(BigInt(0), BigInt(0));
 
-          if (_fromIntegers !== null) {
-            edicts.push(_fromIntegers);
-          } else {
+        for (let j = i + 1; j < payload.length; j += 4) {
+          const chunk = payload.slice(j, j + 4);
+
+          if (chunk.length !== 4) {
             cenotaph = true;
+            break;
           }
+
+          // Assuming `id.next()` is an async function or a function that returns an object or null
+          let next = id.next(chunk[0], chunk[1]);
+          if (!next) {
+            cenotaph = true;
+            break;
+          }
+
+          // Assuming `Edict.fromIntegers()` is a function that returns an Edict object or null
+          let edict = Edict.fromIntegers(tx, next, chunk[2], chunk[3]);
+          if (!edict) {
+            cenotaph = true;
+            break;
+          }
+
+          id = next;
+          edicts.push(edict);
         }
         break;
       }
@@ -393,6 +499,7 @@ export class Message {
       if (payload[i + 1] !== undefined) {
         value = payload[i + 1];
       } else {
+        cenotaph = true;
         break;
       }
 
@@ -412,23 +519,42 @@ export class Message {
       const tag = payload[i];
 
       if (tag === TAG_BODY) {
-        let id = BigInt(0);
-        for (let j = i + 1; j < payload.length; j += 3) {
-          id += payload[j];
-          if (id > BigInt(2) ** BigInt(128) - BigInt(1)) {
-            id = BigInt(2) ** BigInt(128) - BigInt(1);
-          }
-          const _fromIntegers = Edict.fromOpReturn(id, payload[j + 1], payload[j + 2]);
-          if (_fromIntegers !== null) {
-            edicts.push(_fromIntegers);
-          } else {
+        let id = new RuneId(BigInt(0), BigInt(0));
+
+        for (let j = i + 1; i < payload.length; j += 4) {
+          if (j + 3 >= payload.length) {
             cenotaph = true;
+            break;
           }
+
+          const chunk = payload.slice(j, j + 4);
+          // Assuming `id.next()` is an async function or a function that returns an object or null
+          let next = id.next(chunk[0], chunk[1]);
+          if (!next) {
+            cenotaph = true;
+            break;
+          }
+
+          // Assuming `Edict.fromIntegers()` is a function that returns an Edict object or null
+          let edict = Edict.fromOpReturn(next, chunk[2], chunk[3]);
+          if (!edict) {
+            cenotaph = true;
+            break;
+          }
+
+          id = next;
+          edicts.push(edict);
         }
         break;
       }
 
-      const value = payload[i + 1];
+      let value: bigint | undefined;
+      if (payload[i + 1] !== undefined) {
+        value = payload[i + 1];
+      } else {
+        break;
+      }
+
       if (!fields.get(tag)) {
         fields.set(tag, value);
       }

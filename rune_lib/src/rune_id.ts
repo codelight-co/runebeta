@@ -1,27 +1,28 @@
+import * as varint from './varint';
+
 export class RuneId {
   public block: bigint;
-  public tx: number;
+  public tx: bigint;
 
-  constructor(block: bigint, tx: number) {
+  constructor(block: bigint, tx: bigint) {
     this.block = block;
     this.tx = tx;
   }
 
-  static tryFrom(n: bigint): RuneId | Error {
-    const block = n >> BigInt(16);
-    const tx = Number(n & BigInt(0xffff));
-    if (!Number.isSafeInteger(tx)) {
-      return new Error('Conversion error');
+  static createNew(block: bigint, tx: bigint): RuneId | Error {
+    let _id = new RuneId(block, tx);
+    if (_id.block === BigInt(0) && _id.tx > BigInt(0)) {
+      return new Error('Invalid RuneId');
     }
-    return new RuneId(block, tx);
+    return _id;
   }
 
   static toBigInt(id: RuneId): bigint {
-    return (id.block << BigInt(16)) | BigInt(id.tx);
+    return id.block | id.tx;
   }
 
   public toBigInt(): bigint {
-    return (this.block << BigInt(16)) | BigInt(this.tx);
+    return this.block | this.tx;
   }
 
   public toString(): string {
@@ -34,11 +35,38 @@ export class RuneId {
       return new Error('Invalid rune ID format');
     }
     const block = BigInt(parts[0]);
-    const tx = parseInt(parts[1]);
-    if (isNaN(tx)) {
-      return new Error('Invalid number format');
-    }
+    const tx = BigInt(parts[1]);
     return new RuneId(block, tx);
+  }
+
+  public delta(next: RuneId): [bigint, bigint] | null {
+    const block = next.block - this.block;
+    const tx = next.tx - this.tx;
+    return [block, tx];
+  }
+
+  public next(block: bigint, tx: bigint): RuneId | null {
+    const nextBlock = this.block + block;
+    const nextTx = block === BigInt(0) ? this.tx + tx : tx;
+    return new RuneId(nextBlock, nextTx);
+  }
+
+  public encodeBalance(balance: bigint, buffer: number[]): void {
+    varint.encodeToVec(this.block, buffer);
+    varint.encodeToVec(this.tx, buffer);
+    varint.encodeToVec(balance, buffer);
+  }
+
+  static decodeBalance(buffer: Uint8Array): [RuneId, bigint] | null {
+    let len = 0;
+    const [block, blockLen] = varint.decode(buffer.slice(len));
+    len += blockLen;
+    const [tx, txLen] = varint.decode(buffer.slice(len));
+    len += txLen;
+    const id = new RuneId(block, tx);
+    const [balance, balanceLen] = varint.decode(buffer.slice(len));
+    len += balanceLen;
+    return [id, balance];
   }
 }
 
