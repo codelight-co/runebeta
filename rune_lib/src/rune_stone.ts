@@ -30,7 +30,7 @@ const TAG_NOP: bigint = BigInt(127);
 //   }
 
 export class RuneStone {
-  public TAG = 'RUNE_TEST';
+  public TAG = 'R';
 
   constructor(
     public edicts: Edict[],

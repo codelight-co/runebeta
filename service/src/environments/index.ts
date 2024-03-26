@@ -38,12 +38,12 @@ const BITCOIN_NETWORK: string = process.env.BITCOIN_NETWORK || 'testnet';
 const BTC_NETWORK: 'testnet' | 'mainnet' | 'livenet' = 'testnet';
 const PLATFORM_FEE_ADDRESS = '';
 const DUST_AMOUNT = 546;
-const RUNE_TAG = 'RUNE_TEST';
+const RUNE_TAG = 'R';
 const BASE_URL = 'http://222.253.82.244:8088';
 const BITCOIN_RPC_HOST = process.env.BITCOIN_RPC_HOST || 'http://localhost';
-const BITCOIN_RPC_PORT = Number(process.env.BITCOIN_RPC_PORT ?? 38332);
-const BITCOIN_RPC_USER = process.env.BITCOIN_RPC_USER || '__cookie__';
-const BITCOIN_RPC_PASS = process.env.BITCOIN_RPC_PASS || '';
+const BITCOIN_RPC_PORT = Number(process.env.BITCOIN_RPC_PORT ?? 18332);
+const BITCOIN_RPC_USER = process.env.BITCOIN_RPC_USER || 'mike';
+const BITCOIN_RPC_PASS = process.env.BITCOIN_RPC_PASS || 'apd3g41pkl';
 const BITCOIN_RPC_TIMEOUT = Number(process.env.BITCOIN_RPC_TIMEOUT ?? 120000);
 
 export {

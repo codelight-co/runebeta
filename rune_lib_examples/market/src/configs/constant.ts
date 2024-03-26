@@ -1,7 +1,7 @@
 export const BTC_NETWORK: "testnet" | "mainnet" | "livenet" = "testnet"
 export const PLATFORM_FEE_ADDRESS = ""
 export const DUST_AMOUNT = 546
-export const RUNE_TAG = "RUNE_TEST"
+export const RUNE_TAG = "R"
 export const BASE_URL = "http://192.168.1.253:18332"
 export const BITCOIN_RPC_HOST =
   process.env.BITCOIN_RPC_HOST || "http://192.168.1.253"
