@@ -265,7 +265,7 @@ export class RuneStone {
     //   );
     // }
 
-    console.log({ overflow, cenotaph, flags });
+    // console.log({ overflow, cenotaph, flags });
 
     return new RuneStone(
       message.edicts,
