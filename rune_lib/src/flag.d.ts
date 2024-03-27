@@ -7,7 +7,7 @@ export declare class Flag {
     type: FlagTypes;
     constructor(type: FlagTypes);
     mask(): bigint;
-    take(flags: bigint): boolean;
+    take(flags: bigint): [boolean, bigint];
     set(flags: bigint): bigint;
 }
 export declare function flagMask(type: FlagTypes): bigint;

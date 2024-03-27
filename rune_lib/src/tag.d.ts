@@ -7,7 +7,10 @@ export declare enum Tag {
     Deadline = 10,
     DefaultOutput = 12,
     Claim = 14,
+    Cap = 16,
+    Premine = 18,
     Burn = 126,
+    Cenotaph = 126,
     Divisibility = 1,
     Spacers = 3,
     Symbol = 5,
@@ -15,3 +18,4 @@ export declare enum Tag {
 }
 export declare function tagEncoder(tag: bigint, value: bigint, target: number[]): number[];
 export declare function tagInto(tag: Tag): bigint;
+export declare function tagTaker(tag: bigint, value: bigint, fields: Map<bigint, bigint[]>): bigint | null;
