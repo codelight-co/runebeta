@@ -15,6 +15,7 @@ interface IEtching {
   rune: Rune | null;
   symbol: string | null;
   spacers: bigint;
+  premine: bigint | null;
 }
 
 export class Etching {
@@ -24,10 +25,11 @@ export class Etching {
     public rune: Rune | null,
     public symbol: string | null,
     public spacers: bigint = BigInt(0),
+    public premine: bigint | null = null,
   ) {}
 
   static fromJson(json: IEtching): Etching {
-    return new Etching(json.divisibility, json.mint, json.rune, json.symbol, json.spacers);
+    return new Etching(json.divisibility, json.mint, json.rune, json.symbol, json.spacers, json.premine);
   }
 
   static fromJsonString(str: string): Etching {
@@ -38,6 +40,7 @@ export class Etching {
       rune: Rune.fromString(_obj.rune),
       symbol: _obj.symbol,
       spacers: BigInt(_obj.spacers),
+      premine: _obj.premine ? BigInt(_obj.premine) : null,
     });
   }
 
@@ -48,6 +51,7 @@ export class Etching {
       rune: this.rune,
       symbol: this.symbol,
       spacers: this.spacers,
+      premine: this.premine,
     };
   }
 
@@ -58,6 +62,7 @@ export class Etching {
       rune: this.rune?.toString(),
       symbol: this.symbol,
       spacers: this.spacers.toString(),
+      premine: this.premine?.toString(),
     });
   }
 }

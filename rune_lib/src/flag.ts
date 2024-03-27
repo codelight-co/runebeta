@@ -10,10 +10,11 @@ export class Flag {
     return BigInt(1) << BigInt(this.type);
   }
 
-  public take(flags: bigint): boolean {
+  public take(flags: bigint): [boolean, bigint] {
     const mask = this.mask();
     const set = (flags & mask) !== BigInt(0);
-    return set;
+    flags &= ~mask;
+    return [set, flags];
   }
 
   public set(flags: bigint): bigint {
