@@ -1,3 +1,4 @@
+require('dotenv').config();
 export const BTC_NETWORK: 'testnet' | 'mainnet' | 'livenet' = 'testnet';
 export const PLATFORM_FEE_ADDRESS = '';
 export const DUST_AMOUNT = 546;
