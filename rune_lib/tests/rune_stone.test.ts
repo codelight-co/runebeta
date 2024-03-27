@@ -270,6 +270,32 @@ describe('rune_stone', () => {
     expect(rs?.cenotaph).toEqual(true);
   });
 
+  test('duplicate_odd_tags_are_ignored', () => {
+    const rs = decipherTest([
+      tagInto(Tag.Flags),
+      flagMask(FlagTypes.Etch),
+      tagInto(Tag.Divisibility),
+      BigInt(4),
+      tagInto(Tag.Divisibility),
+      BigInt(5),
+      tagInto(Tag.Body),
+      BigInt(1),
+      BigInt(1),
+      BigInt(2),
+      BigInt(0),
+      //
+    ]);
+
+    expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
+    expect(rs?.etching).toStrictEqual(
+      new Etching({
+        rune: null,
+        divisibility: 4,
+      }),
+    );
+    expect(rs?.cenotaph).toEqual(false);
+  });
+
   // test('duplicate_tags_are_ignored', () => {
   //   const rs = decipherTest([
   //     tagInto(Tag.Flags),
@@ -288,114 +314,115 @@ describe('rune_stone', () => {
   //   expect(rs?.etching).toStrictEqual(new Etching(0, null, new Rune(BigInt(4)), null, BigInt(0)));
   // });
 
-  // test('unrecognized_odd_tag_is_ignored', () => {
-  //   const rs = decipherTest([
-  //     tagInto(Tag.Nop),
-  //     BigInt(100),
-  //     tagInto(Tag.Body),
-  //     BigInt(1),
-  //     BigInt(1),
-  //     BigInt(2),
-  //     BigInt(0),
-  //     //
-  //   ]);
+  test('unrecognized_odd_tag_is_ignored', () => {
+    const rs = decipherTest([
+      tagInto(Tag.Nop),
+      BigInt(100),
+      tagInto(Tag.Body),
+      BigInt(1),
+      BigInt(1),
+      BigInt(2),
+      BigInt(0),
+      //
+    ]);
 
-  //   expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
-  // });
+    expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
+  });
 
-  // test('runestone_with_unrecognized_even_tag_is_cenotaph', () => {
-  //   const rs = decipherTest([
-  //     tagInto(Tag.Cenotaph),
-  //     BigInt(0),
-  //     tagInto(Tag.Body),
-  //     BigInt(1),
-  //     BigInt(1),
-  //     BigInt(2),
-  //     BigInt(0),
-  //     //
-  //   ]);
+  test('runestone_with_unrecognized_even_tag_is_cenotaph', () => {
+    const rs = decipherTest([
+      tagInto(Tag.Cenotaph),
+      BigInt(0),
+      tagInto(Tag.Body),
+      BigInt(1),
+      BigInt(1),
+      BigInt(2),
+      BigInt(0),
+      //
+    ]);
 
-  //   expect(rs?.cenotaph).toEqual(true);
-  //   expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
-  // });
+    expect(rs?.cenotaph).toEqual(true);
+    expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
+  });
 
-  // test('runestone_with_unrecognized_flag_is_cenotaph', () => {
-  //   const rs = decipherTest([
-  //     tagInto(Tag.Flags),
-  //     tagInto(Tag.Cenotaph),
-  //     tagInto(Tag.Body),
-  //     BigInt(1),
-  //     BigInt(1),
-  //     BigInt(2),
-  //     BigInt(0),
-  //     //
-  //   ]);
+  test('runestone_with_unrecognized_flag_is_cenotaph', () => {
+    const rs = decipherTest([
+      tagInto(Tag.Flags),
+      tagInto(Tag.Cenotaph),
+      tagInto(Tag.Body),
+      BigInt(1),
+      BigInt(1),
+      BigInt(2),
+      BigInt(0),
+      //
+    ]);
 
-  //   expect(rs?.cenotaph).toEqual(true);
-  //   expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
-  // });
+    expect(rs?.cenotaph).toEqual(true);
+    expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
+  });
 
-  // test('runestone_with_edict_id_with_zero_block_and_nonzero_tx_is_cenotaph', () => {
-  //   const rs = decipherTest([
-  //     tagInto(Tag.Body),
-  //     BigInt(0),
-  //     BigInt(1),
-  //     BigInt(2),
-  //     BigInt(0),
-  //     //
-  //   ]);
+  test('runestone_with_edict_id_with_zero_block_and_nonzero_tx_is_cenotaph', () => {
+    const rs = decipherTest([
+      tagInto(Tag.Body),
+      BigInt(0),
+      BigInt(1),
+      BigInt(2),
+      BigInt(0),
+      //
+    ]);
 
-  //   expect(rs?.cenotaph).toEqual(true);
-  //   expect(rs?.edicts.length).toBe(0);
-  // });
+    expect(rs?.cenotaph).toEqual(true);
+    expect(rs?.edicts.length).toBe(0);
+  });
 
-  // test('runestone_with_output_over_max_is_cenotaph', () => {
-  //   const rs = decipherTest([
-  //     tagInto(Tag.Body),
-  //     BigInt(1),
-  //     BigInt(1),
-  //     BigInt(2),
-  //     BigInt(2),
-  //     //
-  //   ]);
+  test('runestone_with_output_over_max_is_cenotaph', () => {
+    const rs = decipherTest([
+      tagInto(Tag.Body),
+      BigInt(1),
+      BigInt(1),
+      BigInt(2),
+      BigInt(2),
+      //
+    ]);
 
-  //   expect(rs?.cenotaph).toEqual(true);
-  //   expect(rs?.edicts.length).toBe(0);
-  // });
+    expect(rs?.cenotaph).toEqual(true);
+    expect(rs?.edicts.length).toBe(0);
+  });
 
-  // test('tag_with_no_value_is_cenotaph', () => {
-  //   const rs = decipherTest([
-  //     tagInto(Tag.Flags),
-  //     BigInt(1),
-  //     tagInto(Tag.Flags),
-  //     //
-  //   ]);
-  //   expect(rs?.cenotaph).toEqual(true);
-  //   expect(rs?.edicts.length).toBe(0);
-  // });
+  test('tag_with_no_value_is_cenotaph', () => {
+    const rs = decipherTest([
+      tagInto(Tag.Flags),
+      BigInt(1),
+      tagInto(Tag.Flags),
+      //
+    ]);
+    expect(rs?.cenotaph).toEqual(true);
+    expect(rs?.edicts.length).toBe(0);
+  });
 
-  // test('trailing_integers_in_body_is_cenotaph', () => {
-  //   let integers = [
-  //     tagInto(Tag.Body),
-  //     BigInt(1),
-  //     BigInt(1),
-  //     BigInt(2),
-  //     BigInt(0),
-  //     //
-  //   ];
+  test('trailing_integers_in_body_is_cenotaph', () => {
+    let integers = [
+      tagInto(Tag.Body),
+      BigInt(1),
+      BigInt(1),
+      BigInt(2),
+      BigInt(0),
+      //
+    ];
 
-  //   for (let i = 0; i < 4; i += 1) {
-  //     let rs = decipherTest(integers);
-  //     if (i === 0) {
-  //       expect(rs?.cenotaph).toEqual(false);
-  //     } else {
-  //       expect(rs?.cenotaph).toEqual(true);
-  //     }
+    for (let i = 0; i < 4; i += 1) {
+      let rs = decipherTest(integers);
 
-  //     expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
-  //     integers.push(BigInt(0));
-  //   }
-  // });
+      if (i === 0) {
+        expect(rs?.cenotaph).toEqual(false);
+      } else {
+        expect(rs?.cenotaph).toEqual(true);
+      }
+
+      expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
+      integers.push(BigInt(0));
+    }
+  });
 
   // test('decipher_etching_with_divisibility', () => {
   //   const rs = decipherTest([

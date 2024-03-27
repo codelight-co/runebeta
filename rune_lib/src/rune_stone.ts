@@ -213,6 +213,8 @@ export class RuneStone {
 
     let fields = message.fields;
 
+    console.log({ fields });
+
     let cenotaph = message.cenotaph;
     let etching: Etching | null | undefined = null;
 
@@ -399,15 +401,20 @@ export class RuneStone {
     //   );
     // }
 
-    // console.log({
-    //   kk: fields,
-    //   terms,
-    //   overflow,
-    //   cenotaph,
-    //   flags,
-    //   keys: Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
-    //   //
-    // });
+    console.log({
+      kk: fields,
+      terms,
+      overflow,
+      cenotaph,
+      flags,
+      keys: Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
+      res:
+        overflow === true ||
+        cenotaph === true ||
+        (flags !== undefined && flags !== BigInt(0) && flags !== null) ||
+        Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
+      //
+    });
 
     return new RuneStone({
       edicts: message.edicts,
@@ -415,7 +422,7 @@ export class RuneStone {
       cenotaph:
         overflow ||
         cenotaph ||
-        (flags !== undefined && flags !== BigInt(0)) ||
+        (flags !== undefined && flags !== BigInt(0) && flags !== null) ||
         Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
       mint,
       pointer,
