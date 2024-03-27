@@ -85,7 +85,7 @@ export class MarketsService implements OnModuleInit {
     const isPass = await SellerHandler.verifySignedListingPSBTBase64(
       listing,
       makerFeeBp,
-      runeItem,
+      { ...runeItem, owner: user.walletAddress },
     );
     if (!isPass) {
       throw new BadRequestException('Invalid signature');

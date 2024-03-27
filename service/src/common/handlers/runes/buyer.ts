@@ -156,11 +156,11 @@ export namespace BuyerHandler {
         !seller.seller.sellerReceiveAddress ||
         !seller.seller.runeItem ||
         !seller.seller.runeItem.txid ||
-        !seller.seller.runeItem.vout
+        seller.seller.runeItem.vout === undefined ||
+        seller.seller.runeItem.vout === null
       ) {
         throw new InvalidArgumentError('Seller address is not set');
       }
-
       const { sellerInput, sellerOutput } =
         await getSellerInputAndOutput(seller);
       _seller_inputs.push(sellerInput);
@@ -178,12 +178,11 @@ export namespace BuyerHandler {
           10000,
       );
       _seller_listing_prices += seller.seller.price;
-      _seller_total_tokens += seller.seller.runeItem.tokenValue;
+      _seller_total_tokens += BigInt(seller.seller.runeItem.tokenValue);
       /// push _token_output to _token_outputs,and sort them later, and join FT value together
     }
 
     /// Step 5, add buyer BTC input
-
     let total_buyer_inputs_value = 0;
     const _buyers_inputs: SellerInput[] = [];
 
@@ -191,12 +190,13 @@ export namespace BuyerHandler {
       const input: any = {
         hash: utxo.txid,
         index: utxo.vout,
-        nonWitnessUtxo: utxo.tx.toBuffer(),
+        nonWitnessUtxo: bitcoin.Transaction.fromHex(
+          await FullnodeRPC.getrawtransaction(utxo.txid),
+        ).toBuffer(),
       };
 
       const p2shInputWitnessUTXOUn: any = {};
       const p2shInputRedeemScriptUn: any = {};
-
       if (isP2SHAddress(buyer_state.buyer.buyerAddress, network)) {
         const redeemScript = bitcoin.payments.p2wpkh({
           pubkey: Buffer.from(buyer_state.buyer.buyerPublicKey!, 'hex'),
@@ -210,13 +210,11 @@ export namespace BuyerHandler {
         } as WitnessUtxo;
         p2shInputRedeemScriptUn.redeemScript = p2sh.redeem?.output;
       }
-
       _buyers_inputs.push({
         ...input,
         ...p2shInputWitnessUTXOUn,
         ...p2shInputRedeemScriptUn,
       });
-
       total_buyer_inputs_value += utxo.value;
     }
 
@@ -244,19 +242,16 @@ export namespace BuyerHandler {
 
     /// Adding all Inputs:
     const _all_inputs = [..._seller_inputs, ..._buyers_inputs];
-
     for (let i = 0; i < _all_inputs.length; i++) {
       psbt.addInput(_all_inputs[i] as any);
     }
-
     /// Adding all Outputs except change fee:
 
     const _all_outputs_except_change = [
       ..._seller_outputs,
       op_return_output,
-      platform_output,
+      // platform_output,
     ];
-
     for (let i = 0; i < _all_outputs_except_change.length; i++) {
       psbt.addOutput(_all_outputs_except_change[i] as any);
     }
@@ -267,13 +262,11 @@ export namespace BuyerHandler {
       psbt.txOutputs.length, // already taken care of the exchange output bytes calculation
       buyer_state.buyer.feeRateTier,
     );
-
     const totalOutput = psbt.txOutputs.reduce(
       (partialSum, a) => partialSum + a.value,
       0,
     );
     const changeValue = total_buyer_inputs_value - totalOutput - fee;
-
     if (changeValue < 0) {
       throw `Your wallet address doesn't have enough funds to buy this inscription.
   Price:      ${satToBtc(_seller_listing_prices)} BTC
@@ -297,6 +290,7 @@ export namespace BuyerHandler {
         id: e.id!,
       };
     });
+
     return buyer_state;
   }
 
