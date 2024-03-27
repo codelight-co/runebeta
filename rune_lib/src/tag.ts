@@ -71,8 +71,9 @@ export function tagTaker<T>(tag: bigint, length: number, fields: Map<bigint, big
   }
   let value = callback(values);
   if (field) {
-    field = drain(field, 0, length);
+    drain(field, 0, length);
   }
+
   if (field && field.length === 0) {
     fields.delete(tag);
   }
@@ -84,6 +85,7 @@ function drain<T>(array: T[], start: number, end: number): T[] {
   // JavaScript 的 splice 方法的第二个参数需要的是删除的元素数量
   // 所以我们需要计算出长度
   const deleteCount = end - start;
+
   // 使用 splice 来移除元素，它同时返回被移除的元素数组
   return array.splice(start, deleteCount);
 }
