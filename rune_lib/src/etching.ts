@@ -10,7 +10,7 @@ import { Rune } from './rune';
 import { Terms } from './terms';
 
 interface IEtching {
-  divisibility: number;
+  divisibility?: number;
   rune?: Rune | null | undefined;
   symbol?: string | null | undefined;
   spacers?: bigint | null | undefined;
@@ -26,7 +26,7 @@ export class Etching {
   public premine: bigint | null = null;
   public terms: Terms | null = null;
   constructor({ divisibility, rune, symbol, spacers, premine, terms }: IEtching) {
-    this.divisibility = divisibility;
+    this.divisibility = divisibility ?? 0;
     this.rune = rune ?? null;
     this.symbol = symbol ?? null;
     this.spacers = spacers ?? BigInt(0);

@@ -261,9 +261,8 @@ export class RuneStone {
     // fields.delete(TAG_LIMIT);
 
     let rune = tagTaker(TAG_RUNE, 1, fields, values => {
-      return values[0] !== null ? new Rune(values[0]) : null;
+      return values[0] !== null && values[0] !== undefined ? new Rune(values[0]) : null;
     });
-
     // fields.delete(TAG_RUNE);
 
     let cap = tagTaker(TAG_CAP, 1, fields, values => {
@@ -295,12 +294,12 @@ export class RuneStone {
       let start = tagTaker(TAG_OFFSET_START, 1, fields, values => {
         return values[0] ?? null;
       });
-      fields.delete(TAG_OFFSET_START);
+      // fields.delete(TAG_OFFSET_START);
       let end = tagTaker(TAG_OFFSET_END, 1, fields, values => {
         return values[0] ?? null;
       });
-      fields.delete(TAG_OFFSET_END);
-      return [start, end];
+      // fields.delete(TAG_OFFSET_END);
+      return start === null && end === null ? null : [start, end];
     })();
     // console.log({ fields });
 
@@ -313,7 +312,7 @@ export class RuneStone {
         return values[0] ?? null;
       });
       // fields.delete(TAG_HEIGHT_END);
-      return [start, end];
+      return start === null && end === null ? null : [start, end];
     })();
     // console.log({ fields });
 
@@ -348,9 +347,11 @@ export class RuneStone {
       let _etch = new Flag(FlagTypes.Etch).take(flags);
       etch = _etch[0];
       flags = _etch[1];
+
       let _terms = new Flag(FlagTypes.Terms).take(flags);
       terms = _terms[0];
       flags = _terms[1];
+
       // fields.delete(TAG_FLAGS);
     }
 
@@ -361,7 +362,14 @@ export class RuneStone {
         symbol,
         spacers,
         premine,
-        terms: terms ? new Terms(cap, height, limit, offset) : null,
+        terms: terms
+          ? new Terms({
+              cap,
+              height,
+              limit,
+              offset,
+            })
+          : null,
       });
     }
 
@@ -391,13 +399,15 @@ export class RuneStone {
     //   );
     // }
 
-    console.log({
-      overflow,
-      cenotaph,
-      flags,
-      keys: Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
-      //
-    });
+    // console.log({
+    //   kk: fields,
+    //   terms,
+    //   overflow,
+    //   cenotaph,
+    //   flags,
+    //   keys: Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
+    //   //
+    // });
 
     return new RuneStone({
       edicts: message.edicts,
@@ -646,11 +656,14 @@ export class Message {
         cenotaph = true;
         break;
       }
-      let _value = fields.get(tag);
-      if (!_value) {
-        _value = [];
-        _value!.push(value);
-        fields.set(tag, _value!);
+      let _values = fields.get(tag);
+      if (!_values) {
+        _values = [];
+        _values!.push(value);
+        fields.set(tag, _values!);
+      } else {
+        _values.push(value);
+        fields.set(tag, _values!);
       }
     }
 

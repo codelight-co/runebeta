@@ -3,6 +3,7 @@ import * as bitcoin from 'bitcoinjs-lib';
 import * as varint from '../src/index';
 import { Tag, tagInto } from '../src/tag';
 import { Flag, FlagTypes, flagMask } from '../src/flag';
+import { Terms } from '../src/terms';
 
 function payload(integers: bigint[]): Uint8Array {
   let payload: number[] = [];
@@ -157,59 +158,117 @@ describe('rune_stone', () => {
     console.log(rs);
   });
 
-  // test('etch_flag_is_required_to_etch_rune_even_if_mint_is_set', () => {
-  //   const rs = decipherTest([
-  //     tagInto(Tag.Flags),
-  //     flagMask(FlagTypes.Mint),
-  //     tagInto(Tag.Term),
-  //     BigInt(4),
-  //     tagInto(Tag.Body),
-  //     BigInt(1),
-  //     BigInt(1),
-  //     BigInt(2),
-  //     BigInt(0),
-  //     //
-  //   ]);
+  test('etch_flag_is_required_to_etch_rune_even_if_mint_is_set', () => {
+    const rs = decipherTest([
+      tagInto(Tag.Flags),
+      flagMask(FlagTypes.Terms),
+      tagInto(Tag.OffsetEnd),
+      BigInt(4),
+      tagInto(Tag.Body),
+      BigInt(1),
+      BigInt(1),
+      BigInt(2),
+      BigInt(0),
+      //
+    ]);
 
-  //   expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
-  //   expect(rs?.etching).toBeNull();
-  // });
+    expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
+    expect(rs?.etching).toBeNull();
+  });
 
-  // test('decipher_etching_with_term', () => {
-  //   const rs = decipherTest([
-  //     tagInto(Tag.Flags),
-  //     flagMask(FlagTypes.Mint) | flagMask(FlagTypes.Etch),
-  //     tagInto(Tag.Term),
-  //     BigInt(4),
-  //     tagInto(Tag.Body),
-  //     BigInt(1),
-  //     BigInt(1),
-  //     BigInt(2),
-  //     BigInt(0),
-  //     //
-  //   ]);
+  test('decipher_etching_with_term', () => {
+    const rs = decipherTest([
+      tagInto(Tag.Flags),
+      flagMask(FlagTypes.Etch) | flagMask(FlagTypes.Terms),
+      tagInto(Tag.OffsetEnd),
+      BigInt(4),
+      tagInto(Tag.Body),
+      BigInt(1),
+      BigInt(1),
+      BigInt(2),
+      BigInt(0),
+      //
+    ]);
+    console.log(rs);
 
-  //   expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
-  //   expect(rs?.etching).toStrictEqual(new Etching(0, new Mint(null, null, null, BigInt(4)), null, null, BigInt(0)));
-  // });
+    expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
+    expect(rs?.etching).toStrictEqual(
+      new Etching({
+        terms: new Terms({
+          offset: [null, BigInt(4)],
+        }),
+      }),
+    );
+  });
 
-  // test('decipher_etching_with_limit', () => {
-  //   const rs = decipherTest([
-  //     tagInto(Tag.Flags),
-  //     flagMask(FlagTypes.Mint) | flagMask(FlagTypes.Etch),
-  //     tagInto(Tag.Limit),
-  //     BigInt(4),
-  //     tagInto(Tag.Body),
-  //     BigInt(1),
-  //     BigInt(1),
-  //     BigInt(2),
-  //     BigInt(0),
-  //     //
-  //   ]);
+  test('decipher_etching_with_limit', () => {
+    const rs = decipherTest([
+      tagInto(Tag.Flags),
+      flagMask(FlagTypes.Etch) | flagMask(FlagTypes.Terms),
+      tagInto(Tag.Limit),
+      BigInt(4),
+      tagInto(Tag.Body),
+      BigInt(1),
+      BigInt(1),
+      BigInt(2),
+      BigInt(0),
+      //
+    ]);
 
-  //   expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
-  //   expect(rs?.etching).toStrictEqual(new Etching(0, new Mint(null, null, BigInt(4), null), null, null, BigInt(0)));
-  // });
+    expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
+    expect(rs?.etching).toStrictEqual(
+      new Etching({
+        terms: new Terms({
+          limit: BigInt(4),
+        }),
+      }),
+    );
+  });
+
+  test('invalid_varint_produces_cenotaph', () => {
+    let _payload = payload([BigInt(128)]);
+
+    const psbt = new bitcoin.Psbt();
+    psbt.setVersion(2);
+    psbt.locktime = 0;
+    psbt.addOutput({
+      script: bitcoin.script.compile([
+        bitcoin.opcodes.OP_RETURN,
+        varint.MAGIC_NUMBER,
+        Buffer.from(_payload), // OP_PUSHBYTES_4
+      ]),
+      value: 0,
+    });
+
+    const s = psbt.extractTransaction(false);
+    const d = RuneStone.fromTransaction(s);
+    expect(d?.cenotaph).toEqual(true);
+  });
+
+  test('duplicate_even_tags_produce_cenotaph', () => {
+    const rs = decipherTest([
+      tagInto(Tag.Flags),
+      flagMask(FlagTypes.Etch),
+      tagInto(Tag.Rune),
+      BigInt(4),
+      tagInto(Tag.Rune),
+      BigInt(5),
+      tagInto(Tag.Body),
+      BigInt(1),
+      BigInt(1),
+      BigInt(2),
+      BigInt(0),
+      //
+    ]);
+
+    expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
+    expect(rs?.etching).toStrictEqual(
+      new Etching({
+        rune: new Rune(BigInt(4)),
+      }),
+    );
+    expect(rs?.cenotaph).toEqual(true);
+  });
 
   // test('duplicate_tags_are_ignored', () => {
   //   const rs = decipherTest([

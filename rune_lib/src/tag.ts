@@ -70,6 +70,7 @@ export function tagTaker<T>(tag: bigint, length: number, fields: Map<bigint, big
     }
   }
   let value = callback(values);
+
   if (field) {
     drain(field, 0, length);
   }

@@ -1,19 +1,23 @@
 export interface ITerms {
-  cap: bigint | null;
-  height: [bigint | null, bigint | null] | null;
-  limit: bigint | null;
-  offset: [bigint | null, bigint | null] | null;
+  cap?: bigint | null;
+  height?: (bigint | null)[] | null;
+  limit?: bigint | null;
+  offset?: (bigint | null)[] | null;
 }
 
 export class Terms {
-  constructor(
-    public cap: bigint | null,
-    public height: (bigint | null)[] | null,
-    public limit: bigint | null,
-    public offset: (bigint | null)[] | null,
-  ) {}
+  public cap: bigint | null;
+  public height: (bigint | null)[] | null;
+  public limit: bigint | null;
+  public offset: (bigint | null)[] | null;
+  constructor(terms: ITerms) {
+    this.cap = terms.cap ?? null;
+    this.height = terms.height ?? null;
+    this.limit = terms.limit ?? null;
+    this.offset = terms.offset ?? null;
+  }
   static fromJson(json: ITerms): Terms {
-    return new Terms(json.cap, json.height, json.limit, json.offset);
+    return new Terms(json);
   }
 
   static fromJsonString(str: string): Terms {
