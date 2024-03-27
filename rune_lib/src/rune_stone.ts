@@ -219,6 +219,7 @@ export class RuneStone {
     let mint = tagTaker<RuneId>(TAG_MINT, 2, fields, values => {
       return new RuneId(values[0], values[1]);
     });
+    fields.delete(TAG_MINT);
 
     let pointer = tagTaker(TAG_POINTER, 1, fields, values => {
       let _pointer = values[0];
@@ -228,6 +229,7 @@ export class RuneStone {
         return null;
       }
     });
+    fields.delete(TAG_POINTER);
 
     let divisibility = tagTaker(TAG_DIVISIBILITY, 1, fields, values => {
       let _divisibility = values[0];
@@ -237,6 +239,7 @@ export class RuneStone {
         return null;
       }
     });
+    fields.delete(TAG_DIVISIBILITY);
 
     // let mint = fields.has(TAG_MINT) ? fields.get(TAG_MINT) : null;
     // fields.delete(TAG_MINT);
@@ -255,18 +258,22 @@ export class RuneStone {
     let limit = tagTaker(TAG_LIMIT, 1, fields, values => {
       return values[0] ?? null;
     });
+    fields.delete(TAG_LIMIT);
 
     let rune = tagTaker(TAG_RUNE, 1, fields, values => {
       return values[0] !== null ? new Rune(values[0]) : null;
     });
+    fields.delete(TAG_RUNE);
 
     let cap = tagTaker(TAG_CAP, 1, fields, values => {
       return values[0] ?? null;
     });
+    fields.delete(TAG_CAP);
 
     let premine = tagTaker(TAG_PREMINE, 1, fields, values => {
       return values[0] ?? null;
     });
+    fields.delete(TAG_PREMINE);
 
     let spacers = tagTaker(TAG_SPACERS, 1, fields, values => {
       let _spacers = values[0];
@@ -276,18 +283,22 @@ export class RuneStone {
         return null;
       }
     });
+    fields.delete(TAG_SPACERS);
 
     let symbol = tagTaker(TAG_SYMBOL, 1, fields, values => {
       return values[0] ? charFromU32(Number(values[0])) : null;
     });
+    fields.delete(TAG_SYMBOL);
 
     let offset = (() => {
       let start = tagTaker(TAG_OFFSET_START, 1, fields, values => {
         return values[0] ?? null;
       });
+      fields.delete(TAG_OFFSET_START);
       let end = tagTaker(TAG_OFFSET_END, 1, fields, values => {
         return values[0] ?? null;
       });
+      fields.delete(TAG_OFFSET_END);
       return [start, end];
     })();
 
@@ -295,9 +306,11 @@ export class RuneStone {
       let start = tagTaker(TAG_HEIGHT_START, 1, fields, values => {
         return values[0] ?? null;
       });
+      fields.delete(TAG_HEIGHT_START);
       let end = tagTaker(TAG_HEIGHT_END, 1, fields, values => {
         return values[0] ?? null;
       });
+      fields.delete(TAG_HEIGHT_END);
       return [start, end];
     })();
 
@@ -329,13 +342,17 @@ export class RuneStone {
     });
 
     if (flags !== null) {
+      console.log({ flags });
       let _etch = new Flag(FlagTypes.Etch).take(flags);
       etch = _etch[0];
       flags = _etch[1];
+      console.log({ flags1: flags });
 
       let _terms = new Flag(FlagTypes.Terms).take(flags);
       terms = _terms[0];
       flags = _terms[1];
+      console.log({ flags3: flags });
+      fields.delete(TAG_FLAGS);
     }
 
     if (etch) {
@@ -375,7 +392,13 @@ export class RuneStone {
     //   );
     // }
 
-    // console.log({ overflow, cenotaph, flags });
+    console.log({
+      overflow,
+      cenotaph,
+      flags,
+      keys: Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
+      //
+    });
 
     return new RuneStone({
       edicts: message.edicts,

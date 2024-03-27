@@ -154,6 +154,7 @@ describe('rune_stone', () => {
     ]);
     expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
     expect(rs?.etching).toStrictEqual(new Etching({ divisibility: 0, rune: new Rune(BigInt(4)) }));
+    console.log(rs);
   });
 
   // test('etch_flag_is_required_to_etch_rune_even_if_mint_is_set', () => {
