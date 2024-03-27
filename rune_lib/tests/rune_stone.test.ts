@@ -424,25 +424,30 @@ describe('rune_stone', () => {
     }
   });
 
-  // test('decipher_etching_with_divisibility', () => {
-  //   const rs = decipherTest([
-  //     tagInto(Tag.Flags),
-  //     flagMask(FlagTypes.Etch),
-  //     tagInto(Tag.Rune),
-  //     BigInt(4),
-  //     tagInto(Tag.Divisibility),
-  //     BigInt(5),
-  //     tagInto(Tag.Body),
-  //     BigInt(1),
-  //     BigInt(1),
-  //     BigInt(2),
-  //     BigInt(0),
-  //     //
-  //   ]);
+  test('decipher_etching_with_divisibility', () => {
+    const rs = decipherTest([
+      tagInto(Tag.Flags),
+      flagMask(FlagTypes.Etch),
+      tagInto(Tag.Rune),
+      BigInt(4),
+      tagInto(Tag.Divisibility),
+      BigInt(5),
+      tagInto(Tag.Body),
+      BigInt(1),
+      BigInt(1),
+      BigInt(2),
+      BigInt(0),
+      //
+    ]);
 
-  //   expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
-  //   expect(rs?.etching).toStrictEqual(new Etching(5, null, new Rune(BigInt(4)), null, BigInt(0)));
-  // });
+    expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
+    expect(rs?.etching).toStrictEqual(
+      new Etching({
+        divisibility: 5,
+        rune: new Rune(BigInt(4)),
+      }),
+    );
+  });
 
   // test('unrecognized_flag_is_burn', () => {
   //   const rs = decipherTest([tagInto(Tag.Burn), flagMask(FlagTypes.Burn), tagInto(Tag.Body), rune_id(BigInt(1)), BigInt(2), BigInt(0)]);
@@ -520,57 +525,127 @@ describe('rune_stone', () => {
   //   expect(rs?.etching).toStrictEqual(new Etching(1, null, new Rune(BigInt(4)), 'a', BigInt(0), null));
   // });
 
-  // test('divisibility_above_max_is_ignored', () => {
-  //   const rs = decipherTest([
-  //     tagInto(Tag.Flags),
-  //     flagMask(FlagTypes.Etch),
-  //     tagInto(Tag.Rune),
-  //     BigInt(4),
-  //     tagInto(Tag.Divisibility),
-  //     BigInt(MAX_DIVISIBILITY + 1),
-  //     tagInto(Tag.Body),
-  //     BigInt(1),
-  //     BigInt(1),
-  //     BigInt(2),
-  //     BigInt(0),
-  //     //
-  //   ]);
+  test('divisibility_above_max_is_ignored', () => {
+    const rs = decipherTest([
+      tagInto(Tag.Flags),
+      flagMask(FlagTypes.Etch),
+      tagInto(Tag.Rune),
+      BigInt(4),
+      tagInto(Tag.Divisibility),
+      BigInt(MAX_DIVISIBILITY + 1),
+      tagInto(Tag.Body),
+      BigInt(1),
+      BigInt(1),
+      BigInt(2),
+      BigInt(0),
+      //
+    ]);
 
-  //   expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
-  //   expect(rs?.etching).toStrictEqual(new Etching(0, null, new Rune(BigInt(4)), null, BigInt(0)));
-  // });
+    expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
+    expect(rs?.etching).toStrictEqual(
+      new Etching({
+        rune: new Rune(BigInt(4)),
+      }),
+    );
+  });
 
-  // test('symbol_above_max_is_ignored', () => {
-  //   const rs = decipherTest([
-  //     tagInto(Tag.Flags),
-  //     flagMask(FlagTypes.Etch),
-  //     tagInto(Tag.Symbol),
-  //     BigInt(0x10ffff + 1),
-  //     tagInto(Tag.Body),
-  //     BigInt(1),
-  //     BigInt(1),
-  //     BigInt(2),
-  //     BigInt(0),
-  //     //
-  //   ]);
+  test('symbol_above_max_is_ignored', () => {
+    const rs = decipherTest([
+      tagInto(Tag.Flags),
+      flagMask(FlagTypes.Etch),
+      tagInto(Tag.Symbol),
+      BigInt(0x10ffff + 1),
+      tagInto(Tag.Body),
+      BigInt(1),
+      BigInt(1),
+      BigInt(2),
+      BigInt(0),
+      //
+    ]);
 
-  //   expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
-  //   expect(rs?.etching).toStrictEqual(new Etching(0, null, null, null, BigInt(0), null));
-  // });
+    expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
+    expect(rs?.etching).toStrictEqual(new Etching({}));
+  });
 
-  // test('decipher_etching_with_symbol', () => {
-  //   const rs = decipherTest([BigInt(2), BigInt(4), BigInt(3), BigInt('a'.charCodeAt(0)), BigInt(0), rune_id(BigInt(1)), BigInt(2), BigInt(0)]);
-  //   const psbt = new bitcoin.Psbt();
-  //   psbt.addOutput({
-  //     script: opReturn(_payload),
-  //     value: 0,
-  //   });
+  test('decipher_etching_with_symbol', () => {
+    const rs = decipherTest([
+      tagInto(Tag.Flags),
+      flagMask(FlagTypes.Etch),
+      tagInto(Tag.Rune),
+      BigInt(4),
+      tagInto(Tag.Symbol),
+      BigInt('a'.charCodeAt(0)),
+      tagInto(Tag.Body),
+      BigInt(1),
+      BigInt(1),
+      BigInt(2),
+      BigInt(0),
+      //
+    ]);
 
-  //   const s = psbt.extractTransaction(false);
-  //   const d = RuneStone.fromTransaction(s);
-  //   expect(d?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
-  //   expect(d?.etching).toStrictEqual(new Etching(0, null, new Rune(BigInt(4)), 'a', BigInt(0)));
-  // });
+    expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
+    expect(rs?.etching).toStrictEqual(
+      new Etching({
+        rune: new Rune(BigInt(4)),
+        symbol: 'a',
+      }),
+    );
+  });
+
+  test('decipher_etching_with_all_etching_tags', () => {
+    const rs = decipherTest([
+      tagInto(Tag.Flags),
+      flagMask(FlagTypes.Etch) | flagMask(FlagTypes.Terms),
+      tagInto(Tag.Rune),
+      BigInt(4),
+      tagInto(Tag.Divisibility),
+      BigInt(1),
+      tagInto(Tag.Spacers),
+      BigInt(5),
+      tagInto(Tag.Symbol),
+      BigInt('a'.charCodeAt(0)),
+      tagInto(Tag.OffsetEnd),
+      BigInt(2),
+      tagInto(Tag.Limit),
+      BigInt(3),
+      tagInto(Tag.Premine),
+      BigInt(8),
+      tagInto(Tag.Cap),
+      BigInt(9),
+      tagInto(Tag.Pointer),
+      BigInt(0),
+      tagInto(Tag.Mint),
+      BigInt(1),
+      tagInto(Tag.Mint),
+      BigInt(1),
+      tagInto(Tag.Body),
+      BigInt(1),
+      BigInt(1),
+      BigInt(2),
+      BigInt(0),
+      //
+    ]);
+
+    expect(rs?.edicts[0]).toStrictEqual(new Edict(rune_id(BigInt(1)), BigInt(2), BigInt(0)));
+    expect(rs?.etching).toStrictEqual(
+      new Etching({
+        divisibility: 1,
+        rune: new Rune(BigInt(4)),
+        symbol: 'a',
+        premine: BigInt(8),
+        spacers: BigInt(5),
+        terms: new Terms({
+          offset: [null, BigInt(2)],
+          limit: BigInt(3),
+          height: null,
+          cap: BigInt(9),
+        }),
+      }),
+    );
+    expect(rs?.cenotaph).toBe(false);
+    expect(rs?.pointer).toBe(BigInt(0));
+    expect(rs?.mint).toStrictEqual(new RuneId(BigInt(1), BigInt(1)));
+  });
 
   // test('decipher_etching_with_divisibility_and_symbol', () => {
   //   const rs = decipherTest([
