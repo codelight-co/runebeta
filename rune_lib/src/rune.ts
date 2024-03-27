@@ -97,6 +97,25 @@ export class Rune {
     }
     return new Rune(x);
   }
+
+  public isReserved(): boolean {
+    return this.value >= RESERVED;
+  }
+
+  public reserved(n: bigint): Rune {
+    return new Rune(RESERVED + n);
+  }
+
+  public commitment(): Uint8Array {
+    let bytes = this.value.toString(16);
+
+    let buf = Buffer.from(bytes, 'hex');
+    let end = buf.length;
+    while (end > 0 && buf[end - 1] === 0) {
+      end--;
+    }
+    return new Uint8Array(buf.subarray(0, end).buffer);
+  }
 }
 
 // 使用示例
