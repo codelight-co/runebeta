@@ -201,11 +201,11 @@ describe('rune_stone', () => {
     );
   });
 
-  test('decipher_etching_with_limit', () => {
+  test('decipher_etching_with_amount', () => {
     const rs = decipherTest([
       tagInto(Tag.Flags),
       flagMask(FlagTypes.Etch) | flagMask(FlagTypes.Terms),
-      tagInto(Tag.Limit),
+      tagInto(Tag.Amount),
       BigInt(4),
       tagInto(Tag.Body),
       BigInt(1),
@@ -219,7 +219,7 @@ describe('rune_stone', () => {
     expect(rs?.etching).toStrictEqual(
       new Etching({
         terms: new Terms({
-          limit: BigInt(4),
+          amount: BigInt(4),
         }),
       }),
     );
@@ -606,7 +606,7 @@ describe('rune_stone', () => {
       BigInt('a'.charCodeAt(0)),
       tagInto(Tag.OffsetEnd),
       BigInt(2),
-      tagInto(Tag.Limit),
+      tagInto(Tag.Amount),
       BigInt(3),
       tagInto(Tag.Premine),
       BigInt(8),
@@ -636,7 +636,7 @@ describe('rune_stone', () => {
         spacers: BigInt(5),
         terms: new Terms({
           offset: [null, BigInt(2)],
-          limit: BigInt(3),
+          amount: BigInt(3),
           height: null,
           cap: BigInt(9),
         }),
