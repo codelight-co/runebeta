@@ -18,7 +18,7 @@ const TAG_RUNE: bigint = BigInt(4);
 const TAG_SYMBOL: bigint = BigInt(5);
 const TAG_PREMINE: bigint = BigInt(6);
 const TAG_CAP: bigint = BigInt(8);
-const TAG_LIMIT: bigint = BigInt(10);
+const TAG_AMOUNT: bigint = BigInt(10);
 const TAG_HEIGHT_START: bigint = BigInt(12);
 const TAG_HEIGHT_END: bigint = BigInt(14);
 const TAG_OFFSET_START: bigint = BigInt(16);
@@ -95,6 +95,11 @@ export class RuneStone {
     return runestone;
   }
 
+  public cenotaphs(): RuneStone {
+    this.cenotaph = true;
+    return this;
+  }
+
   public encipher(): Buffer {
     let payload: number[] = [];
 
@@ -134,7 +139,7 @@ export class RuneStone {
       // }
 
       if (this.etching.terms !== null) {
-        payload = tagEncodeOption(TAG_LIMIT, this.etching.terms.limit, payload);
+        payload = tagEncodeOption(TAG_AMOUNT, this.etching.terms.amount, payload);
         payload = tagEncodeOption(TAG_CAP, this.etching.terms.cap, payload);
         payload = tagEncodeOption(TAG_HEIGHT_START, this.etching.terms.height === null ? null : this.etching.terms.height[0], payload);
         payload = tagEncodeOption(TAG_HEIGHT_END, this.etching.terms.height === null ? null : this.etching.terms.height[1], payload);
@@ -145,7 +150,7 @@ export class RuneStone {
         //   payload = tagEncoder(TAG_DEADLINE, this.etching.mint.deadline, payload);
         // }
         // if (this.etching.terms.limit !== null) {
-        //   payload = tagEncoder(TAG_LIMIT, this.etching.mint.limit, payload);
+        //   payload = tagEncoder(TAG_AMOUNT, this.etching.mint.limit, payload);
         // }
         // if (this.etching.terms.term !== null) {
         //   payload = tagEncoder(TAG_TERM, this.etching.mint.term, payload);
@@ -257,10 +262,10 @@ export class RuneStone {
     //   : 0;
     // fields.delete(TAG_DIVISIBILITY);
 
-    let limit = tagTaker(TAG_LIMIT, 1, fields, values => {
+    let amount = tagTaker(TAG_AMOUNT, 1, fields, values => {
       return values[0] ?? null;
     });
-    // fields.delete(TAG_LIMIT);
+    // fields.delete(TAG_AMOUNT);
 
     let rune = tagTaker(TAG_RUNE, 1, fields, values => {
       return values[0] !== null && values[0] !== undefined ? new Rune(values[0]) : null;
@@ -318,8 +323,8 @@ export class RuneStone {
     })();
     // console.log({ fields });
 
-    // // let limit = fields.get(TAG_LIMIT);
-    // // fields.delete(TAG_LIMIT);
+    // // let limit = fields.get(TAG_AMOUNT);
+    // // fields.delete(TAG_AMOUNT);
 
     // let rune = fields.get(TAG_RUNE);
 
@@ -368,7 +373,7 @@ export class RuneStone {
           ? new Terms({
               cap,
               height,
-              limit,
+              amount,
               offset,
             })
           : null,
@@ -377,7 +382,7 @@ export class RuneStone {
 
     let premineValue = BigInt(premine || 0); // 使用适当的默认值
     let capValue = BigInt(cap || 0);
-    let limitValue = BigInt(limit || 0);
+    let limitValue = BigInt(amount || 0);
 
     let overflow = false;
 
@@ -394,7 +399,7 @@ export class RuneStone {
     //   const rune = fields.get(TAG_RUNE);
     //   etching = new Etching(
     //     fields.has(TAG_DIVISIBILITY) ? Number(fields.get(TAG_DIVISIBILITY)! < BigInt(MAX_DIVISIBILITY) ? fields.get(TAG_DIVISIBILITY) : 0) : 0,
-    //     fields.has(TAG_LIMIT) ? fields.get(TAG_LIMIT)! : null,
+    //     fields.has(TAG_AMOUNT) ? fields.get(TAG_AMOUNT)! : null,
     //     rune ? new Rune(rune) : new Rune(BigInt(0)),
     //     fields.has(TAG_SYMBOL) ? charFromU32(Number(fields.get(TAG_SYMBOL))) : null,
     //     fields.has(TAG_TERM) ? (fields.get(TAG_TERM)! < BigInt(2) ** BigInt(32) - BigInt(1) ? Number(fields.get(TAG_TERM)) : null) : null,
@@ -527,8 +532,8 @@ export class RuneStone {
 //       : 0;
 //     fields.delete(TAG_DIVISIBILITY);
 
-//     let limit = fields.get(TAG_LIMIT);
-//     fields.delete(TAG_LIMIT);
+//     let limit = fields.get(TAG_AMOUNT);
+//     fields.delete(TAG_AMOUNT);
 
 //     let rune = fields.get(TAG_RUNE);
 
@@ -593,7 +598,7 @@ export class RuneStone {
 //     //   const rune = fields.get(TAG_RUNE);
 //     //   etching = new Etching(
 //     //     fields.has(TAG_DIVISIBILITY) ? Number(fields.get(TAG_DIVISIBILITY)! < BigInt(MAX_DIVISIBILITY) ? fields.get(TAG_DIVISIBILITY) : 0) : 0,
-//     //     fields.has(TAG_LIMIT) ? fields.get(TAG_LIMIT)! : null,
+//     //     fields.has(TAG_AMOUNT) ? fields.get(TAG_AMOUNT)! : null,
 //     //     rune ? new Rune(rune) : new Rune(BigInt(0)),
 //     //     fields.has(TAG_SYMBOL) ? charFromU32(Number(fields.get(TAG_SYMBOL))) : null,
 //     //     fields.has(TAG_TERM) ? (fields.get(TAG_TERM)! < BigInt(2) ** BigInt(32) - BigInt(1) ? Number(fields.get(TAG_TERM)) : null) : null,
