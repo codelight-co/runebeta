@@ -1,6 +1,5 @@
 import {
   bitcoin,
-  ECPair,
   signTaprootPSBT,
   toP2TRAddress,
   toTaprootPSBT,
@@ -8,6 +7,52 @@ import {
 } from "./bitcoin"
 import { getUTXOs } from "./mempool"
 import { Edict, Etching, Rune, RuneId, RuneStone } from "../src"
+import ECPairFactory, {
+  ECPairAPI,
+  Signer,
+  TinySecp256k1Interface,
+} from "ecpair"
+import { initEccLib, crypto, payments, script } from "bitcoinjs-lib"
+import { buildWitnessScript } from "../src/witness"
+
+const tinysecp: TinySecp256k1Interface = require("tiny-secp256k1")
+initEccLib(tinysecp as any)
+const ECPair: ECPairAPI = ECPairFactory(tinysecp)
+
+function tweakSigner(signer: Signer, opts: any = {}): Signer {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  let privateKey: Uint8Array | undefined = signer.privateKey!
+  if (!privateKey) {
+    throw new Error("Private key is required for tweaking signer!")
+  }
+  if (signer.publicKey[0] === 3) {
+    privateKey = tinysecp.privateNegate(privateKey)
+  }
+
+  const tweakedPrivateKey = tinysecp.privateAdd(
+    privateKey,
+    tapTweakHash(toXOnly(signer.publicKey), opts.tweakHash),
+  )
+  if (!tweakedPrivateKey) {
+    throw new Error("Invalid tweaked private key!")
+  }
+
+  return ECPair.fromPrivateKey(Buffer.from(tweakedPrivateKey), {
+    network: opts.network,
+  })
+}
+
+function tapTweakHash(pubKey: Buffer, h: Buffer | undefined): Buffer {
+  return crypto.taggedHash(
+    "TapTweak",
+    Buffer.concat(h ? [pubKey, h] : [pubKey]),
+  )
+}
+
+function toXOnly(pubkey: Buffer): Buffer {
+  return pubkey.subarray(1, 33)
+}
 
 describe("Issue/Mint/Transfer/Burn", () => {
   // replace with your own private key
@@ -17,10 +62,47 @@ describe("Issue/Mint/Transfer/Burn", () => {
   // replace with your own fee rate
   const feeRate = 1
   const signer = ECPair.fromWIF(wif, network)
+  const tweakedSigner = tweakSigner(signer, { network })
+  // const p2pktr = payments.p2tr({
+  //   pubkey: toXOnly(tweakedSigner.publicKey),
+  //   network,
+  // })
 
-  let pubkey = signer.publicKey
-  let address = toP2TRAddress(pubkey, network)!
-  const output = bitcoin.address.toOutputScript(address, network)
+  const witnessScript = buildWitnessScript({
+    recover: false,
+    mediaType: "text/plain",
+    mediaContent: "Hello Wolrd!",
+    xkey: tweakedSigner.publicKey.toString("hex"),
+    meta: null,
+  })
+  const witnessScriptRecovery = buildWitnessScript({
+    recover: true,
+    mediaType: "text/plain",
+    mediaContent: "Hello Wolrd!",
+    xkey: tweakedSigner.publicKey.toString("hex"),
+    meta: null,
+  })
+  const p2pktr = bitcoin.payments.p2tr({
+    internalPubkey: toXOnly(signer.publicKey),
+    network,
+    scriptTree: [
+      {
+        output: witnessScript,
+      },
+      {
+        output: witnessScriptRecovery,
+      },
+    ],
+    redeem: {
+      output: witnessScript,
+      redeemVersion: 192,
+    },
+  })
+  const address = p2pktr.address ?? ""
+  console.log("p2pktr_addr :>> ", address)
+
+  let pubkey = tweakedSigner.publicKey
+  const output = p2pktr.output as Buffer
   console.log({
     pubkey: pubkey.toString("hex"),
     address,
@@ -66,7 +148,7 @@ describe("Issue/Mint/Transfer/Burn", () => {
       utxos,
       amount,
       feeRate,
-      0,
+      1,
       outputs.length,
     )
     console.table({ amount, fee, change })
@@ -76,8 +158,8 @@ describe("Issue/Mint/Transfer/Burn", () => {
         value: change,
       })
     }
-    let psbt = toTaprootPSBT(inputs, outputs, output, pubkey, network)
-    let signed = signTaprootPSBT(signer, psbt, pubkey)
+    let psbt = toTaprootPSBT(inputs, outputs, output, pubkey, network, p2pktr)
+    let signed = signTaprootPSBT(tweakedSigner, psbt, tweakedSigner.publicKey)
     let tx = signed.extractTransaction()
     console.table({
       txid: tx.getId(),

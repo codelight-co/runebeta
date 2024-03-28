@@ -24,6 +24,7 @@
     "bitcoinjs-lib": "^6.1.5",
     "ecpair": "^2.1.0",
     "jest": "^29.7.0",
+    "tiny-secp256k1": "^2.2.3",
     "tsc-alias": "^1.8.8",
     "tslib": "^2.6.2",
     "typescript": "^5.4.2"

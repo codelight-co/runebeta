@@ -1,21 +1,21 @@
-import { Mint } from './mint';
 import { Rune } from './rune';
+import { Terms } from './terms';
 interface IEtching {
-    divisibility: number;
-    mint: Mint | null;
-    rune: Rune | null;
-    symbol: string | null;
-    spacers: bigint;
-    premine: bigint | null;
+    divisibility?: number;
+    rune?: Rune | null | undefined;
+    symbol?: string | null | undefined;
+    spacers?: bigint | null | undefined;
+    premine?: bigint | null | undefined;
+    terms?: Terms | null | undefined;
 }
 export declare class Etching {
     divisibility: number;
-    mint: Mint | null;
     rune: Rune | null;
     symbol: string | null;
     spacers: bigint;
     premine: bigint | null;
-    constructor(divisibility: number, mint: Mint | null, rune: Rune | null, symbol: string | null, spacers?: bigint, premine?: bigint | null);
+    terms: Terms | null;
+    constructor({ divisibility, rune, symbol, spacers, premine, terms }: IEtching);
     static fromJson(json: IEtching): Etching;
     static fromJsonString(str: string): Etching;
     toJson(): IEtching;
