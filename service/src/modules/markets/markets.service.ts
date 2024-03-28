@@ -50,13 +50,27 @@ export class MarketsService implements OnModuleInit {
     id: string,
     marketRuneOrderFilterDto: MarketRuneOrderFilterDto,
   ) {
-    const res = await this.httpService
-      .get(`https://api.runealpha.xyz/market/orders/rune/${id}`, {
-        params: marketRuneOrderFilterDto,
-      })
-      .toPromise();
+    const builder = await this.orderRepository
+      .createQueryBuilder()
+      .where(`rune_item ->> 'id' = :id`, { id });
 
-    return res.data?.data;
+    if (marketRuneOrderFilterDto.status) {
+      builder.andWhere('status = :status', {
+        status: marketRuneOrderFilterDto.status,
+      });
+    }
+    if (marketRuneOrderFilterDto.sortBy) {
+      builder.orderBy(
+        marketRuneOrderFilterDto.sortBy,
+        marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+          ? 'DESC'
+          : 'ASC',
+      );
+    } else {
+      builder.orderBy('created_at', 'DESC');
+    }
+
+    return builder.getMany();
   }
 
   async getStats() {

@@ -7,51 +7,46 @@ import {
 } from 'typeorm';
 
 @Entity({ synchronize: false })
-export class RuneEntry {
+export class TransactionRuneEntry {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ type: 'bigint' })
-  rune_height: bigint;
+  @Column({ type: 'varchar' })
+  tx_hash: string;
 
-  @Column({ type: 'smallint' })
-  rune_index: number;
+  @Column({ type: 'varchar' })
+  rune_id: string;
 
-  @Column({ type: 'bytea' })
-  burned: Array<string>;
+  @Column({ type: 'text' })
+  burned: string;
 
-  @Column({ type: 'smallint' })
+  @Column({ type: 'int2' })
   divisibility: number;
 
   @Column({ type: 'varchar' })
   etching: string;
 
-  @Column({ type: 'jsonb', nullable: true })
-  mint: any;
+  @Column({ type: 'int8' })
+  mints: string;
 
-  @Column({ type: 'bigint' })
-  mints: bigint;
+  @Column({ type: 'int8' })
+  number: string;
 
-  @Column({ type: 'bigint' })
-  rnumber: bigint;
+  @Column({ type: 'jsonb' })
+  mint_entry: any;
 
-  @Column({ type: 'integer' })
+  @Column({ type: 'text' })
+  rune: string;
+
+  @Column({ type: 'int4' })
   spacers: number;
 
-  @Column({ type: 'bytea' })
-  supply: Array<string>;
+  @Column({ type: 'text' })
+  supply: string;
 
-  @Column({ type: 'char' })
+  @Column({ type: 'text' })
   symbol: string;
 
-  @Column({ type: 'integer' })
-  rtimestamp: number;
-
-  @Column()
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @Column()
-  @UpdateDateColumn()
-  updatedAt: Date;
+  @Column({ type: 'int4' })
+  timestamp: number;
 }

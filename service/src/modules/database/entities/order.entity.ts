@@ -32,6 +32,9 @@ export class Order {
   @Column({ type: 'varchar' })
   sellerReceiveAddress: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  status: string;
+
   @Column({ type: 'text' })
   unsignedListingPSBTBase64: string;
 

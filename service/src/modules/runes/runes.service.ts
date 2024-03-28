@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { RuneFilterDto } from './dto';
 import { HttpService } from '@nestjs/axios';
 import { Repository } from 'typeorm';
-import { RuneEntry } from '../database/entities/rune-entry.entity';
+import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
 import { Rune } from '../database/entities';
 
 @Injectable()
@@ -10,12 +10,14 @@ export class RunesService {
   constructor(
     private readonly httpService: HttpService,
     @Inject('RUNE_ENTRY_REPOSITORY')
-    private runeEntryRepository: Repository<RuneEntry>,
+    private runeEntryRepository: Repository<TransactionRuneEntry>,
     @Inject('RUNE_REPOSITORY')
     private runeRepository: Repository<Rune>,
   ) {}
 
-  async getRunes(runeFilterDto: RuneFilterDto): Promise<RuneEntry[]> {
+  async getRunes(
+    runeFilterDto: RuneFilterDto,
+  ): Promise<TransactionRuneEntry[]> {
     const builder = this.runeEntryRepository
       .createQueryBuilder()
       .offset(runeFilterDto.offset)

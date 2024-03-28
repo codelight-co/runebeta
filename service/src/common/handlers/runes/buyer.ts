@@ -230,20 +230,25 @@ export namespace BuyerHandler {
       BigInt(_seller_outputs.length + 2),
       _seller_total_tokens,
     );
-    const rs = new RuneStone([edict], null, false, null, null);
-
+    const rs = new RuneStone({
+      edicts: [edict],
+      etching: null,
+      cenotaph: false,
+      mint: null,
+      pointer: null,
+    });
     const op_return_output = {
       value: 0,
       script: rs.encipher(),
     };
 
     /// Step 6, add platform BTC input
-    _platform_fee = _platform_fee > DUST_AMOUNT ? _platform_fee : 0;
+    // _platform_fee = _platform_fee > DUST_AMOUNT ? _platform_fee : 0;
 
-    const platform_output = {
-      address: PLATFORM_FEE_ADDRESS,
-      value: _platform_fee,
-    };
+    // const platform_output = {
+    //   address: PLATFORM_FEE_ADDRESS,
+    //   value: _platform_fee,
+    // };
 
     /// Adding all Inputs:
     const _all_inputs = [..._seller_inputs, ..._buyers_inputs];
