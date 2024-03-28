@@ -11,7 +11,7 @@ export class SpacedRune implements ISpacedRune {
   public limit: bigint | null;
   public term: number | null;
 
-  constructor(rune: Rune, limit: bigint | null, term: number | null) {
+  constructor({ rune, limit, term }: ISpacedRune) {
     this.rune = rune;
     this.limit = limit;
     this.term = term;
@@ -40,6 +40,6 @@ export class SpacedRune implements ISpacedRune {
       return new Error('trailing spacer');
     }
     rune = Rune.fromString(runeStr).id;
-    return new SpacedRune(new Rune(rune), limit, term);
+    return new SpacedRune({ rune: new Rune(rune), limit, term });
   }
 }
