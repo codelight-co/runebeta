@@ -21,7 +21,7 @@ export class Pile {
     let fractional = this.amount % cutoff;
 
     if (this.symbol) {
-      result += `\u{00A0}${this.symbol}`;
+      result += `\u{A0}${this.symbol === null ? '¤' : this.symbol}`;
     }
 
     if (fractional === BigInt(0)) {

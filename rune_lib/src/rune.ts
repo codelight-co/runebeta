@@ -6,39 +6,39 @@ export const RESERVED = BigInt('6402364363415443603228541259936211926');
 export const MAX_SPACERS = 0b00000111_11111111_11111111_11111111;
 export const MAGIC_NUMBER = 0x5d; // OP_PUSHNUM_13
 export const OP_VERIFY = 0x69;
+export const STEPS = [
+  BigInt('0'), //
+  BigInt('26'), //
+  BigInt('702'), //
+  BigInt('18278'), //
+  BigInt('475254'), //
+  BigInt('12356630'), //
+  BigInt('321272406'), //
+  BigInt('8353082582'), //
+  BigInt('217180147158'), //
+  BigInt('5646683826134'), //
+  BigInt('146813779479510'), //
+  BigInt('3817158266467286'), //
+  BigInt('99246114928149462'), //
+  BigInt('2580398988131886038'), //
+  BigInt('67090373691429037014'), //
+  BigInt('1744349715977154962390'), //
+  BigInt('45353092615406029022166'), //
+  BigInt('1179180408000556754576342'), //
+  BigInt('30658690608014475618984918'), //
+  BigInt('797125955808376366093607894'), //
+  BigInt('20725274851017785518433805270'), //
+  BigInt('538857146126462423479278937046'), //
+  BigInt('14010285799288023010461252363222'), //
+  BigInt('364267430781488598271992561443798'), //
+  BigInt('9470953200318703555071806597538774'), //
+  BigInt('246244783208286292431866971536008150'), //
+  BigInt('6402364363415443603228541259936211926'), //
+  BigInt('166461473448801533683942072758341510102'), //
+];
 
 export class Rune {
   public value: bigint;
-  private STEPS = [
-    BigInt('0'), //
-    BigInt('26'), //
-    BigInt('702'), //
-    BigInt('18278'), //
-    BigInt('475254'), //
-    BigInt('12356630'), //
-    BigInt('321272406'), //
-    BigInt('8353082582'), //
-    BigInt('217180147158'), //
-    BigInt('5646683826134'), //
-    BigInt('146813779479510'), //
-    BigInt('3817158266467286'), //
-    BigInt('99246114928149462'), //
-    BigInt('2580398988131886038'), //
-    BigInt('67090373691429037014'), //
-    BigInt('1744349715977154962390'), //
-    BigInt('45353092615406029022166'), //
-    BigInt('1179180408000556754576342'), //
-    BigInt('30658690608014475618984918'), //
-    BigInt('797125955808376366093607894'), //
-    BigInt('20725274851017785518433805270'), //
-    BigInt('538857146126462423479278937046'), //
-    BigInt('14010285799288023010461252363222'), //
-    BigInt('364267430781488598271992561443798'), //
-    BigInt('9470953200318703555071806597538774'), //
-    BigInt('246244783208286292431866971536008150'), //
-    BigInt('6402364363415443603228541259936211926'), //
-    BigInt('166461473448801533683942072758341510102'), //
-  ];
 
   get id(): bigint {
     return this.value;
@@ -96,6 +96,25 @@ export class Rune {
       }
     }
     return new Rune(x);
+  }
+
+  public isReserved(): boolean {
+    return this.value >= RESERVED;
+  }
+
+  public reserved(n: bigint): Rune {
+    return new Rune(RESERVED + n);
+  }
+
+  public commitment(): Uint8Array {
+    let bytes = this.value.toString(16);
+
+    let buf = Buffer.from(bytes, 'hex');
+    let end = buf.length;
+    while (end > 0 && buf[end - 1] === 0) {
+      end--;
+    }
+    return new Uint8Array(buf.subarray(0, end).buffer);
   }
 }
 

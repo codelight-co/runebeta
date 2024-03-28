@@ -25,6 +25,7 @@
     "cross-fetch": "^4.0.0",
     "dotenv": "^16.4.5",
     "ecpair": "^2.1.0",
+    "jest": "^29.7.0",
     "rpc-bitcoin": "^2.0.0",
     "rune_lib": "file:../../rune_lib",
     "tsc-alias": "^1.8.8",
