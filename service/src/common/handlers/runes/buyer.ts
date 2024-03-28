@@ -10,7 +10,7 @@ import {
   getSellerRuneOutputValue,
 } from 'src/vendors/feeprovider';
 import { FullnodeRPC } from 'src/vendors/fullnoderpc';
-import { Edict, RuneStone } from 'rune_lib';
+import { Edict, RuneId, RuneStone } from 'rune_lib';
 
 bitcoin.initEccLib(ecc);
 
@@ -219,13 +219,18 @@ export namespace BuyerHandler {
     }
 
     /// TODO adding OP_RETURN here
+    const runeItemId = seller_items[0]?.seller?.runeItem?.id?.toString();
+    const runeId = RuneId.fromString(runeItemId);
+    if (!runeId) {
+      throw new Error('Invalid Rune ID');
+    }
+
     const edict = new Edict(
-      BigInt(seller_items[0].seller.runeItem.id),
+      runeId as RuneId,
       BigInt(_seller_outputs.length + 2),
       _seller_total_tokens,
     );
     const rs = new RuneStone([edict], null, false, null, null);
-    rs.setTag(RUNE_TAG);
 
     const op_return_output = {
       value: 0,
