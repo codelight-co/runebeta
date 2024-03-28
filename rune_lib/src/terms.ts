@@ -10,11 +10,11 @@ export class Terms {
   public height: (bigint | null)[] | null;
   public amount: bigint | null;
   public offset: (bigint | null)[] | null;
-  constructor(terms: ITerms) {
-    this.cap = terms.cap ?? null;
-    this.height = terms.height ?? null;
-    this.amount = terms.amount ?? null;
-    this.offset = terms.offset ?? null;
+  constructor({ cap, height, amount, offset }: ITerms) {
+    this.cap = cap ?? null;
+    this.height = height ?? null;
+    this.amount = amount ?? null;
+    this.offset = offset ?? null;
   }
   static fromJson(json: ITerms): Terms {
     return new Terms(json);

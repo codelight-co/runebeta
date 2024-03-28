@@ -67,16 +67,16 @@ export class RuneStone {
     mint,
     pointer,
   }: {
-    edicts: Edict[];
-    etching: Etching | null;
-    cenotaph: boolean;
-    mint: RuneId | null;
-    pointer: bigint | null;
+    edicts?: Edict[];
+    etching?: Etching | null;
+    cenotaph?: boolean;
+    mint?: RuneId | null;
+    pointer?: bigint | null;
   }) {
-    this.cenotaph = cenotaph;
-    this.edicts = edicts;
-    this.etching = etching;
-    this.mint = mint;
+    this.cenotaph = cenotaph ?? false;
+    this.edicts = edicts ?? [];
+    this.etching = etching ?? null;
+    this.mint = mint ?? null;
     this.pointer = pointer ?? BigInt(0);
   }
 
@@ -193,7 +193,7 @@ export class RuneStone {
 
     let buffers = chunkBuffer(Buffer.from(new Uint8Array(payload)), 520);
 
-    let script = bitcoin.script.compile([bitcoin.opcodes.OP_RETURN, bitcoin.opcodes.OP_PUSHNUM_13, ...buffers]);
+    let script = bitcoin.script.compile([bitcoin.opcodes.OP_RETURN, MAGIC_NUMBER, ...buffers]);
 
     return script;
   }
@@ -218,7 +218,7 @@ export class RuneStone {
 
     let fields = message.fields;
 
-    console.log({ fields });
+    // console.log({ fields });
 
     let cenotaph = message.cenotaph;
     let etching: Etching | null | undefined = null;
@@ -406,20 +406,20 @@ export class RuneStone {
     //   );
     // }
 
-    console.log({
-      kk: fields,
-      terms,
-      overflow,
-      cenotaph,
-      flags,
-      keys: Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
-      res:
-        overflow === true ||
-        cenotaph === true ||
-        (flags !== undefined && flags !== BigInt(0) && flags !== null) ||
-        Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
-      //
-    });
+    // console.log({
+    //   kk: fields,
+    //   terms,
+    //   overflow,
+    //   cenotaph,
+    //   flags,
+    //   keys: Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
+    //   res:
+    //     overflow === true ||
+    //     cenotaph === true ||
+    //     (flags !== undefined && flags !== BigInt(0) && flags !== null) ||
+    //     Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
+    //   //
+    // });
 
     return new RuneStone({
       edicts: message.edicts,
