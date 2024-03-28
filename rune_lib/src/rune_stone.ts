@@ -218,15 +218,12 @@ export class RuneStone {
 
     let fields = message.fields;
 
-    // console.log({ fields });
-
     let cenotaph = message.cenotaph;
     let etching: Etching | null | undefined = null;
 
     let mint = tagTaker<RuneId>(TAG_MINT, 2, fields, values => {
       return new RuneId(values[0], values[1]);
     });
-    // fields.delete(TAG_MINT);
 
     let pointer = tagTaker(TAG_POINTER, 1, fields, values => {
       let _pointer = values[0];
@@ -236,7 +233,6 @@ export class RuneStone {
         return null;
       }
     });
-    // fields.delete(TAG_POINTER);
 
     let divisibility = tagTaker(TAG_DIVISIBILITY, 1, fields, values => {
       let _divisibility = values[0];
@@ -246,41 +242,22 @@ export class RuneStone {
         return null;
       }
     });
-    // fields.delete(TAG_DIVISIBILITY);
-
-    // let mint = fields.has(TAG_MINT) ? fields.get(TAG_MINT) : null;
-    // fields.delete(TAG_MINT);
-
-    // let deadline = fields.has(TAG_DEADLINE) ? fields.get(TAG_DEADLINE) : null;
-    // fields.delete(TAG_DEADLINE);
-
-    // let defaultOutput = fields.has(TAG_DEFAULT_OUTPUT) ? fields.get(TAG_DEFAULT_OUTPUT) : null;
-    // fields.delete(TAG_DEFAULT_OUTPUT);
-
-    // let divisibility = fields.has(TAG_DIVISIBILITY)
-    //   ? Number(fields.get(TAG_DIVISIBILITY)! < BigInt(MAX_DIVISIBILITY) ? fields.get(TAG_DIVISIBILITY) : 0)
-    //   : 0;
-    // fields.delete(TAG_DIVISIBILITY);
 
     let amount = tagTaker(TAG_AMOUNT, 1, fields, values => {
       return values[0] ?? null;
     });
-    // fields.delete(TAG_AMOUNT);
 
     let rune = tagTaker(TAG_RUNE, 1, fields, values => {
       return values[0] !== null && values[0] !== undefined ? new Rune(values[0]) : null;
     });
-    // fields.delete(TAG_RUNE);
 
     let cap = tagTaker(TAG_CAP, 1, fields, values => {
       return values[0] ?? null;
     });
-    // fields.delete(TAG_CAP);
 
     let premine = tagTaker(TAG_PREMINE, 1, fields, values => {
       return values[0] ?? null;
     });
-    // fields.delete(TAG_PREMINE);
 
     let spacers = tagTaker(TAG_SPACERS, 1, fields, values => {
       let _spacers = values[0];
@@ -290,59 +267,30 @@ export class RuneStone {
         return null;
       }
     });
-    // fields.delete(TAG_SPACERS);
 
     let symbol = tagTaker(TAG_SYMBOL, 1, fields, values => {
       return values[0] ? charFromU32(Number(values[0])) : null;
     });
-    // fields.delete(TAG_SYMBOL);
 
     let offset = (() => {
       let start = tagTaker(TAG_OFFSET_START, 1, fields, values => {
         return values[0] ?? null;
       });
-      // fields.delete(TAG_OFFSET_START);
       let end = tagTaker(TAG_OFFSET_END, 1, fields, values => {
         return values[0] ?? null;
       });
-      // fields.delete(TAG_OFFSET_END);
       return start === null && end === null ? null : [start, end];
     })();
-    // console.log({ fields });
 
     let height = (() => {
       let start = tagTaker(TAG_HEIGHT_START, 1, fields, values => {
         return values[0] ?? null;
       });
-      // fields.delete(TAG_HEIGHT_START);
       let end = tagTaker(TAG_HEIGHT_END, 1, fields, values => {
         return values[0] ?? null;
       });
-      // fields.delete(TAG_HEIGHT_END);
       return start === null && end === null ? null : [start, end];
     })();
-    // console.log({ fields });
-
-    // // let limit = fields.get(TAG_AMOUNT);
-    // // fields.delete(TAG_AMOUNT);
-
-    // let rune = fields.get(TAG_RUNE);
-
-    // let cap = fields.has(TAG_CAP) ? fields.get(TAG_CAP) : null;
-
-    // fields.delete(TAG_CAP);
-
-    // let premine = fields.has(TAG_PREMINE) ? fields.get(TAG_PREMINE) : null;
-    // fields.delete(TAG_PREMINE);
-
-    // let spacers = fields.has(TAG_SPACERS) ? Number(fields.get(TAG_SPACERS)! < BigInt(MAX_SPACERS) ? fields.get(TAG_SPACERS) : 0) : 0;
-    // fields.delete(TAG_SPACERS);
-
-    // let symbol = fields.has(TAG_SYMBOL) ? charFromU32(Number(fields.get(TAG_SYMBOL))) : null;
-    // fields.delete(TAG_SYMBOL);
-
-    // let term = fields.has(TAG_TERM) ? (fields.get(TAG_TERM)! < BigInt(2) ** BigInt(32) - BigInt(1) ? Number(fields.get(TAG_TERM)) : null) : null;
-    // fields.delete(TAG_TERM);
 
     let etch: boolean = false;
     let terms: boolean = false;
@@ -358,8 +306,6 @@ export class RuneStone {
       let _terms = new Flag(FlagTypes.Terms).take(flags);
       terms = _terms[0];
       flags = _terms[1];
-
-      // fields.delete(TAG_FLAGS);
     }
 
     if (etch) {
@@ -387,24 +333,10 @@ export class RuneStone {
     let overflow = false;
 
     try {
-      // 尝试执行操作
       addU128(premineValue, mulU128(capValue, limitValue));
-      // 如果这里没有抛出错误，意味着没有溢出
     } catch (e) {
-      // 如果捕获到错误，说明发生了溢出
       overflow = true;
     }
-
-    // if (fields.has(TAG_RUNE)) {
-    //   const rune = fields.get(TAG_RUNE);
-    //   etching = new Etching(
-    //     fields.has(TAG_DIVISIBILITY) ? Number(fields.get(TAG_DIVISIBILITY)! < BigInt(MAX_DIVISIBILITY) ? fields.get(TAG_DIVISIBILITY) : 0) : 0,
-    //     fields.has(TAG_AMOUNT) ? fields.get(TAG_AMOUNT)! : null,
-    //     rune ? new Rune(rune) : new Rune(BigInt(0)),
-    //     fields.has(TAG_SYMBOL) ? charFromU32(Number(fields.get(TAG_SYMBOL))) : null,
-    //     fields.has(TAG_TERM) ? (fields.get(TAG_TERM)! < BigInt(2) ** BigInt(32) - BigInt(1) ? Number(fields.get(TAG_TERM)) : null) : null,
-    //   );
-    // }
 
     // console.log({
     //   kk: fields,
@@ -432,17 +364,6 @@ export class RuneStone {
       mint,
       pointer,
     });
-
-    // return new RuneStone(
-    //   message.edicts,
-    //   etching,
-    //   overflow ||
-    //     cenotaph ||
-    //     (flags !== undefined && flags !== BigInt(0)) ||
-    //     Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
-    //   claim !== undefined && claim !== null ? claim : null,
-    //   defaultOutput !== undefined && defaultOutput !== null ? defaultOutput : null,
-    // );
   }
 
   public payload(transaction: bitcoin.Transaction): Buffer | null {
@@ -480,145 +401,181 @@ export class RuneStone {
   }
 }
 
-// export function decodeOpReturn(scriptHex: string | Buffer, tag: String) {
-//   const scriptBuf = typeof scriptHex === 'string' ? Buffer.from(scriptHex, 'hex') : scriptHex;
-//   const script = bitcoin.script.decompile(scriptBuf);
-//   let payload: Buffer | null = null;
-//   // 检查是否以 OP_RETURN 开始
-//   if (script && script[0] === bitcoin.opcodes.OP_RETURN) {
-//     // 检查是否包含特定标记 "RUNE_TEST"
-//     if (script.length > 1 && Buffer.isBuffer(script[1]) && script[1].toString() === tag) {
-//       // 提取随后的数据
-//       let _payload = Buffer.alloc(0);
-//       for (let i = 2; i < script.length; i++) {
-//         if (Buffer.isBuffer(script[i])) {
-//           _payload = Buffer.concat([_payload, script[i] as Buffer]);
-//         }
-//       }
-//       payload = _payload;
-//     }
-//   }
-//   if (payload !== null) {
-//     let integers: bigint[] = [];
-//     let i = 0;
+export function decodeOpReturn(scriptHex: string | Buffer, outLength: number) {
+  const scriptBuf = typeof scriptHex === 'string' ? Buffer.from(scriptHex, 'hex') : scriptHex;
+  const script = bitcoin.script.decompile(scriptBuf);
+  let payload: Buffer | null = null;
+  if (script && script[0] === bitcoin.opcodes.OP_RETURN) {
+    if (script.length > 1 && !Buffer.isBuffer(script[1]) && script[1] === MAGIC_NUMBER) {
+      let _payload = Buffer.alloc(0);
+      for (let i = 2; i < script.length; i++) {
+        if (Buffer.isBuffer(script[i])) {
+          _payload = Buffer.concat([_payload, script[i] as Buffer]);
+        }
+      }
+      payload = _payload;
+    }
+  }
+  if (payload !== null) {
+    let integers: bigint[] = [];
+    let i = 0;
 
-//     while (i < payload.length) {
-//       const _payload = payload.subarray(i);
-//       const [integer, length] = varint.decode(_payload);
-//       integers.push(integer);
-//       i += length;
-//     }
+    while (i < payload.length) {
+      const _payload = payload.subarray(i);
+      const [integer, length] = varint.decode(_payload);
+      integers.push(integer);
+      i += length;
+    }
 
-//     const message = Message.fromOpReturn(integers);
+    const message = Message.fromOpReturn(integers);
 
-//     let fields = message.fields;
+    let fields = message.fields;
 
-//     let cenotaph = message.cenotaph;
+    // console.log({ fields });
 
-//     let etching: Etching | null | undefined = null;
+    let cenotaph = message.cenotaph;
+    let etching: Etching | null | undefined = null;
 
-//     let claim = fields.has(TAG_CLAIM) ? fields.get(TAG_CLAIM) : null;
-//     fields.delete(TAG_CLAIM);
+    let mint = tagTaker<RuneId>(TAG_MINT, 2, fields, values => {
+      return new RuneId(values[0], values[1]);
+    });
+    // fields.delete(TAG_MINT);
 
-//     let deadline = fields.has(TAG_DEADLINE) ? fields.get(TAG_DEADLINE) : null;
+    let pointer = tagTaker(TAG_POINTER, 1, fields, values => {
+      let _pointer = values[0];
+      if (Number(_pointer) < outLength) {
+        return _pointer;
+      } else {
+        return null;
+      }
+    });
+    // fields.delete(TAG_POINTER);
 
-//     fields.delete(TAG_DEADLINE);
+    let divisibility = tagTaker(TAG_DIVISIBILITY, 1, fields, values => {
+      let _divisibility = values[0];
+      if (_divisibility < BigInt(MAX_DIVISIBILITY)) {
+        return _divisibility;
+      } else {
+        return null;
+      }
+    });
 
-//     let defaultOutput = fields.has(TAG_DEFAULT_OUTPUT) ? fields.get(TAG_DEFAULT_OUTPUT) : null;
-//     fields.delete(TAG_DEFAULT_OUTPUT);
+    let amount = tagTaker(TAG_AMOUNT, 1, fields, values => {
+      return values[0] ?? null;
+    });
 
-//     let divisibility = fields.has(TAG_DIVISIBILITY)
-//       ? Number(fields.get(TAG_DIVISIBILITY)! < BigInt(MAX_DIVISIBILITY) ? fields.get(TAG_DIVISIBILITY) : 0)
-//       : 0;
-//     fields.delete(TAG_DIVISIBILITY);
+    let rune = tagTaker(TAG_RUNE, 1, fields, values => {
+      return values[0] !== null && values[0] !== undefined ? new Rune(values[0]) : null;
+    });
 
-//     let limit = fields.get(TAG_AMOUNT);
-//     fields.delete(TAG_AMOUNT);
+    let cap = tagTaker(TAG_CAP, 1, fields, values => {
+      return values[0] ?? null;
+    });
 
-//     let rune = fields.get(TAG_RUNE);
+    let premine = tagTaker(TAG_PREMINE, 1, fields, values => {
+      return values[0] ?? null;
+    });
 
-//     let cap = fields.has(TAG_CAP) ? fields.get(TAG_CAP) : null;
+    let spacers = tagTaker(TAG_SPACERS, 1, fields, values => {
+      let _spacers = values[0];
+      if (_spacers < BigInt(MAX_SPACERS)) {
+        return _spacers;
+      } else {
+        return null;
+      }
+    });
 
-//     fields.delete(TAG_CAP);
+    let symbol = tagTaker(TAG_SYMBOL, 1, fields, values => {
+      return values[0] ? charFromU32(Number(values[0])) : null;
+    });
 
-//     let premine = fields.has(TAG_PREMINE) ? fields.get(TAG_PREMINE) : null;
-//     fields.delete(TAG_PREMINE);
+    let offset = (() => {
+      let start = tagTaker(TAG_OFFSET_START, 1, fields, values => {
+        return values[0] ?? null;
+      });
+      // fields.delete(TAG_OFFSET_START);
+      let end = tagTaker(TAG_OFFSET_END, 1, fields, values => {
+        return values[0] ?? null;
+      });
+      // fields.delete(TAG_OFFSET_END);
+      return start === null && end === null ? null : [start, end];
+    })();
+    // console.log({ fields });
 
-//     let spacers = fields.has(TAG_SPACERS) ? Number(fields.get(TAG_SPACERS)! < BigInt(MAX_SPACERS) ? fields.get(TAG_SPACERS) : 0) : 0;
-//     fields.delete(TAG_SPACERS);
+    let height = (() => {
+      let start = tagTaker(TAG_HEIGHT_START, 1, fields, values => {
+        return values[0] ?? null;
+      });
+      let end = tagTaker(TAG_HEIGHT_END, 1, fields, values => {
+        return values[0] ?? null;
+      });
+      return start === null && end === null ? null : [start, end];
+    })();
 
-//     let symbol = fields.has(TAG_SYMBOL) ? charFromU32(Number(fields.get(TAG_SYMBOL))) : null;
-//     fields.delete(TAG_SYMBOL);
+    let etch: boolean = false;
+    let terms: boolean = false;
+    let flags = tagTaker(TAG_FLAGS, 1, fields, values => {
+      return values[0] ?? null;
+    });
 
-//     let term = fields.has(TAG_TERM) ? (fields.get(TAG_TERM)! < BigInt(2) ** BigInt(32) - BigInt(1) ? Number(fields.get(TAG_TERM)) : null) : null;
-//     fields.delete(TAG_TERM);
+    if (flags !== null) {
+      let _etch = new Flag(FlagTypes.Etch).take(flags);
+      etch = _etch[0];
+      flags = _etch[1];
 
-//     let etch, mint;
-//     let flags;
-//     if (fields.has(TAG_FLAGS)) {
-//       flags = fields.get(TAG_FLAGS);
-//       if (flags) {
-//         let _etch = new Flag(FlagTypes.Etch).take(flags);
-//         etch = _etch[0];
-//         flags = _etch[1];
-//         let _mint = new Flag(FlagTypes.Mint).take(flags);
-//         mint = _mint[0];
-//         flags = _mint[1];
-//       }
-//       fields.delete(TAG_FLAGS);
-//     }
+      let _terms = new Flag(FlagTypes.Terms).take(flags);
+      terms = _terms[0];
+      flags = _terms[1];
+    }
 
-//     if (etch) {
-//       etching = new Etching(
-//         divisibility,
-//         mint ? new Mint(cap ?? null, deadline ?? null, limit ?? null, term !== null ? BigInt(term) : null) : null,
-//         rune ? new Rune(rune) : null,
-//         symbol,
-//         BigInt(spacers),
-//       );
-//     }
+    if (etch) {
+      etching = new Etching({
+        divisibility: Number(divisibility),
+        rune,
+        symbol,
+        spacers,
+        premine,
+        terms: terms
+          ? new Terms({
+              cap,
+              height,
+              amount,
+              offset,
+            })
+          : null,
+      });
+    }
 
-//     // 假设 premine, cap, limit 可能是 undefined 或 null
-//     let premineValue = BigInt(premine || 0); // 使用适当的默认值
-//     let capValue = BigInt(cap || 0);
-//     let limitValue = BigInt(limit || 0);
+    let premineValue = BigInt(premine || 0); // 使用适当的默认值
+    let capValue = BigInt(cap || 0);
+    let limitValue = BigInt(amount || 0);
 
-//     let overflow = false;
+    let overflow = false;
 
-//     try {
-//       // 尝试执行操作
-//       addU128(premineValue, mulU128(capValue, limitValue));
-//       // 如果这里没有抛出错误，意味着没有溢出
-//     } catch (e) {
-//       // 如果捕获到错误，说明发生了溢出
-//       overflow = true;
-//     }
+    try {
+      // 尝试执行操作
+      addU128(premineValue, mulU128(capValue, limitValue));
+      // 如果这里没有抛出错误，意味着没有溢出
+    } catch (e) {
+      // 如果捕获到错误，说明发生了溢出
+      overflow = true;
+    }
 
-//     // if (fields.has(TAG_RUNE)) {
-//     //   const rune = fields.get(TAG_RUNE);
-//     //   etching = new Etching(
-//     //     fields.has(TAG_DIVISIBILITY) ? Number(fields.get(TAG_DIVISIBILITY)! < BigInt(MAX_DIVISIBILITY) ? fields.get(TAG_DIVISIBILITY) : 0) : 0,
-//     //     fields.has(TAG_AMOUNT) ? fields.get(TAG_AMOUNT)! : null,
-//     //     rune ? new Rune(rune) : new Rune(BigInt(0)),
-//     //     fields.has(TAG_SYMBOL) ? charFromU32(Number(fields.get(TAG_SYMBOL))) : null,
-//     //     fields.has(TAG_TERM) ? (fields.get(TAG_TERM)! < BigInt(2) ** BigInt(32) - BigInt(1) ? Number(fields.get(TAG_TERM)) : null) : null,
-//     //   );
-//     // }
-
-//     return new RuneStone(
-//       message.edicts,
-//       etching,
-//       overflow ||
-//         cenotaph ||
-//         (flags !== undefined && flags !== BigInt(0)) ||
-//         Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
-//       claim !== undefined && claim !== null ? claim : null,
-//       defaultOutput !== undefined && defaultOutput !== null ? defaultOutput : null,
-//     );
-//   } else {
-//     return null;
-//   }
-// }
+    return new RuneStone({
+      edicts: message.edicts,
+      etching,
+      cenotaph:
+        overflow ||
+        cenotaph ||
+        (flags !== undefined && flags !== BigInt(0) && flags !== null) ||
+        Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
+      mint,
+      pointer,
+    });
+  } else {
+    return null;
+  }
+}
 
 export class Message {
   constructor(public cenotaph: boolean, public fields: Map<bigint, bigint[]>, public edicts: Edict[]) {}
