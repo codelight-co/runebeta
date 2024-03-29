@@ -21,7 +21,7 @@ export class StatsController {
 
   // Get daily transaction count
   @Get('daily-tx-count')
-  async getDailyTransactionCount() {
+  async getDailyTransactionCount(): Promise<string> {
     return this.statsService.getDailyTransactionCount();
   }
 
