@@ -6,28 +6,28 @@ import * as varint from './varint';
 import { MAGIC_NUMBER, MAX_DIVISIBILITY, MAX_SPACERS, Rune } from './rune';
 import assert from 'assert';
 import { Flag, FlagTypes } from './flag';
-import { tagEncodeList, tagEncodeOption, tagEncoder, tagTaker } from './tag';
+import { Tag, tagEncodeList, tagEncodeOption, tagEncoder, tagTaker } from './tag';
 import { RuneId } from './rune_id';
 import { Terms } from './terms';
 
-const TAG_BODY: bigint = BigInt(0);
-const TAG_DIVISIBILITY: bigint = BigInt(1);
-const TAG_FLAGS: bigint = BigInt(2);
-const TAG_SPACERS: bigint = BigInt(3);
-const TAG_RUNE: bigint = BigInt(4);
-const TAG_SYMBOL: bigint = BigInt(5);
-const TAG_PREMINE: bigint = BigInt(6);
-const TAG_CAP: bigint = BigInt(8);
-const TAG_AMOUNT: bigint = BigInt(10);
-const TAG_HEIGHT_START: bigint = BigInt(12);
-const TAG_HEIGHT_END: bigint = BigInt(14);
-const TAG_OFFSET_START: bigint = BigInt(16);
-const TAG_OFFSET_END: bigint = BigInt(18);
-const TAG_MINT: bigint = BigInt(20);
-const TAG_POINTER: bigint = BigInt(22);
-const TAG_CENOTAPH: bigint = BigInt(126);
-const TAG_BURN: bigint = BigInt(126);
-const TAG_NOP: bigint = BigInt(127);
+export const TAG_BODY: bigint = BigInt(Tag.Body);
+export const TAG_DIVISIBILITY: bigint = BigInt(Tag.Divisibility);
+export const TAG_FLAGS: bigint = BigInt(Tag.Flags);
+export const TAG_SPACERS: bigint = BigInt(Tag.Spacers);
+const TAG_RUNE: bigint = BigInt(Tag.Rune);
+const TAG_SYMBOL: bigint = BigInt(Tag.Symbol);
+const TAG_PREMINE: bigint = BigInt(Tag.Premine);
+const TAG_CAP: bigint = BigInt(Tag.Cap);
+const TAG_AMOUNT: bigint = BigInt(Tag.Amount);
+const TAG_HEIGHT_START: bigint = BigInt(Tag.HeightStart);
+const TAG_HEIGHT_END: bigint = BigInt(Tag.HeightEnd);
+const TAG_OFFSET_START: bigint = BigInt(Tag.OffsetStart);
+const TAG_OFFSET_END: bigint = BigInt(Tag.OffsetEnd);
+const TAG_MINT: bigint = BigInt(Tag.Mint);
+const TAG_POINTER: bigint = BigInt(Tag.Pointer);
+const TAG_CENOTAPH: bigint = BigInt(Tag.Cenotaph);
+const TAG_BURN: bigint = BigInt(Tag.Burn);
+const TAG_NOP: bigint = BigInt(Tag.Nop);
 
 const U128_MAX = BigInt(2) ** BigInt(128) - BigInt(1);
 
@@ -46,12 +46,6 @@ function mulU128(a: bigint, b: bigint) {
   }
   return result;
 }
-
-// pub struct Runestone {
-//     pub edicts: Vec<Edict>,
-//     pub etching: Option<Etching>,
-//     pub cenotaph: bool,
-//   }
 
 export class RuneStone {
   public edicts: Edict[];
@@ -118,25 +112,6 @@ export class RuneStone {
       payload = tagEncodeOption(TAG_SPACERS, BigInt(this.etching.spacers), payload);
       payload = tagEncodeOption(TAG_SYMBOL, this.etching.symbol == null ? null : BigInt(this.etching.symbol.charCodeAt(0)), payload);
       payload = tagEncodeOption(TAG_SYMBOL, this.etching.premine, payload);
-      // if (this.etching.rune !== null) {
-      //   payload = tagEncoder(TAG_RUNE, this.etching.rune.id, payload);
-      // }
-
-      // if (this.etching.divisibility !== 0 && this.etching.divisibility <= MAX_DIVISIBILITY) {
-      //   payload = tagEncoder(TAG_DIVISIBILITY, BigInt(this.etching.divisibility), payload);
-      // }
-
-      // if (this.etching.spacers !== BigInt(0)) {
-      //   payload = tagEncoder(TAG_SPACERS, BigInt(this.etching.spacers), payload);
-      // }
-
-      // if (this.etching.symbol !== null) {
-      //   payload = tagEncoder(TAG_SYMBOL, BigInt(this.etching.symbol.charCodeAt(0)), payload);
-      // }
-
-      // if (this.etching.premine !== null) {
-      //   payload = tagEncoder(TAG_SYMBOL, this.etching.premine, payload);
-      // }
 
       if (this.etching.terms !== null) {
         payload = tagEncodeOption(TAG_AMOUNT, this.etching.terms.amount, payload);
@@ -145,19 +120,6 @@ export class RuneStone {
         payload = tagEncodeOption(TAG_HEIGHT_END, this.etching.terms.height === null ? null : this.etching.terms.height[1], payload);
         payload = tagEncodeOption(TAG_OFFSET_START, this.etching.terms.offset === null ? null : this.etching.terms.offset[0], payload);
         payload = tagEncodeOption(TAG_HEIGHT_END, this.etching.terms.offset === null ? null : this.etching.terms.offset[1], payload);
-
-        // if (this.etching.terms.deadline !== null) {
-        //   payload = tagEncoder(TAG_DEADLINE, this.etching.mint.deadline, payload);
-        // }
-        // if (this.etching.terms.limit !== null) {
-        //   payload = tagEncoder(TAG_AMOUNT, this.etching.mint.limit, payload);
-        // }
-        // if (this.etching.terms.term !== null) {
-        //   payload = tagEncoder(TAG_TERM, this.etching.mint.term, payload);
-        // }
-        // if (this.etching.terms.cap !== null) {
-        //   payload = tagEncoder(TAG_CAP, this.etching.mint.cap, payload);
-        // }
       }
     }
 
