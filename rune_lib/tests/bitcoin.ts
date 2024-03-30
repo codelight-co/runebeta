@@ -548,7 +548,7 @@ export const ORD_PROTOCOL_ENVELOPE_ID = 'ord';
 
 export const getTapscriptCommitment = (childNodeXOnlyPubkey: string, payloadHex: string) => {
   let ops = `${childNodeXOnlyPubkey} OP_CHECKSIG OP_0 OP_IF `;
-  // ops += `${Buffer.from(ORD_PROTOCOL_ENVELOPE_ID, 'utf8').toString('hex')}`;
+  ops += `${Buffer.from(ORD_PROTOCOL_ENVELOPE_ID, 'utf8').toString('hex')}`;
   // ops += ` ${Buffer.from(opType, 'utf8').toString('hex')}`;
   const chunks = chunkBuffer(Buffer.from(payloadHex, 'hex'), 520);
   for (let chunk of chunks) {

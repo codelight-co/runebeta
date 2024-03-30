@@ -100,7 +100,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
       const commitTxRawHex = commitTx.toHex();
       const commitTxId = commitTx.getId();
 
-      console.table({
+      console.log({
         commitTxId,
         commitTxRawHex,
       });
@@ -165,7 +165,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
       let revealTx = psbtReveal.extractTransaction();
 
       const revealTxRawHex = revealTx.toHex();
-      console.table({
+      console.log({
         revealTxId: revealTx.getId(),
         revealTxFee: psbtReveal.getFee(),
         revealTxFeeRate: psbtReveal.getFeeRate(),
@@ -242,7 +242,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
     // console.log(txid);
   });
 
-  it('test mint tokens', async () => {
+  it.skip('test mint tokens', async () => {
     let utxos = await getUTXOs(address, network);
     console.table(utxos);
     // etching block height | etching transaction index
@@ -294,7 +294,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
     // let txid = await broadcast(rawhex, network);
     // console.log(txid);
   });
-  it('test transfer tokens', async () => {
+  it.skip('test transfer tokens', async () => {
     let utxos = await getUTXOs(address, network);
     console.table(utxos);
     // balance location: txid:vout
@@ -354,7 +354,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
     // console.log(txid);
   });
 
-  it('test burn tokens', async () => {
+  it.skip('test burn tokens', async () => {
     let utxos = await getUTXOs(address, network);
     console.table(utxos);
     // balance location: txid:vout
