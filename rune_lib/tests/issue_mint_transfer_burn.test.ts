@@ -139,6 +139,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
       const fundingKeypair = getKeypairInfo(signer, network);
 
       psbtReveal.signInput(0, fundingKeypair.childNode);
+      psbtReveal.finalizeAllInputs();
 
       // let amount = outputs.reduce((a, b) => a + b.value, 0);
       // const txResult = prepareTx({
