@@ -2,6 +2,7 @@ import {
   addressToOutputScript,
   AddressType,
   bitcoin,
+  calcP2TRFee,
   ECPair,
   getKeypairInfo,
   getTapscriptCommitment,
@@ -23,6 +24,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
   const wif = 'cSwthjF4FgBcrSEp5C1ufJbdd5TF49F1dyGqLE2NEGqVTffNENca';
   // replace with your own network
   const network = bitcoin.networks.testnet;
+
   // replace with your own fee rate
   const feeRate = 1;
   const signer = ECPair.fromWIF(wif, network);
@@ -39,7 +41,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
     let utxos = await getUTXOs(address, network);
     console.table(utxos);
     // the name of the token
-    let rune = Rune.fromString('MASTERFX');
+    let rune = Rune.fromString('WOOOFDOKOKOKO');
     const runeStone = new RuneStone({
       edicts: [], // edicts
       etching: new Etching({
@@ -89,10 +91,24 @@ describe('Issue/Mint/Transfer/Burn', () => {
         tapInternalKey,
       });
 
-      psbtCommit.addOutput({
-        address: scriptP2TR.address!,
-        value: commitAndRevealFee,
-      });
+      const psbtCommitOutputs = [
+        {
+          address: scriptP2TR.address!,
+          value: commitAndRevealFee,
+        },
+        {
+          address,
+          value: pickedUtxo.value,
+        },
+      ];
+
+      const fee = calcP2TRFee(feeRate, 1, psbtCommitOutputs);
+
+      psbtCommitOutputs[1].value = pickedUtxo.value - fee - commitAndRevealFee;
+
+      for (let i = 0; i < psbtCommitOutputs.length; i++) {
+        psbtCommit.addOutput(psbtCommitOutputs[i]);
+      }
 
       let commitWallet = new Wallet(wif, network, addressType);
       let signedCommitTx = commitWallet.signPsbt(psbtCommit);

@@ -4,6 +4,7 @@ import * as varint from '../src/index';
 import { Tag, tagInto } from '../src/tag';
 import { Flag, FlagTypes, flagMask } from '../src/flag';
 import { Terms } from '../src/terms';
+import { SpacedRune } from '../src/spaced_rune';
 
 function payload(integers: bigint[]): Uint8Array {
   let payload: number[] = [];
@@ -867,7 +868,10 @@ describe('op_return', () => {
     console.log(Buffer.from('746578742f706c61696e3b636861727365743d7574662d38', 'hex').toString('utf8'));
     console.log(Buffer.from('58564552534542414259', 'hex').toString('utf8'));
 
-    const rs = decodeOpReturn('6a5d1b020304f09290abc1d71e01000300052406e8070ae80708e7071601', 3);
+    const rs = decodeOpReturn('6a5d16020304d494d4b1ffd2d90403880105780a1508c0843d', 3);
+    console.log((SpacedRune.fromString('RSIC•RUNE•ONE')! as SpacedRune).toString());
+
+    console.log(rs?.etching?.rune?.toString());
     console.log({ rs });
   });
 });

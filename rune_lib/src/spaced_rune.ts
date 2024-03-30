@@ -2,26 +2,21 @@ import { Rune } from './rune';
 
 export interface ISpacedRune {
   rune: Rune;
-  limit: bigint | null;
-  term: number | null;
+  spacers: bigint | null;
 }
 
 export class SpacedRune implements ISpacedRune {
   public rune: Rune;
-  public limit: bigint | null;
-  public term: number | null;
+  public spacers: bigint | null;
 
-  constructor({ rune, limit, term }: ISpacedRune) {
+  constructor({ rune, spacers }: ISpacedRune) {
     this.rune = rune;
-    this.limit = limit;
-    this.term = term;
+    this.spacers = spacers;
   }
 
   static fromString(s: string): SpacedRune | Error {
     let rune = BigInt(0);
     let spacers = BigInt(0);
-    let limit = BigInt(0);
-    let term = 0;
     let runeStr = '';
     for (const c of s) {
       if (c >= 'A' && c <= 'Z') {
@@ -36,10 +31,37 @@ export class SpacedRune implements ISpacedRune {
         return new Error('invalid character');
       }
     }
-    if (32 - spacers.toString(2).length >= runeStr.length) {
+    let ld = leadingZeros(spacers);
+    if (!ld || 32 - ld >= runeStr.length) {
       return new Error('trailing spacer');
     }
     rune = Rune.fromString(runeStr).id;
-    return new SpacedRune({ rune: new Rune(rune), limit, term });
+    return new SpacedRune({ rune: new Rune(rune), spacers });
+  }
+
+  public toString() {
+    const rune = this.rune.toString();
+
+    let symbol = '';
+    for (let i = 0; i < rune.length; i++) {
+      const char = rune[i];
+      symbol += char;
+      if (i < rune.length - 1 && (this.spacers! & (BigInt(1) << BigInt(i))) !== BigInt(0)) {
+        symbol += '•';
+      }
+    }
+    return symbol;
+  }
+}
+
+function leadingZeros(n: bigint) {
+  if (n === BigInt(0)) return 32;
+  // 转换为32位无符号整数的二进制字符串
+  const binaryStr = n.toString(2).padStart(32, '0');
+  const reg = binaryStr.match(/^0*/);
+  if (reg !== null) {
+    return reg[0].length;
+  } else {
+    return undefined;
   }
 }
