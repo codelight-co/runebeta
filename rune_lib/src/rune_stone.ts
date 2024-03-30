@@ -14,22 +14,22 @@ export const TAG_BODY: bigint = BigInt(Tag.Body);
 export const TAG_DIVISIBILITY: bigint = BigInt(Tag.Divisibility);
 export const TAG_FLAGS: bigint = BigInt(Tag.Flags);
 export const TAG_SPACERS: bigint = BigInt(Tag.Spacers);
-const TAG_RUNE: bigint = BigInt(Tag.Rune);
-const TAG_SYMBOL: bigint = BigInt(Tag.Symbol);
-const TAG_PREMINE: bigint = BigInt(Tag.Premine);
-const TAG_CAP: bigint = BigInt(Tag.Cap);
-const TAG_AMOUNT: bigint = BigInt(Tag.Amount);
-const TAG_HEIGHT_START: bigint = BigInt(Tag.HeightStart);
-const TAG_HEIGHT_END: bigint = BigInt(Tag.HeightEnd);
-const TAG_OFFSET_START: bigint = BigInt(Tag.OffsetStart);
-const TAG_OFFSET_END: bigint = BigInt(Tag.OffsetEnd);
-const TAG_MINT: bigint = BigInt(Tag.Mint);
-const TAG_POINTER: bigint = BigInt(Tag.Pointer);
-const TAG_CENOTAPH: bigint = BigInt(Tag.Cenotaph);
-const TAG_BURN: bigint = BigInt(Tag.Burn);
-const TAG_NOP: bigint = BigInt(Tag.Nop);
+export const TAG_RUNE: bigint = BigInt(Tag.Rune);
+export const TAG_SYMBOL: bigint = BigInt(Tag.Symbol);
+export const TAG_PREMINE: bigint = BigInt(Tag.Premine);
+export const TAG_CAP: bigint = BigInt(Tag.Cap);
+export const TAG_AMOUNT: bigint = BigInt(Tag.Amount);
+export const TAG_HEIGHT_START: bigint = BigInt(Tag.HeightStart);
+export const TAG_HEIGHT_END: bigint = BigInt(Tag.HeightEnd);
+export const TAG_OFFSET_START: bigint = BigInt(Tag.OffsetStart);
+export const TAG_OFFSET_END: bigint = BigInt(Tag.OffsetEnd);
+export const TAG_MINT: bigint = BigInt(Tag.Mint);
+export const TAG_POINTER: bigint = BigInt(Tag.Pointer);
+export const TAG_CENOTAPH: bigint = BigInt(Tag.Cenotaph);
+export const TAG_BURN: bigint = BigInt(Tag.Burn);
+export const TAG_NOP: bigint = BigInt(Tag.Nop);
 
-const U128_MAX = BigInt(2) ** BigInt(128) - BigInt(1);
+export const U128_MAX = BigInt(2) ** BigInt(128) - BigInt(1);
 
 function addU128(a: bigint, b: bigint) {
   let result = a + b;
@@ -89,7 +89,7 @@ export class RuneStone {
     return runestone;
   }
 
-  static fromTransactionHex(txhex:string): RuneStone | null {
+  static fromTransactionHex(txhex: string): RuneStone | null {
     return RuneStone.fromTransaction(bitcoin.Transaction.fromHex(txhex));
   }
 

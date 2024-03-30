@@ -6,6 +6,7 @@ export const RESERVED = BigInt('6402364363415443603228541259936211926');
 export const MAX_SPACERS = 0b00000111_11111111_11111111_11111111;
 export const MAGIC_NUMBER = 0x5d; // OP_PUSHNUM_13
 export const OP_VERIFY = 0x69;
+export const COMMIT_INTERVAL = 6;
 export const STEPS = [
   BigInt('0'), //
   BigInt('26'), //
