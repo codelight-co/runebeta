@@ -136,6 +136,10 @@ describe('Issue/Mint/Transfer/Burn', () => {
         },
       ];
 
+      for (let i = 0; i < outputs.length; i++) {
+        psbtReveal.addOutput(outputs[i]);
+      }
+
       const fundingKeypair = getKeypairInfo(signer, network);
 
       psbtReveal.signInput(0, fundingKeypair.childNode);
