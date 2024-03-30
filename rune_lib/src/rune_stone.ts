@@ -89,6 +89,10 @@ export class RuneStone {
     return runestone;
   }
 
+  static fromTransactionHex(txhex:string): RuneStone | null {
+    return RuneStone.fromTransaction(bitcoin.Transaction.fromHex(txhex));
+  }
+
   public cenotaphs(): RuneStone {
     this.cenotaph = true;
     return this;

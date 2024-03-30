@@ -2,15 +2,16 @@ import {
     addressToOutputScript,
     AddressType,
     bitcoin,
-    ECPair, logToJSON,
+    ECPair,
+    logToJSON,
     prepareTx,
     publicKeyToAddress,
     toPsbt,
     Wallet
 } from "./bitcoin";
 import {getUTXOs} from "./mempool";
-import {Etching, Rune, RuneId, RuneStone} from "../src";
-import {Mint} from "../src/mint";
+import {Edict, Etching, Rune, RuneId, RuneStone} from "../src";
+import {Terms} from "../src/terms";
 
 describe('Issue/Mint/Transfer/Burn', () => {
     // replace with your own private key
@@ -32,34 +33,30 @@ describe('Issue/Mint/Transfer/Burn', () => {
         let utxos = await getUTXOs(address, network);
         console.table(utxos);
         // the name of the token
-        let rune = Rune.fromString("NEWHELLOFIXEDCAP");
+        let rune = Rune.fromString("MASTERFX");
         const runeStone = new RuneStone(
-            [
-                // if you want to mint tokens when issuing a token, then you need to pass this parameter.
-                {
-                    // always 0
-                    id: BigInt(0),
-                    // amount to mint
-                    amount: BigInt(1e10),
-                    // the amount to be minted will be on which output?
-                    output: BigInt(1),
-                } as any
-            ], // edicts
-            new Etching(
-                // like decimals.
-                2,
-                new Mint(null, BigInt(1e12), null),
-                // the name of the token, if null, it will be automatically generated.
-                rune,
-                // this is not the name of the token, only one character is supported here
-                '$',
-                BigInt(0)
-            ), // etching
-            false, // is burning? true/false
-            BigInt(0), // claim
-            null, // default output
+            {
+                edicts: [], // edicts
+                etching: new Etching(
+                    {
+                        // like decimals.
+                        divisibility: 0,
+                        // the name of the token, if null, it will be automatically generated.
+                        rune,
+                        // this is not the name of the token, only one character is supported here
+                        symbol: '$',
+                        premine: BigInt(1000),
+                        terms: new Terms({
+                            cap: BigInt(999),
+                            amount: BigInt(1000),
+                        })
+                    }
+                ), // etching
+                cenotaph: false, // is burning? true/false
+                mint: null,
+                pointer: BigInt(1),
+            }
         );
-        runeStone.setTag('RUNE_TEST');
         const encipher = runeStone.encipher();
         const outputs = [
             {
@@ -69,8 +66,8 @@ describe('Issue/Mint/Transfer/Burn', () => {
             {
                 // receiver
                 script: output,
-                value: 1,
-            }
+                value: 546,
+            },
         ];
         let amount = outputs.reduce((a, b) => a + b.value, 0);
         const txResult = prepareTx({
@@ -106,31 +103,29 @@ describe('Issue/Mint/Transfer/Burn', () => {
     it('test issue tokens(fairmint)', async () => {
         let utxos = await getUTXOs(address, network);
         console.table(utxos);
-        let rune = Rune.fromString("HELLOEVA");
+        let rune = Rune.fromString("MASTERFA");
         const runeStone = new RuneStone(
-            [],
-            new Etching(
-                // like decimals.
-                8,
-                new Mint(
-                    // mint end time.
-                    BigInt(Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60),
-                    // maximum amount for each mint.
-                    BigInt(1e8),
-                    // the block at which minting ends.
-                    BigInt(1e8),
-                ),
-                // the name of the token, if null, it will be automatically generated.
-                rune,
-                // this is not the name of the token, only one character is supported here
-                '$',
-                BigInt(0)
-            ), // etching
-            false, // is burning? true/false
-            null, // claim
-            null, // default output
+            {
+                etching: new Etching(
+                    {
+                        // like decimals.
+                        divisibility: 2,
+                        // the name of the token, if null, it will be automatically generated.
+                        rune,
+                        // this is not the name of the token, only one character is supported here
+                        symbol: 'x',
+                        terms: new Terms({
+                            cap: BigInt(1e12),
+                            height: [null, BigInt(1e8)],
+                            amount: BigInt(1e5),
+                        })
+                    }
+                ), // etching
+                cenotaph: false, // is burning? true/false
+                mint: null,
+                pointer: BigInt(1),
+            }
         );
-        runeStone.setTag('RUNE_TEST');
         const encipher = runeStone.encipher();
         const outputs = [
             {
@@ -140,7 +135,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
             {
                 script: output,
                 value: 1,
-            }
+            },
         ];
         let amount = outputs.reduce((a, b) => a + b.value, 0);
         const txResult = prepareTx({
@@ -177,15 +172,17 @@ describe('Issue/Mint/Transfer/Burn', () => {
         let utxos = await getUTXOs(address, network);
         console.table(utxos);
         // etching block height | etching transaction index
-        let runeId = new RuneId(2582757, 389);
+        let runeId = new RuneId(BigInt(0), BigInt(0));
         const runeStone = new RuneStone(
-            [], // edicts
-            null, // etching
-            false, // is burning? true/false
-            RuneId.toBigInt(runeId), // claim
-            null, // default output
+            {
+                edicts: [
+                    new Edict(runeId, BigInt(1e5), BigInt(1))
+                ],
+                cenotaph: false,
+                mint: runeId,
+                pointer: BigInt(1),
+            }
         );
-        runeStone.setTag('RUNE_TEST');
         const encipher = runeStone.encipher();
         const outputs = [
             {
@@ -234,21 +231,15 @@ describe('Issue/Mint/Transfer/Burn', () => {
         const location = ':1';
         let input = utxos.find((e) => e.txid + ':' + e.vout === location)!;
         // etching block height | etching transaction index
-        let runeId = new RuneId(2582645, 839);
+        let runeId = new RuneId(BigInt(0), BigInt(0));
         const runeStone = new RuneStone(
-            [
-                {
-                    id: RuneId.toBigInt(runeId),
-                    amount: BigInt(100),
-                    output: BigInt(1),
-                } as any,
-            ], // edicts
-            null, // etching
-            false, // is burning? true/false
-            null, // claim
-            null, // default output
+            {
+                edicts: [
+                    new Edict(runeId, BigInt(1e5), BigInt(1)),
+                    new Edict(runeId, BigInt(1e12 - 1e5), BigInt(2)),
+                ]
+            }
         );
-        runeStone.setTag('RUNE_TEST');
         const encipher = runeStone.encipher();
         const outputs = [
             {
@@ -301,14 +292,9 @@ describe('Issue/Mint/Transfer/Burn', () => {
         // balance location: txid:vout
         const location = ':1';
         let input = utxos.find((e) => e.txid + ':' + e.vout === location)!;
-        const runeStone = new RuneStone(
-            [], // edicts
-            null, // etching
-            true, // is burning? true/false
-            null, // claim
-            null, // default output
-        );
-        runeStone.setTag('RUNE_TEST');
+        const runeStone = new RuneStone({
+            cenotaph: true
+        });
         const encipher = runeStone.encipher();
         const outputs = [
             {
