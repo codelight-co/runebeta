@@ -17,6 +17,9 @@ dependencies:
   '@swc/jest':
     specifier: ^0.2.36
     version: 0.2.36(@swc/core@1.4.8)
+  '@types/bs58check':
+    specifier: ^2.1.2
+    version: 2.1.2
   '@types/jest':
     specifier: ^29.5.12
     version: 29.5.12
@@ -867,6 +870,12 @@ packages:
     resolution: {integrity: sha512-WXCyOcRtH37HAUkpXhUduaxdm82b4GSlyTqajXviN4EfiuPgNYR109xMCKvpl6zPIpua0DGlMEDCq+g8EdoheQ==}
     dependencies:
       '@babel/types': 7.24.0
+
+  /@types/bs58check@2.1.2:
+    resolution: {integrity: sha512-xpXaQlOIY1KoXlA/ytHGHpEIU87PJt+g9SH7nC6HdCgaBwT2IEZIwBMHbjuX6BpnfbiUMlmwqurdLDwXpcdmSA==}
+    dependencies:
+      '@types/node': 20.11.28
+    dev: false
 
   /@types/cacheable-request@6.0.3:
     resolution: {integrity: sha512-IQ3EbTzGxIigb1I3qPZc1rWJnH0BmSKv5QYTalEwweFvyBDLSAe24zP0le/hyi7ecGfZVlIVAg4BZqb8WBwKqw==}

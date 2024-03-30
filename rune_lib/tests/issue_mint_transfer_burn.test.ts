@@ -1,17 +1,33 @@
-import { addressToOutputScript, AddressType, bitcoin, ECPair, logToJSON, prepareTx, publicKeyToAddress, toPsbt, Wallet } from './bitcoin';
-import { getUTXOs } from './mempool';
+import {
+  addressToOutputScript,
+  AddressType,
+  bitcoin,
+  ECPair,
+  getKeypairInfo,
+  getTapscriptCommitment,
+  logToJSON,
+  prepareCommitRevealConfig,
+  prepareTx,
+  publicKeyToAddress,
+  toPsbt,
+  Wallet,
+} from './bitcoin';
+import { getUTXOs, pickUTXO } from './mempool';
 import { Edict, Etching, Rune, RuneId, RuneStone } from '../src';
 import { Terms } from '../src/terms';
+import { toXOnly } from 'bitcoinjs-lib/src/psbt/bip371';
+import { Psbt } from 'bitcoinjs-lib';
 
 describe('Issue/Mint/Transfer/Burn', () => {
   // replace with your own private key
-  const wif = '';
+  const wif = 'cSwthjF4FgBcrSEp5C1ufJbdd5TF49F1dyGqLE2NEGqVTffNENca';
   // replace with your own network
   const network = bitcoin.networks.testnet;
   // replace with your own fee rate
   const feeRate = 1;
   const signer = ECPair.fromWIF(wif, network);
   let pubkey = signer.publicKey;
+
   let addressType = AddressType.P2TR;
   let address = publicKeyToAddress(pubkey, addressType, network)!;
   const output = addressToOutputScript(address);
@@ -43,47 +59,118 @@ describe('Issue/Mint/Transfer/Burn', () => {
       mint: null,
       pointer: BigInt(1),
     });
-    const encipher = runeStone.encipher();
-    const outputs = [
-      {
-        script: encipher,
-        value: 0,
-      },
-      {
-        // receiver
-        script: output,
-        value: 546,
-      },
-    ];
-    let amount = outputs.reduce((a, b) => a + b.value, 0);
-    const txResult = prepareTx({
-      regularUTXOs: utxos,
-      inputs: [],
-      outputs,
-      feeRate,
-      address,
-      amount,
-    });
-    if (txResult.error) {
-      console.error(txResult.error);
+
+    // compose tapscript
+
+    const tapInternalKey = toXOnly(pubkey);
+
+    const { scriptP2TR, hashLockP2TR, hashscript } = prepareCommitRevealConfig(
+      tapInternalKey.toString('hex'),
+      Buffer.from(runeStone.etching?.rune?.commitment()!).toString('hex'),
+      network,
+    );
+
+    const commitAndRevealFee = 10000; // temporily value, should calfee
+
+    const pickedUtxo = pickUTXO(utxos, commitAndRevealFee);
+
+    if (pickedUtxo === undefined) {
+      console.log('no utxos');
       return;
+    } else {
+      // compose commit tx
+
+      let psbtCommit = new Psbt({ network: network });
+      psbtCommit.setVersion(1);
+      psbtCommit.addInput({
+        hash: pickedUtxo.txid,
+        index: pickedUtxo.vout,
+        witnessUtxo: { value: pickedUtxo.value, script: output },
+        tapInternalKey,
+      });
+
+      psbtCommit.addOutput({
+        address: scriptP2TR.address!,
+        value: commitAndRevealFee,
+      });
+
+      let commitWallet = new Wallet(wif, network, addressType);
+      let signedCommitTx = commitWallet.signPsbt(psbtCommit);
+      const commitTx = signedCommitTx.extractTransaction();
+      const commitTxRawHex = commitTx.toHex();
+      const commitTxId = commitTx.getId();
+
+      console.table({
+        commitTxId,
+        commitTxRawHex,
+      });
+
+      // compose reveal TX
+
+      const tapLeafScript = {
+        leafVersion: hashLockP2TR!.redeem!.redeemVersion!,
+        script: hashLockP2TR!.redeem!.output!,
+        controlBlock: hashLockP2TR.witness![hashLockP2TR.witness!.length - 1],
+      };
+
+      let psbtReveal = new Psbt({ network });
+      psbtReveal.setVersion(1);
+      psbtReveal.addInput({
+        hash: commitTxId,
+        index: 0,
+        witnessUtxo: { value: commitAndRevealFee, script: hashLockP2TR.output! },
+        tapLeafScript: [tapLeafScript],
+        sequence: 0xffffffff - 2,
+      });
+
+      const encipher = runeStone.encipher();
+      const outputs = [
+        {
+          script: encipher,
+          value: 0,
+        },
+        {
+          // receiver
+          script: output,
+          value: 546,
+        },
+      ];
+
+      const fundingKeypair = getKeypairInfo(signer, network);
+
+      psbtReveal.signInput(0, fundingKeypair.childNode);
+
+      // let amount = outputs.reduce((a, b) => a + b.value, 0);
+      // const txResult = prepareTx({
+      //   regularUTXOs: utxos,
+      //   inputs: [],
+      //   outputs,
+      //   feeRate,
+      //   address,
+      //   amount,
+      // });
+      // if (txResult.error) {
+      //   console.error(txResult.error);
+      //   return;
+      // }
+      // logToJSON(txResult.ok);
+      // let psbt = toPsbt({ tx: txResult.ok!, pubkey, rbf: true });
+      // let wallet = new Wallet(wif, network, addressType);
+      // let signed = wallet.signPsbt(psbt);
+      let revealTx = psbtReveal.extractTransaction();
+
+      const revealTxRawHex = revealTx.toHex();
+      console.table({
+        revealTxId: revealTx.getId(),
+        revealTxFee: psbtReveal.getFee(),
+        revealTxFeeRate: psbtReveal.getFeeRate(),
+        revealTxRawHex,
+      });
+      let stone = RuneStone.fromTransaction(revealTx);
+      console.log(stone);
+      // let txid = await broadcast(rawhex, network);
+      // console.log(txid);
     }
-    logToJSON(txResult.ok);
-    let psbt = toPsbt({ tx: txResult.ok!, pubkey, rbf: true });
-    let wallet = new Wallet(wif, network, addressType);
-    let signed = wallet.signPsbt(psbt);
-    let tx = signed.extractTransaction();
-    console.table({
-      txid: tx.getId(),
-      fee: psbt.getFee(),
-      feeRate: psbt.getFeeRate(),
-    });
-    const rawhex = tx.toHex();
-    console.log(rawhex);
-    let stone = RuneStone.fromTransaction(tx);
-    console.log(stone);
-    // let txid = await broadcast(rawhex, network);
-    // console.log(txid);
   });
 
   it('test issue tokens(fairmint)', async () => {

@@ -28,7 +28,6 @@ export const TAG_POINTER: bigint = BigInt(Tag.Pointer);
 export const TAG_CENOTAPH: bigint = BigInt(Tag.Cenotaph);
 export const TAG_BURN: bigint = BigInt(Tag.Burn);
 export const TAG_NOP: bigint = BigInt(Tag.Nop);
-
 export const U128_MAX = BigInt(2) ** BigInt(128) - BigInt(1);
 
 function addU128(a: bigint, b: bigint) {
@@ -646,13 +645,17 @@ export class Message {
       if (payload[i + 1] !== undefined) {
         value = payload[i + 1];
       } else {
+        cenotaph = true;
         break;
       }
-
-      let _value = fields.get(tag);
-      if (!_value) {
-        _value!.push(value);
-        fields.set(tag, _value!);
+      let _values = fields.get(tag);
+      if (!_values) {
+        _values = [];
+        _values!.push(value);
+        fields.set(tag, _values!);
+      } else {
+        _values.push(value);
+        fields.set(tag, _values!);
       }
     }
 

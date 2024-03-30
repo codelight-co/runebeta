@@ -1,4 +1,4 @@
-import { CLAIM_BIT, Edict, Etching, MAX_DIVISIBILITY, Rune, RuneId, RuneStone } from '../src/index';
+import { CLAIM_BIT, Edict, Etching, MAX_DIVISIBILITY, Rune, RuneId, RuneStone, decodeOpReturn } from '../src/index';
 import * as bitcoin from 'bitcoinjs-lib';
 import * as varint from '../src/index';
 import { Tag, tagInto } from '../src/tag';
@@ -859,33 +859,15 @@ describe('rune_stone', () => {
   // });
 });
 
-// // test decode op_return
-// describe('decode op return', () => {
-//   test('decode op_return', () => {
-//     const arr = [
-//       '6a0952554e455f544553541a020304b0f2bfa4e37f05240a85b088ff7406bc834008809d9e0d',
-//       '6a0952554e455f544553541a020304b0f2bfa4e37f05240a85b088df1206bc834008809d9e0d',
-//       '6a0952554e455f54455354100083f5c48aff63a2c2bbccfb86ff0001',
-//       '6a0952554e455f54455354100083f5c48aff6399d1ccb9bc84ff0002',
-//     ];
-//     let rss: any[] = [];
-//     let edicts: any[] = [];
-//     let etching: any[] = [];
-//     for (let scriptPubkey of arr) {
-//       const rs = decodeOpReturn(scriptPubkey, 'RUNE_TEST');
-//       if (rs) {
-//         rss.push(rs);
-//         edicts.push(...rs.edicts);
-//         etching.push(rs.etching);
-//       }
-//     }
-//     console.table(rss);
-//     console.table(edicts);
-//     console.table(etching);
-//   });
-// });
+// test decode op_return
+describe('op_return', () => {
+  test('decode op_return', () => {
+    console.log(Buffer.from('6f7264', 'hex').toString('utf8'));
+    console.log(Buffer.from('70096415bc7a', 'hex').toString('utf8'));
+    console.log(Buffer.from('746578742f706c61696e3b636861727365743d7574662d38', 'hex').toString('utf8'));
+    console.log(Buffer.from('58564552534542414259', 'hex').toString('utf8'));
 
-// test('decode op_return', () => {
-//   const rs = decodeOpReturn('6a0952554e455f54455354170e83f5c48aff630083f5c48aff63a2c2bbccfb86ff0001', 'RUNE_TEST');
-//   console.log(rs);
-// });
+    const rs = decodeOpReturn('6a5d1b020304f09290abc1d71e01000300052406e8070ae80708e7071601', 3);
+    console.log({ rs });
+  });
+});
