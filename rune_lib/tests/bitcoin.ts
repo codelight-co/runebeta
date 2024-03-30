@@ -559,7 +559,9 @@ export const getTapscriptCommitment = (childNodeXOnlyPubkey: string, payloadHex:
 };
 
 export const prepareCommitRevealConfig = (childNodeXOnlyPubkey: string, payloadHex: string, network: bitcoin.networks.Network) => {
+  console.log({ payloadHex });
   const revealScript = getTapscriptCommitment(childNodeXOnlyPubkey, payloadHex);
+  console.log({ revealScript });
 
   const hashscript = script.fromASM(revealScript);
   const scriptTree = {

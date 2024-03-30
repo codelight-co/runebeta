@@ -115,7 +115,8 @@ export class Rune {
     while (end > 0 && buf[end - 1] === 0) {
       end--;
     }
-    return new Uint8Array(buf.subarray(0, end).buffer);
+
+    return new Uint8Array(buf.subarray(0, end));
   }
 }
 

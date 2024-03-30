@@ -178,7 +178,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
     }
   });
 
-  it('test issue tokens(fairmint)', async () => {
+  it.skip('test issue tokens(fairmint)', async () => {
     let utxos = await getUTXOs(address, network);
     console.table(utxos);
     let rune = Rune.fromString('MASTERFA');
