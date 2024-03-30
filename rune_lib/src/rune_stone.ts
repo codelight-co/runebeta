@@ -226,7 +226,8 @@ export class RuneStone {
 
     let spacers = tagTaker(TAG_SPACERS, 1, fields, values => {
       let _spacers = values[0];
-      if (_spacers < BigInt(MAX_SPACERS)) {
+
+      if (_spacers <= BigInt(MAX_SPACERS)) {
         return _spacers;
       } else {
         return null;
@@ -395,8 +396,6 @@ export function decodeOpReturn(scriptHex: string | Buffer, outLength: number) {
     const message = Message.fromOpReturn(integers);
 
     let fields = message.fields;
-
-    // console.log({ fields });
 
     let cenotaph = message.cenotaph;
     let etching: Etching | null | undefined = null;

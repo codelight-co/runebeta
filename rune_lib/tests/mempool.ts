@@ -30,6 +30,13 @@ export function getUTXOs(address: string, network: Network = bitcoin.networks.te
     );
 }
 
+export function getTxBytes(txid: string, network: Network = bitcoin.networks.testnet) {
+  const url = mempoolUrl(network);
+  return fetch(`${url}/tx/${txid}/hex`)
+    .then(res => res.text())
+    .then(hex => hex);
+}
+
 export function pickUTXO(utxos: UTXO[], expectAmount: number): UTXO | undefined {
   let pick: UTXO | undefined;
   for (const utxo of utxos) {

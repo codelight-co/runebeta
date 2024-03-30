@@ -5,6 +5,7 @@ import { Tag, tagInto } from '../src/tag';
 import { Flag, FlagTypes, flagMask } from '../src/flag';
 import { Terms } from '../src/terms';
 import { SpacedRune } from '../src/spaced_rune';
+import { getTxBytes } from './mempool';
 
 function payload(integers: bigint[]): Uint8Array {
   let payload: number[] = [];
@@ -862,16 +863,24 @@ describe('rune_stone', () => {
 
 // test decode op_return
 describe('op_return', () => {
-  test('decode op_return', () => {
+  test('decode op_return', async () => {
     console.log(Buffer.from('6f7264', 'hex').toString('utf8'));
     console.log(Buffer.from('70096415bc7a', 'hex').toString('utf8'));
     console.log(Buffer.from('746578742f706c61696e3b636861727365743d7574662d38', 'hex').toString('utf8'));
     console.log(Buffer.from('58564552534542414259', 'hex').toString('utf8'));
 
-    const rs = decodeOpReturn('6a5d16020304d494d4b1ffd2d90403880105780a1508c0843d', 3);
-    console.log((SpacedRune.fromString('RSIC•RUNE•ONE')! as SpacedRune).toString());
+    // const rs = decodeOpReturn('6a5d16020304d494d4b1ffd2d90403880105780a1508c0843d', 2);
+    // console.log((SpacedRune.fromString('RSIC•RUNE•ONE')! as SpacedRune).spacers);
 
-    console.log(rs?.etching?.rune?.toString());
-    console.log({ rs });
+    // const sr = new SpacedRune({ rune: rs?.etching!.rune!, spacers: rs?.etching!.spacers! }).toString();
+    // console.log({ rs, sr });
+
+    const tx = bitcoin.Transaction.fromHex(
+      '0200000000010118777144f01170c275acb13c1754e6134289db59799d654b7c237b38ce4d4a77000000000006000000022b020000000000002251209d227f7ee7de95ef66e0e638e011b2f44f04475d873b2c80b47e168492472fc20000000000000000196a5d16020304d494d4b1ffd2d90403880105780a1508c0843d0340e9dc8bb3d4c10d43219e9a491d3b0c1562931ab484afcb83b1358f960700035a099e602dcd18a85296228b9bc47476b44eff45911dee522e91c102d28e57a3ff5820ecab62ca2dd6d189ea6a63f530354d721164b02b2783443bb42e9b5789fcbb79ac0063036f7264010118746578742f706c61696e3b636861727365743d7574662d38010200010d07540a35f69766090005525349430a6821c1ecab62ca2dd6d189ea6a63f530354d721164b02b2783443bb42e9b5789fcbb7900000000',
+    );
+
+    const rs2 = RuneStone.fromTransaction(tx);
+
+    console.log({ rs2 });
   });
 });
