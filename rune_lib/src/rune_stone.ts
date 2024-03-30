@@ -115,7 +115,7 @@ export class RuneStone {
       payload = tagEncodeOption(TAG_DIVISIBILITY, BigInt(this.etching.divisibility), payload);
       payload = tagEncodeOption(TAG_SPACERS, BigInt(this.etching.spacers), payload);
       payload = tagEncodeOption(TAG_SYMBOL, this.etching.symbol == null ? null : BigInt(this.etching.symbol.charCodeAt(0)), payload);
-      payload = tagEncodeOption(TAG_SYMBOL, this.etching.premine, payload);
+      payload = tagEncodeOption(TAG_PREMINE, this.etching.premine, payload);
 
       if (this.etching.terms !== null) {
         payload = tagEncodeOption(TAG_AMOUNT, this.etching.terms.amount, payload);

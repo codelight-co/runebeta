@@ -14,7 +14,14 @@ export interface IEdict {
 }
 
 export class Edict {
-  constructor(public id: RuneId, public amount: bigint, public output: bigint) {}
+  public id: RuneId;
+  public amount: bigint;
+  public output: bigint;
+  constructor({ id, amount, output }: IEdict) {
+    this.id = id;
+    this.amount = amount;
+    this.output = output;
+  }
 
   static fromIntegers(tx: Transaction, id: RuneId, amount: bigint, output: bigint): Edict | null {
     if (id.block === BigInt(0) && id.tx > BigInt(0)) {
@@ -24,7 +31,7 @@ export class Edict {
     if (output > BigInt(tx.outs.length)) {
       return null;
     }
-    return new Edict(id, amount, output);
+    return new Edict({ id, amount, output });
   }
 
   static fromOpReturn(id: RuneId, amount: bigint, output: bigint): Edict | null {
@@ -35,11 +42,11 @@ export class Edict {
     if (output > BigInt(1)) {
       return null;
     }
-    return new Edict(id, amount, output);
+    return new Edict({ id, amount, output });
   }
 
   static fromJson(json: IEdict): Edict {
-    return new Edict(json.id, json.amount, json.output);
+    return new Edict(json);
   }
 
   // static fromJsonString(str: string): Edict {
