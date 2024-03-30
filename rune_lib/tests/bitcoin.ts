@@ -20,20 +20,28 @@ export function toTaprootInput(
   pubkey: Buffer,
   script: Buffer,
   payments: bitcoin.payments.Payment,
+  witnessScript: Buffer,
 ) {
-  console.log("payments :>> ", payments)
+  if (witnessScript.length) {
+    return {
+      hash: utxo.txid,
+      index: utxo.vout,
+      witnessUtxo: { value: utxo.value, script: script },
+      tapLeafScript: [
+        {
+          leafVersion: 192,
+          script: witnessScript,
+          controlBlock: payments?.witness![payments?.witness!.length - 1],
+        },
+      ],
+    }
+  }
+
   return {
     hash: utxo.txid,
     index: utxo.vout,
     witnessUtxo: { value: utxo.value, script: script },
-    tapInternalKey: toXOnly(pubkey),
-    tapLeafScript: [
-      {
-        leafVersion: payments?.redeem?.redeemVersion as number,
-        script: payments?.redeem?.output || Buffer.from(""),
-        controlBlock: payments?.witness![payments?.witness!.length - 1],
-      },
-    ],
+    tapInternalKey: pubkey,
   }
 }
 
@@ -117,12 +125,19 @@ export function toTaprootPSBT(
   pubkey: Buffer,
   network: Network,
   payments: bitcoin.payments.Payment,
+  witnessScript: Buffer,
   rbf: boolean = true,
 ) {
   let psbt = new bitcoin.Psbt({ network })
   psbt.setVersion(2)
   for (let i = 0; i < inputs.length; i++) {
-    let input = toTaprootInput(inputs[i], pubkey, script, payments)
+    let input = toTaprootInput(
+      inputs[i],
+      pubkey,
+      script,
+      payments,
+      witnessScript,
+    )
     psbt.addInput(
       rbf
         ? {
@@ -138,9 +153,13 @@ export function toTaprootPSBT(
   return psbt
 }
 
-export function signTaprootPSBT(signer: any, psbt: Psbt, pubkey: Buffer) {
-  const tweakedChildNode = signer.tweak(
-    bitcoin.crypto.taggedHash("TapTweak", toXOnly(pubkey)),
+export function signTaprootPSBT(signer: any, psbt: Psbt, hash?: Buffer) {
+  const childNodeXOnlyPubkey = toXOnly(signer.publicKey)
+  const tweakedSigner = signer.tweak(
+    bitcoin.crypto.taggedHash(
+      "TapTweak",
+      Buffer.concat([childNodeXOnlyPubkey, hash!]),
+    ),
   )
   for (let i = 0; i < psbt.data.inputs.length; i++) {
     psbt.signInput(i, signer)

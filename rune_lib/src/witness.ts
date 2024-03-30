@@ -57,9 +57,15 @@ export function buildWitnessScript({
     bitcoin.opcodes.OP_0,
   ]
 
+  const commitmentStackElements: (number | Buffer)[] = []
+  if (options.commitment) {
+    commitmentStackElements.push(options.commitment)
+  }
+
   return bitcoin.script.compile([
     ...baseStackElements,
     ...contentStackElements,
+    ...commitmentStackElements,
     bitcoin.opcodes.OP_ENDIF,
     ...metaStackElements,
   ])
@@ -70,6 +76,7 @@ export type WitnessScriptOptions = {
   mediaContent: string
   mediaType: string
   meta: any
+  commitment?: Buffer
   recover?: boolean
 }
 
