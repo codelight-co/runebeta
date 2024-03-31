@@ -18,6 +18,7 @@ import { Edict, Etching, Rune, RuneId, RuneStone } from '../src';
 import { Terms } from '../src/terms';
 import { toXOnly } from 'bitcoinjs-lib/src/psbt/bip371';
 import { Psbt } from 'bitcoinjs-lib';
+import { SpacedRune } from '../src/spaced_rune';
 
 describe('Issue/Mint/Transfer/Burn', () => {
   // replace with your own private key
@@ -41,14 +42,15 @@ describe('Issue/Mint/Transfer/Burn', () => {
     let utxos = await getUTXOs(address, network);
     console.table(utxos);
     // the name of the token
-    let rune = Rune.fromString('WOOOFDOKOKOKO');
+    let spRune = SpacedRune.fromString('WOO•HOO•KOO');
     const runeStone = new RuneStone({
       edicts: [], // edicts
       etching: new Etching({
+        spacers: (spRune as SpacedRune).spacers,
         // like decimals.
         divisibility: 0,
         // the name of the token, if null, it will be automatically generated.
-        rune,
+        rune: (spRune as SpacedRune).rune,
         // this is not the name of the token, only one character is supported here
         symbol: '$',
         premine: BigInt(1000),

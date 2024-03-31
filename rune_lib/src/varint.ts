@@ -28,18 +28,25 @@ export function encode(n: bigint): Uint8Array {
 }
 
 export function encodeToVec(n: bigint, v: number[]): number[] {
-  let out: number[] = new Array(19).fill(0);
-  let i = 18;
+  // let out: number[] = new Array(19).fill(0);
+  // let i = 18;
 
-  out[i] = bigintToLEBytes(n)[0] & 0b0111_1111;
+  // out[i] = bigintToLEBytes(n)[0] & 0b0111_1111;
 
-  while (n > BigInt(0x7f)) {
-    n = n / BigInt(128) - BigInt(1);
-    i -= 1;
-    out[i] = bigintToLEBytes(n)[0] | 0b1000_0000;
+  // while (n > BigInt(0x7f)) {
+  //   n = n / BigInt(128) - BigInt(1);
+  //   i -= 1;
+  //   out[i] = bigintToLEBytes(n)[0] | 0b1000_0000;
+  // }
+
+  // v.push(...out.slice(i));
+  // return v;
+
+  while (n >> BigInt(7) > 0) {
+    v.push(bigintToLEBytes(n)[0] | 0b1000_0000);
+    n >>= BigInt(7);
   }
-
-  v.push(...out.slice(i));
+  v.push(bigintToLEBytes(n)[0]);
   return v;
 }
 

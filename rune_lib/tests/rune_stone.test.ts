@@ -867,10 +867,12 @@ describe('op_return', () => {
     console.log(Buffer.from('6f7264', 'hex').toString('utf8'));
     console.log(Buffer.from('70096415bc7a', 'hex').toString('utf8'));
     console.log(Buffer.from('746578742f706c61696e3b636861727365743d7574662d38', 'hex').toString('utf8'));
-    console.log(Buffer.from('58564552534542414259', 'hex').toString('utf8'));
+    console.log(Buffer.from('696d6167652f77656270', 'hex').toString('utf8'));
 
     // const rs = decodeOpReturn('6a5d16020304d494d4b1ffd2d90403880105780a1508c0843d', 2);
-    // console.log((SpacedRune.fromString('RSIC•RUNE•ONE')! as SpacedRune).spacers);
+    const sss = SpacedRune.fromString('FOLLOW•ME•ON•X•BOHDANDJA')! as SpacedRune;
+
+    console.log(Buffer.from(sss.rune.commitment()).toString('hex'));
 
     // const sr = new SpacedRune({ rune: rs?.etching!.rune!, spacers: rs?.etching!.spacers! }).toString();
     // console.log({ rs, sr });
