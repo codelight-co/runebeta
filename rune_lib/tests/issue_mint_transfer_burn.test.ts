@@ -9,6 +9,7 @@ import {
     prepareCommitRevealConfig,
     prepareTx,
     publicKeyToAddress,
+    randomP2TRWallet,
     toPsbt,
     Wallet,
 } from './bitcoin';
@@ -41,7 +42,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
         let utxos = await getUTXOs(address, network);
         console.table(utxos);
         // the name of the token
-        let spRune = SpacedRune.fromString('HELLO•WORLD•FIXED');
+        let spRune = SpacedRune.fromString('HELLO•FIXED');
         const runeStone = new RuneStone({
             edicts: [], // edicts
             etching: new Etching({
@@ -82,7 +83,8 @@ describe('Issue/Mint/Transfer/Burn', () => {
         ];
 
         // compose tapscript
-        const tapInternalKey = toXOnly(pubkey);
+        let revealWallet = randomP2TRWallet(network);
+        const tapInternalKey = toXOnly(revealWallet.pubkey);
 
         let payload = Buffer.from(runeStone.etching?.rune?.commitment()!);
         const {scriptP2TR, hashLockP2TR, hashscript} = prepareCommitRevealConfig(tapInternalKey, payload, network);
@@ -150,7 +152,8 @@ describe('Issue/Mint/Transfer/Burn', () => {
         });
         psbtReveal.addOutputs(revealOutputs);
 
-        const fundingKeypair = getKeypairInfo(signer, network);
+
+        const fundingKeypair = getKeypairInfo(revealWallet.keyPair, network);
 
         psbtReveal.signInput(0, fundingKeypair.childNode);
         psbtReveal.finalizeAllInputs();
@@ -215,7 +218,8 @@ describe('Issue/Mint/Transfer/Burn', () => {
         ];
 
         // compose tapscript
-        const tapInternalKey = toXOnly(pubkey);
+        let revealWallet = randomP2TRWallet(network);
+        const tapInternalKey = toXOnly(revealWallet.pubkey);
 
         let payload = Buffer.from(runeStone.etching?.rune?.commitment()!);
         const {scriptP2TR, hashLockP2TR, hashscript} = prepareCommitRevealConfig(tapInternalKey, payload, network);
@@ -283,7 +287,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
         });
         psbtReveal.addOutputs(revealOutputs);
 
-        const fundingKeypair = getKeypairInfo(signer, network);
+        const fundingKeypair = getKeypairInfo(revealWallet.keyPair, network);
 
         psbtReveal.signInput(0, fundingKeypair.childNode);
         psbtReveal.finalizeAllInputs();
