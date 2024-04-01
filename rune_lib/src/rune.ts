@@ -1,3 +1,5 @@
+import { bigintToLEBytes } from './varint';
+
 export const DIFFCHANGE_INTERVAL = BigInt(2016);
 export const CLAIM_BIT = BigInt(1) << BigInt(48);
 export const MAX_DIVISIBILITY = 38;
@@ -6,6 +8,7 @@ export const RESERVED = BigInt('6402364363415443603228541259936211926');
 export const MAX_SPACERS = 0b00000111_11111111_11111111_11111111;
 export const MAGIC_NUMBER = 0x5d; // OP_PUSHNUM_13
 export const OP_VERIFY = 0x69;
+export const COMMIT_INTERVAL = 6;
 export const STEPS = [
   BigInt('0'), //
   BigInt('26'), //
@@ -107,14 +110,15 @@ export class Rune {
   }
 
   public commitment(): Uint8Array {
-    let bytes = this.value.toString(16);
+    let bytes = bigintToLEBytes(this.value);
 
-    let buf = Buffer.from(bytes, 'hex');
+    let buf = Buffer.from(bytes);
     let end = buf.length;
     while (end > 0 && buf[end - 1] === 0) {
       end--;
     }
-    return new Uint8Array(buf.subarray(0, end).buffer);
+
+    return new Uint8Array(buf.subarray(0, end));
   }
 }
 
