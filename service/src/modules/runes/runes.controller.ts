@@ -1,7 +1,20 @@
-import { Controller, Get, Param, Query, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  UseGuards,
+  Query,
+  UseInterceptors,
+} from '@nestjs/common';
 import { RunesService } from './runes.service';
 import { RuneFilterDto } from './dto';
 import { CoreTransformInterceptor } from 'src/common/interceptors/coreTransform.interceptor';
+import { EtchRuneDto } from './dto/etch-rune-filter.dto';
+import { AuthGuard } from 'src/common/guards/auth.guard';
+import { UserDecorator } from 'src/common/decorators/user.decorator';
+import { User } from '../database/entities/user.entity';
 
 @Controller('runes')
 @UseInterceptors(CoreTransformInterceptor)
@@ -15,7 +28,7 @@ export class RunesController {
   }
 
   // Get rune by id
-  @Get(':id')
+  @Get(':id/info')
   async getRuneById(@Param('id') id: string) {
     return this.runesService.getRuneById(id);
   }
@@ -24,5 +37,15 @@ export class RunesController {
   @Get(':id/top')
   async getTopHolders(@Param('id') id: string) {
     return this.runesService.getTopHolders(id);
+  }
+
+  // Etching rune
+  @Post('etch')
+  @UseGuards(AuthGuard)
+  async etchRune(
+    @Body() body: EtchRuneDto,
+    @UserDecorator() user: User,
+  ): Promise<any> {
+    return this.runesService.etchRune(user, body);
   }
 }

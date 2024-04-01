@@ -15,6 +15,8 @@ import { AllExceptionsFilter } from './common/filters/exception.filter';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtModule } from '@nestjs/jwt';
+import { ScheduleModule } from '@nestjs/schedule';
+import { TaskModule } from './modules/task-schedule/task.module';
 
 @Module({
   imports: [
@@ -36,6 +38,7 @@ import { JwtModule } from '@nestjs/jwt';
       secret: JWT_SECRET,
       signOptions: { expiresIn: '7D' },
     }),
+    TaskModule,
     StatsModule,
     TransactionsModule,
     RunesModule,

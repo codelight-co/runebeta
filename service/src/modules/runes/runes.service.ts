@@ -4,6 +4,9 @@ import { HttpService } from '@nestjs/axios';
 import { Repository } from 'typeorm';
 import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
 import { Rune } from 'rune_lib';
+import { EtchRuneDto } from './dto/etch-rune-filter.dto';
+import { EtchRune } from '../database/entities';
+import { User } from '../database/entities/user.entity';
 
 @Injectable()
 export class RunesService {
@@ -11,6 +14,8 @@ export class RunesService {
     private readonly httpService: HttpService,
     @Inject('RUNE_ENTRY_REPOSITORY')
     private runeEntryRepository: Repository<TransactionRuneEntry>,
+    @Inject('ETCH_RUNE_REPOSITORY')
+    private etchRuneEntryRepository: Repository<EtchRune>,
   ) {}
 
   async getRunes(runeFilterDto: RuneFilterDto): Promise<any> {
@@ -63,5 +68,23 @@ export class RunesService {
     limit 10`);
 
     return data;
+  }
+
+  async etchRune(user: User, etchRuneDto: EtchRuneDto): Promise<any> {
+    const rune = await this.etchRuneEntryRepository.save({
+      name: etchRuneDto.runeName || '',
+      commit_block_height: etchRuneDto.commitBlockHeight,
+      mint_block_height: etchRuneDto.commitBlockHeight + 6,
+      mint_tx_hex: etchRuneDto.revealTxRawHex,
+      user_id: user.id,
+    });
+
+    return rune;
+  }
+
+  async processEtching(): Promise<void> {
+    const etchRunes = await this.etchRuneEntryRepository.find();
+    console.log('etchRunes :>> ', etchRunes);
+    return;
   }
 }

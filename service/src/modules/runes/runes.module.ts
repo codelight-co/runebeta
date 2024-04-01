@@ -9,5 +9,6 @@ import { DatabaseModule } from '../database/database.module';
   imports: [HttpModule, DatabaseModule],
   controllers: [RunesController],
   providers: [...runesProviders, RunesService],
+  exports: [RunesService],
 })
 export class RunesModule {}

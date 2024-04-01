@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
 import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
-import { Rune } from '../database/entities';
+import { EtchRune } from '../database/entities';
 
 export const runesProviders = [
   {
@@ -10,8 +10,8 @@ export const runesProviders = [
     inject: ['DATA_SOURCE'],
   },
   {
-    provide: 'RUNE_REPOSITORY',
-    useFactory: (dataSource: DataSource) => dataSource.getRepository(Rune),
+    provide: 'ETCH_RUNE_REPOSITORY',
+    useFactory: (dataSource: DataSource) => dataSource.getRepository(EtchRune),
     inject: ['DATA_SOURCE'],
   },
 ];

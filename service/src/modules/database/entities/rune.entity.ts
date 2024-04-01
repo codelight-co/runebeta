@@ -1,24 +1,38 @@
+import { EEtchRuneStatus } from 'src/common/enums';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity({ synchronize: false })
-export class Rune {
+@Entity()
+export class EtchRune {
   @PrimaryColumn()
   id!: number;
+
+  @Column({ type: 'int' })
+  @Index()
+  user_id: number;
 
   @Column({ nullable: true })
   name: string;
 
-  @Column({ type: 'bigint' })
-  tx_height: string;
+  @Column({ type: 'int8' })
+  @Index()
+  commit_block_height: number;
 
-  @Column({ type: 'smallint' })
-  rune_index: number;
+  @Column({ type: 'int8' })
+  @Index()
+  mint_block_height: number;
+
+  @Column({ type: 'text' })
+  mint_tx_hex: string;
+
+  @Column({ type: 'varchar' })
+  status: EEtchRuneStatus;
 
   @Column()
   @CreateDateColumn()
