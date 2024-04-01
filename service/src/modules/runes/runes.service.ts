@@ -4,7 +4,6 @@ import { HttpService } from '@nestjs/axios';
 import { Repository } from 'typeorm';
 import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
 import { Rune } from 'rune_lib';
-import { OutpointRuneBalance } from '../database/entities/sequence-number-runeid.entity';
 
 @Injectable()
 export class RunesService {
