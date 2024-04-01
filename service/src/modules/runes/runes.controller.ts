@@ -19,4 +19,10 @@ export class RunesController {
   async getRuneById(@Param('id') id: string) {
     return this.runesService.getRuneById(id);
   }
+
+  // Get top holders of a rune
+  @Get(':id/top')
+  async getTopHolders(@Param('id') id: string) {
+    return this.runesService.getTopHolders(id);
+  }
 }

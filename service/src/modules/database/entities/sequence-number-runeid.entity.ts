@@ -1,11 +1,4 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  ManyToOne,
-  PrimaryColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
 import { TransactionOut } from './transaction-out.entity';
 
 @Entity({ synchronize: false })
@@ -16,23 +9,15 @@ export class OutpointRuneBalance {
   @Column({ type: 'varchar' })
   tx_hash: string;
 
-  @Column({ type: 'smallint' })
-  vour: number;
+  vout: number;
 
   @Column({ type: 'varchar' })
-  balance_id: bigint;
+  rune_id: string;
 
   @Column({ type: 'varchar' })
   balance_value: string;
 
-  @Column()
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @Column()
-  @UpdateDateColumn()
-  updatedAt: Date;
-
   @ManyToOne(() => TransactionOut, (transactionOut) => transactionOut.txidRunes)
-  vout: TransactionOut;
+  @JoinColumn({ name: 'tx_hash', referencedColumnName: 'tx_hash' })
+  txOut: TransactionOut;
 }

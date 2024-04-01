@@ -4,6 +4,7 @@ import { HttpService } from '@nestjs/axios';
 import { Repository } from 'typeorm';
 import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
 import { Rune } from 'rune_lib';
+import { OutpointRuneBalance } from '../database/entities/sequence-number-runeid.entity';
 
 @Injectable()
 export class RunesService {
@@ -50,5 +51,18 @@ export class RunesService {
     console.log('rune.c :>> ', _rune.toString());
 
     return rune;
+  }
+
+  async getTopHolders(id: string): Promise<any> {
+    const data = await this.runeEntryRepository.query(`
+    select to2.address, tre.spaced_rune ,orb.*
+    from transaction_outs to2 
+    inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash
+    inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id 
+    where spent = false and to2.address is not null and tre.rune_id = '${id}'
+    order by balance_value desc
+    limit 10`);
+
+    return data;
   }
 }
