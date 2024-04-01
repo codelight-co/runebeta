@@ -62,8 +62,7 @@ export class UsersService implements OnModuleInit {
     inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash
     inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id 
     where spent = false and to2.address is not null and tre.rune_id = '${id}' and to2.address = '${user.walletAddress}'
-    order by balance_value desc
-    limit 10`);
+    order by balance_value desc`);
 
     return data;
   }
