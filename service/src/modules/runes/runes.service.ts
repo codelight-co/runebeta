@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { RuneFilterDto } from './dto';
 import { HttpService } from '@nestjs/axios';
 import { Repository } from 'typeorm';
@@ -7,16 +7,25 @@ import { Rune } from 'rune_lib';
 import { EtchRuneDto } from './dto/etch-rune-filter.dto';
 import { EtchRune } from '../database/entities';
 import { User } from '../database/entities/user.entity';
+import { EEtchRuneStatus } from 'src/common/enums';
+import { StatsService } from '../stats/stats.service';
+import { TransactionsService } from '../transactions/transactions.service';
+import { BroadcastTransactionDto } from '../transactions/dto';
+import e from 'express';
 
 @Injectable()
 export class RunesService {
   constructor(
     private readonly httpService: HttpService,
+    private readonly statsService: StatsService,
+    private readonly transactionsService: TransactionsService,
     @Inject('RUNE_ENTRY_REPOSITORY')
     private runeEntryRepository: Repository<TransactionRuneEntry>,
     @Inject('ETCH_RUNE_REPOSITORY')
     private etchRuneEntryRepository: Repository<EtchRune>,
   ) {}
+
+  private logger = new Logger(RunesService.name);
 
   async getRunes(runeFilterDto: RuneFilterDto): Promise<any> {
     const builder = this.runeEntryRepository
@@ -77,14 +86,47 @@ export class RunesService {
       mint_block_height: etchRuneDto.commitBlockHeight + 6,
       mint_tx_hex: etchRuneDto.revealTxRawHex,
       user_id: user.id,
+      status: EEtchRuneStatus.COMMITTED,
     });
 
     return rune;
   }
 
   async processEtching(): Promise<void> {
-    const etchRunes = await this.etchRuneEntryRepository.find();
-    console.log('etchRunes :>> ', etchRunes);
+    const currentBlockHeight = await this.statsService.getBlockHeight();
+    console.log('currentBlockHeight :>> ', currentBlockHeight);
+    if (currentBlockHeight) {
+      try {
+        const etchRunes = await this.etchRuneEntryRepository
+          .createQueryBuilder('rune')
+          .where('rune.commit_block_height <= :currentBlockHeight', {
+            currentBlockHeight,
+          })
+          .andWhere('rune.status = :status', {
+            status: EEtchRuneStatus.COMMITTED,
+          })
+          .getMany();
+
+        for (const etchRune of etchRunes) {
+          this.logger.log('Processing etching', etchRune.id);
+          const tx = await this.transactionsService.broadcastTransaction({
+            rawTransaction: etchRune.mint_tx_hex,
+          } as BroadcastTransactionDto);
+
+          console.log('tx :>> ', tx);
+
+          await this.etchRuneEntryRepository.update(etchRune.id, {
+            status: EEtchRuneStatus.MINTED,
+            mint_block_height: tx.blockHeight,
+          });
+        }
+      } catch (error) {
+        this.logger.error('Error processing etching', error);
+      }
+    }
+
+    this.logger.log('Cant not get block number');
+
     return;
   }
 }

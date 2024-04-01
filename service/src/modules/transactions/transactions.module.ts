@@ -9,5 +9,6 @@ import { transactionsProviders } from './transactions.providers';
   imports: [HttpModule, DatabaseModule],
   controllers: [TransactionsController],
   providers: [TransactionsService, ...transactionsProviders],
+  exports: [TransactionsService],
 })
 export class TransactionsModule {}
