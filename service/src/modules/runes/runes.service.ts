@@ -13,9 +13,7 @@ export class RunesService {
     private runeEntryRepository: Repository<TransactionRuneEntry>,
   ) {}
 
-  async getRunes(
-    runeFilterDto: RuneFilterDto,
-  ): Promise<TransactionRuneEntry[]> {
+  async getRunes(runeFilterDto: RuneFilterDto): Promise<any> {
     const builder = this.runeEntryRepository
       .createQueryBuilder()
       .offset(runeFilterDto.offset)
@@ -34,7 +32,12 @@ export class RunesService {
       );
     }
 
-    return builder.getMany();
+    return {
+      total: await builder.getCount(),
+      limit: runeFilterDto.limit,
+      offset: runeFilterDto.offset,
+      runes: await builder.getMany(),
+    };
   }
 
   async getRuneById(id: string): Promise<TransactionRuneEntry> {

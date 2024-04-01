@@ -44,6 +44,9 @@ export class TransactionRuneEntry {
   @Column({ type: 'text' })
   supply: string;
 
+  @Column({ type: 'varchar' })
+  spaced_rune: string;
+
   @Column({ type: 'text' })
   symbol: string;
 
