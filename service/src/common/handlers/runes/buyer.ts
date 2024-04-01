@@ -225,11 +225,16 @@ export namespace BuyerHandler {
       throw new Error('Invalid Rune ID');
     }
 
-    const edict = new Edict(
-      runeId as RuneId,
-      BigInt(_seller_outputs.length + 2),
-      _seller_total_tokens,
-    );
+    // const edict = new Edict(
+    //   runeId as RuneId,
+    //   BigInt(_seller_outputs.length + 2),
+    //   _seller_total_tokens,
+    // );
+    const edict = new Edict({
+      id: runeId as RuneId,
+      amount: _seller_total_tokens,
+      output: BigInt(_seller_outputs.length + 2),
+    });
     const rs = new RuneStone({
       edicts: [edict],
       etching: null,
