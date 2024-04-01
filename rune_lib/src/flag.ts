@@ -20,6 +20,10 @@ export class Flag {
   public set(flags: bigint): bigint {
     return flags | this.mask();
   }
+
+  public toBigint() {
+    return this.mask();
+  }
 }
 
 export function flagMask(type: FlagTypes) {
@@ -28,4 +32,12 @@ export function flagMask(type: FlagTypes) {
 
 export function flagInto(type: FlagTypes) {
   return BigInt(type);
+}
+
+export function flagTake(type: FlagTypes, flags: bigint): [boolean, bigint] {
+  return new Flag(type).take(flags);
+}
+
+export function fromFlag(flag: Flag): bigint {
+  return flag.toBigint();
 }

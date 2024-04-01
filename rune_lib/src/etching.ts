@@ -7,6 +7,7 @@
 //   }
 
 import { Rune } from './rune';
+import { U128_MAX } from './rune_stone/rune_stone';
 import { Terms } from './terms';
 
 interface IEtching {
@@ -71,4 +72,31 @@ export class Etching {
       terms: this.terms?.toJsonString(),
     });
   }
+
+  public supply(): bigint | null {
+    const premine = this.premine ?? BigInt(0);
+    const cap = this.terms?.cap ?? BigInt(0);
+    const amount = this.terms?.amount ?? BigInt(0);
+    try {
+      return addU128(premine, mulU128(cap, amount));
+    } catch (e) {
+      return null;
+    }
+  }
+}
+
+export function addU128(a: bigint, b: bigint) {
+  let result = a + b;
+  if (result > U128_MAX) {
+    throw new Error('Overflow error');
+  }
+  return result;
+}
+
+export function mulU128(a: bigint, b: bigint) {
+  let result = a * b;
+  if (result > U128_MAX) {
+    throw new Error('Overflow error');
+  }
+  return result;
 }

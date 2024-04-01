@@ -45,10 +45,10 @@ export class RuneId {
     return [block, tx];
   }
 
-  public next(block: bigint, tx: bigint): RuneId | null {
+  public next(block: bigint, tx: bigint): RuneId | Error {
     const nextBlock = this.block + block;
     const nextTx = block === BigInt(0) ? this.tx + tx : tx;
-    return new RuneId(nextBlock, nextTx);
+    return RuneId.createNew(nextBlock, nextTx);
   }
 
   public encodeBalance(balance: bigint, buffer: number[]): void {
