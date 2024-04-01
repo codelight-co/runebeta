@@ -45,14 +45,16 @@ export class UsersService implements OnModuleInit {
     });
   }
 
-  async getMyRunes(user: User): Promise<TransactionOut[]> {
-    return this.transactionOutRepository
-      .createQueryBuilder('transaction_out')
-      .where('address = :address', {
-        address: user.walletAddress,
-      })
-      .andWhere('spent = false')
-      .getMany();
+  async getMyRunes(user: User): Promise<any> {
+    const data = await this.transactionOutRepository.query(`
+    select to2.address, tre.spaced_rune ,orb.*
+    from transaction_outs to2 
+    inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash
+    inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id 
+    where spent = false and to2.address is not null and to2.address = '${user.walletAddress}'
+    order by balance_value desc`);
+
+    return data;
   }
 
   async getMyRuneById(user: User, id: string): Promise<TransactionOut> {
