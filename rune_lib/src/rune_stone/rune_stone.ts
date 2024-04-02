@@ -1,14 +1,18 @@
-import { Edict } from './edict';
-import { Etching } from './etching';
+import { Edict } from '../edict';
+import { Etching } from '../etching';
 import * as bitcoin from 'bitcoinjs-lib';
 import { Transaction } from 'bitcoinjs-lib';
-import * as varint from './varint';
-import { MAGIC_NUMBER, MAX_DIVISIBILITY, MAX_SPACERS, Rune } from './rune';
+import * as varint from '../varint';
+import { MAGIC_NUMBER, MAX_DIVISIBILITY, MAX_SPACERS, Rune } from '../rune';
 import assert from 'assert';
-import { Flag, FlagTypes } from './flag';
-import { Tag, tagEncodeList, tagEncodeOption, tagEncoder, tagTaker } from './tag';
-import { RuneId } from './rune_id';
-import { Terms } from './terms';
+import { Flag, FlagTypes } from '../flag';
+import { Tag, tagEncodeList, tagEncodeOption, tagEncoder, tagTaker } from '../tag';
+import { RuneId } from '../rune_id';
+import { Terms } from '../terms';
+import { Artifact } from '../artifacts';
+import { Message } from './message';
+import { Flaw, FlawTypes } from '../flaw';
+import { Cenotaph } from '../cenotaph';
 
 export const TAG_BODY: bigint = BigInt(Tag.Body);
 export const TAG_DIVISIBILITY: bigint = BigInt(Tag.Divisibility);
@@ -30,54 +34,24 @@ export const TAG_BURN: bigint = BigInt(Tag.Burn);
 export const TAG_NOP: bigint = BigInt(Tag.Nop);
 export const U128_MAX = BigInt(2) ** BigInt(128) - BigInt(1);
 
-function addU128(a: bigint, b: bigint) {
-  let result = a + b
-  if (result > U128_MAX) {
-    throw new Error("Overflow error")
-  }
-  return result
-}
+export class RuneStone extends Artifact {
+  public edicts: Edict[];
+  public etching: Etching | null;
+  // public mint: RuneId | null;
+  public pointer: bigint | null;
 
-function mulU128(a: bigint, b: bigint) {
-  let result = a * b
-  if (result > U128_MAX) {
-    throw new Error("Overflow error")
-  }
-  return result
-}
-
-export class RuneStone {
-  public edicts: Edict[]
-  public etching: Etching | null
-  public cenotaph: boolean
-  public mint: RuneId | null
-  public pointer: bigint | null
-
-  constructor({
-    edicts,
-    etching,
-    cenotaph,
-    mint,
-    pointer,
-  }: {
-    edicts?: Edict[];
-    etching?: Etching | null;
-    cenotaph?: boolean;
-    mint?: RuneId | null;
-    pointer?: bigint | null;
-  }) {
-    this.cenotaph = cenotaph ?? false;
+  constructor({ edicts, etching, mint, pointer }: { edicts?: Edict[]; etching?: Etching | null; mint?: RuneId | null; pointer?: bigint | null }) {
+    super();
     this.edicts = edicts ?? [];
     this.etching = etching ?? null;
-    this.mint = mint ?? null;
     this.pointer = pointer ?? BigInt(0);
+    this.setMint(mint ?? null);
   }
 
-  static fromTransaction(transaction: Transaction): RuneStone | null {
+  static fromTransaction(transaction: Transaction): Artifact | null {
     const rune = new RuneStone({
       edicts: [],
       etching: null,
-      cenotaph: false,
       mint: null,
       pointer: null,
     })
@@ -88,13 +62,8 @@ export class RuneStone {
     return runestone
   }
 
-  static fromTransactionHex(txhex: string): RuneStone | null {
+  static fromTransactionHex(txhex: string): Artifact | null {
     return RuneStone.fromTransaction(bitcoin.Transaction.fromHex(txhex));
-  }
-
-  public cenotaphs(): RuneStone {
-    this.cenotaph = true;
-    return this;
   }
 
   public encipher(): Buffer {
@@ -126,19 +95,11 @@ export class RuneStone {
       }
     }
 
-    if (this.mint) {
-      payload = tagEncodeList(
-        TAG_MINT,
-        [this.mint.block, this.mint.tx],
-        payload,
-      )
+    if (this.mint() !== null) {
+      payload = tagEncodeList(TAG_MINT, [this.mint()!.block, this.mint()!.tx], payload);
     }
 
     payload = tagEncodeOption(TAG_POINTER, this.pointer, payload)
-
-    if (this.cenotaph) {
-      payload = tagEncodeList(TAG_CENOTAPH, [BigInt(0)], payload)
-    }
 
     if (this.edicts.length > 0) {
       payload = varint.encodeToVec(TAG_BODY, payload)
@@ -167,8 +128,8 @@ export class RuneStone {
     return script
   }
 
-  public decipher(transaction: bitcoin.Transaction): RuneStone | null {
-    const payload = this.payload(transaction)
+  public decipher(transaction: bitcoin.Transaction): Artifact | null {
+    const payload = this.payload(transaction);
     if (!payload) {
       return null
     }
@@ -187,7 +148,8 @@ export class RuneStone {
 
     let fields = message.fields
 
-    let cenotaph = message.cenotaph;
+    let flaws = message.flaws;
+
     let etching: Etching | null | undefined = null;
 
     let mint = tagTaker<RuneId>(TAG_MINT, 2, fields, values => {
@@ -293,19 +255,18 @@ export class RuneStone {
               offset,
             })
           : null,
-      })
+      });
+      if (etching.supply() == null) {
+        flaws |= new Flaw(FlawTypes.SupplyOverflow).flag();
+      }
     }
 
-    let premineValue = BigInt(premine || 0); // 使用适当的默认值
-    let capValue = BigInt(cap || 0);
-    let limitValue = BigInt(amount || 0);
+    if (flags !== undefined && flags !== BigInt(0) && flags !== null) {
+      flaws |= new Flaw(FlawTypes.UnrecognizedFlag).flag();
+    }
 
-    let overflow = false
-
-    try {
-      addU128(premineValue, mulU128(capValue, limitValue));
-    } catch (e) {
-      overflow = true;
+    if (Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0)) {
+      flaws |= new Flaw(FlawTypes.UnrecognizedEvenTag).flag();
     }
 
     // console.log({
@@ -323,19 +284,20 @@ export class RuneStone {
     //   //
     // });
 
-    return new RuneStone({
-      edicts: message.edicts,
-      etching,
-      cenotaph:
-        overflow ||
-        cenotaph ||
-        (flags !== undefined && flags !== BigInt(0) && flags !== null) ||
-        Array.from(fields.keys()).some(
-          (tag) => Number.parseInt(tag.toString()) % 2 === 0,
-        ),
-      mint,
-      pointer,
-    });
+    if (flaws !== BigInt(0)) {
+      return new Cenotaph({
+        flaws,
+        etching: etching?.rune ?? null,
+        mint,
+      });
+    } else {
+      return new RuneStone({
+        edicts: message.edicts,
+        etching,
+        mint,
+        pointer,
+      });
+    }
   }
 
   public payload(transaction: bitcoin.Transaction): Buffer | null {
@@ -373,7 +335,7 @@ export class RuneStone {
   }
 }
 
-export function decodeOpReturn(scriptHex: string | Buffer, outLength: number) {
+export function decodeOpReturn(scriptHex: string | Buffer, outLength: number): Artifact | null {
   const scriptBuf = typeof scriptHex === 'string' ? Buffer.from(scriptHex, 'hex') : scriptHex;
   const script = bitcoin.script.decompile(scriptBuf);
   let payload: Buffer | null = null;
@@ -403,7 +365,8 @@ export function decodeOpReturn(scriptHex: string | Buffer, outLength: number) {
 
     let fields = message.fields;
 
-    let cenotaph = message.cenotaph;
+    let flaws = message.flaws;
+
     let etching: Etching | null | undefined = null;
 
     let mint = tagTaker<RuneId>(TAG_MINT, 2, fields, values => {
@@ -514,161 +477,49 @@ export function decodeOpReturn(scriptHex: string | Buffer, outLength: number) {
             })
           : null,
       });
+      if (etching.supply() == null) {
+        flaws |= new Flaw(FlawTypes.SupplyOverflow).flag();
+      }
     }
 
-    let premineValue = BigInt(premine || 0); // 使用适当的默认值
-    let capValue = BigInt(cap || 0);
-    let limitValue = BigInt(amount || 0);
-
-    let overflow = false;
-
-    try {
-      // 尝试执行操作
-      addU128(premineValue, mulU128(capValue, limitValue));
-      // 如果这里没有抛出错误，意味着没有溢出
-    } catch (e) {
-      // 如果捕获到错误，说明发生了溢出
-      overflow = true;
+    if (flags !== undefined && flags !== BigInt(0) && flags !== null) {
+      flaws |= new Flaw(FlawTypes.UnrecognizedFlag).flag();
     }
 
-    return new RuneStone({
-      edicts: message.edicts,
-      etching,
-      cenotaph:
-        overflow ||
-        cenotaph ||
-        (flags !== undefined && flags !== BigInt(0) && flags !== null) ||
-        Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
-      mint,
-      pointer,
-    });
+    if (Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0)) {
+      flaws |= new Flaw(FlawTypes.UnrecognizedEvenTag).flag();
+    }
+
+    // console.log({
+    //   kk: fields,
+    //   terms,
+    //   overflow,
+    //   cenotaph,
+    //   flags,
+    //   keys: Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
+    //   res:
+    //     overflow === true ||
+    //     cenotaph === true ||
+    //     (flags !== undefined && flags !== BigInt(0) && flags !== null) ||
+    //     Array.from(fields.keys()).some(tag => Number.parseInt(tag.toString()) % 2 === 0),
+    //   //
+    // });
+    if (flaws !== BigInt(0)) {
+      return new Cenotaph({
+        flaws,
+        etching: etching?.rune ?? null,
+        mint,
+      });
+    } else {
+      return new RuneStone({
+        edicts: message.edicts,
+        etching,
+        mint,
+        pointer,
+      });
+    }
   } else {
     return null;
-  }
-}
-
-export class Message {
-  constructor(
-    public cenotaph: boolean,
-    public fields: Map<bigint, bigint[]>,
-    public edicts: Edict[],
-  ) {}
-
-  static fromIntegers(tx: Transaction, payload: bigint[]): Message {
-    const fields = new Map<bigint, bigint[]>()
-    const edicts: Edict[] = []
-    let cenotaph = false
-    for (let i = 0; i < payload.length; i += 2) {
-      const tag = payload[i]
-
-      if (tag === TAG_BODY) {
-        let id = new RuneId(BigInt(0), BigInt(0))
-
-        for (let j = i + 1; j < payload.length; j += 4) {
-          const chunk = payload.slice(j, j + 4)
-
-          if (chunk.length !== 4) {
-            cenotaph = true
-            break
-          }
-
-          // Assuming `id.next()` is an async function or a function that returns an object or null
-          let next = id.next(chunk[0], chunk[1])
-          if (!next) {
-            cenotaph = true
-            break
-          }
-
-          // Assuming `Edict.fromIntegers()` is a function that returns an Edict object or null
-          let edict = Edict.fromIntegers(tx, next, chunk[2], chunk[3])
-          if (!edict) {
-            cenotaph = true
-            break
-          }
-
-          id = next
-          edicts.push(edict)
-        }
-        break
-      }
-
-      let value: bigint | undefined
-      if (payload[i + 1] !== undefined) {
-        value = payload[i + 1]
-      } else {
-        cenotaph = true
-        break
-      }
-      let _values = fields.get(tag)
-      if (!_values) {
-        _values = []
-        _values!.push(value)
-        fields.set(tag, _values!)
-      } else {
-        _values.push(value)
-        fields.set(tag, _values!)
-      }
-    }
-
-    return new Message(cenotaph, fields, edicts)
-  }
-
-  static fromOpReturn(payload: bigint[]): Message {
-    const fields = new Map<bigint, bigint[]>()
-    const edicts: Edict[] = []
-    let cenotaph = false
-    for (let i = 0; i < payload.length; i += 2) {
-      const tag = payload[i]
-
-      if (tag === TAG_BODY) {
-        let id = new RuneId(BigInt(0), BigInt(0))
-
-        for (let j = i + 1; i < payload.length; j += 4) {
-          if (j + 3 >= payload.length) {
-            cenotaph = true
-            break
-          }
-
-          const chunk = payload.slice(j, j + 4)
-          // Assuming `id.next()` is an async function or a function that returns an object or null
-          let next = id.next(chunk[0], chunk[1])
-          if (!next) {
-            cenotaph = true
-            break
-          }
-
-          // Assuming `Edict.fromIntegers()` is a function that returns an Edict object or null
-          let edict = Edict.fromOpReturn(next, chunk[2], chunk[3])
-          if (!edict) {
-            cenotaph = true
-            break
-          }
-
-          id = next
-          edicts.push(edict)
-        }
-        break
-      }
-
-      let value: bigint | undefined
-      if (payload[i + 1] !== undefined) {
-        value = payload[i + 1]
-      } else {
-        cenotaph = true;
-        break;
-      }
-      let _values = fields.get(tag);
-      if (!_values) {
-        _values = [];
-        _values!.push(value);
-        fields.set(tag, _values!);
-      } else {
-        _values.push(value);
-        fields.set(tag, _values!);
-      }
-    }
-
-    return new Message(cenotaph, fields, edicts)
   }
 }
 

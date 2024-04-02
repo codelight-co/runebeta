@@ -801,3 +801,9 @@ export const getKeypairInfo = (childNode: any, network: bitcoin.networks.Network
         childNode,
     };
 };
+
+
+export function randomP2TRWallet(network: Network = bitcoin.networks.testnet) {
+    const wif = ECPair.makeRandom({network}).toWIF();
+    return new Wallet(wif, network, AddressType.P2TR);
+}

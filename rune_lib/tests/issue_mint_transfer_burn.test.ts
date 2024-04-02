@@ -9,11 +9,12 @@ import {
     prepareCommitRevealConfig,
     prepareTx,
     publicKeyToAddress,
+    randomP2TRWallet,
     toPsbt,
     Wallet,
 } from './bitcoin';
 import {getUTXOs} from './mempool';
-import {Edict, Etching, Rune, RuneId, RuneStone} from '../src';
+import {Edict, Etching, RuneId, RuneStone} from '../src';
 import {Terms} from '../src/terms';
 import {toXOnly} from 'bitcoinjs-lib/src/psbt/bip371';
 import {Psbt} from 'bitcoinjs-lib';
@@ -41,7 +42,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
         let utxos = await getUTXOs(address, network);
         console.table(utxos);
         // the name of the token
-        let spRune = SpacedRune.fromString('HELLO•WORLD•FIXED');
+        let spRune = SpacedRune.fromString('HELLO•FIXED');
         const runeStone = new RuneStone({
             edicts: [], // edicts
             etching: new Etching({
@@ -59,12 +60,10 @@ describe('Issue/Mint/Transfer/Burn', () => {
                 //     amount: BigInt(1e10 * 1e2),
                 // }),
             }), // etching
-            cenotaph: false, // is burning? true/false
             mint: null,
             // receiver output index
             pointer: BigInt(1),
         });
-
 
         const encipher = runeStone.encipher();
         // const test = bitcoin.payments.embed({
@@ -84,14 +83,11 @@ describe('Issue/Mint/Transfer/Burn', () => {
         ];
 
         // compose tapscript
-        const tapInternalKey = toXOnly(pubkey);
+        let revealWallet = randomP2TRWallet(network);
+        const tapInternalKey = toXOnly(revealWallet.pubkey);
 
         let payload = Buffer.from(runeStone.etching?.rune?.commitment()!);
-        const {scriptP2TR, hashLockP2TR, hashscript} = prepareCommitRevealConfig(
-            tapInternalKey,
-            payload,
-            network,
-        );
+        const {scriptP2TR, hashLockP2TR, hashscript} = prepareCommitRevealConfig(tapInternalKey, payload, network);
 
         let txResult = prepareCommitAndRevealTx({
             // safe btc utxos
@@ -102,11 +98,10 @@ describe('Issue/Mint/Transfer/Burn', () => {
             revealInputs: 1,
             // reveal outputs
             revealOutputs,
-            payload
+            payload,
         });
 
         console.table(txResult);
-
 
         const commitOutputs = [
             {
@@ -122,13 +117,12 @@ describe('Issue/Mint/Transfer/Burn', () => {
             });
         }
 
-
         let commitPsbt = toPsbt({
             tx: {
                 inputs: txResult.inputs,
                 outputs: commitOutputs,
                 feeRate,
-                address
+                address,
             },
             pubkey,
             rbf: true,
@@ -158,7 +152,8 @@ describe('Issue/Mint/Transfer/Burn', () => {
         });
         psbtReveal.addOutputs(revealOutputs);
 
-        const fundingKeypair = getKeypairInfo(signer, network);
+
+        const fundingKeypair = getKeypairInfo(revealWallet.keyPair, network);
 
         psbtReveal.signInput(0, fundingKeypair.childNode);
         psbtReveal.finalizeAllInputs();
@@ -198,17 +193,16 @@ describe('Issue/Mint/Transfer/Burn', () => {
                 // premine
                 premine: BigInt(1e5),
                 terms: new Terms({
-                    // cap = supply / divisibility
+                    // cap = supply / 10^divisibility
+                    // supply = cap * 10^divisibility
                     cap: BigInt(1e10),
                     amount: BigInt(1e5),
                 }),
             }), // etching
-            cenotaph: false, // is burning? true/false
             mint: null,
             // receiver output index
             pointer: BigInt(1),
         });
-
 
         const encipher = runeStone.encipher();
         const revealOutputs = [
@@ -224,14 +218,11 @@ describe('Issue/Mint/Transfer/Burn', () => {
         ];
 
         // compose tapscript
-        const tapInternalKey = toXOnly(pubkey);
+        let revealWallet = randomP2TRWallet(network);
+        const tapInternalKey = toXOnly(revealWallet.pubkey);
 
         let payload = Buffer.from(runeStone.etching?.rune?.commitment()!);
-        const {scriptP2TR, hashLockP2TR, hashscript} = prepareCommitRevealConfig(
-            tapInternalKey,
-            payload,
-            network,
-        );
+        const {scriptP2TR, hashLockP2TR, hashscript} = prepareCommitRevealConfig(tapInternalKey, payload, network);
 
         let txResult = prepareCommitAndRevealTx({
             // safe btc utxos
@@ -242,11 +233,10 @@ describe('Issue/Mint/Transfer/Burn', () => {
             revealInputs: 1,
             // reveal outputs
             revealOutputs,
-            payload
+            payload,
         });
 
         console.table(txResult);
-
 
         const commitOutputs = [
             {
@@ -262,13 +252,12 @@ describe('Issue/Mint/Transfer/Burn', () => {
             });
         }
 
-
         let commitPsbt = toPsbt({
             tx: {
                 inputs: txResult.inputs,
                 outputs: commitOutputs,
                 feeRate,
-                address
+                address,
             },
             pubkey,
             rbf: true,
@@ -298,7 +287,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
         });
         psbtReveal.addOutputs(revealOutputs);
 
-        const fundingKeypair = getKeypairInfo(signer, network);
+        const fundingKeypair = getKeypairInfo(revealWallet.keyPair, network);
 
         psbtReveal.signInput(0, fundingKeypair.childNode);
         psbtReveal.finalizeAllInputs();
@@ -327,7 +316,6 @@ describe('Issue/Mint/Transfer/Burn', () => {
         let runeId = new RuneId(BigInt(2584592), BigInt(58));
         const runeStone = new RuneStone({
             edicts: [new Edict({id: runeId, amount: BigInt(1e5), output: BigInt(1)})],
-            cenotaph: false,
             mint: runeId,
             pointer: BigInt(1),
         });
@@ -385,7 +373,6 @@ describe('Issue/Mint/Transfer/Burn', () => {
                 new Edict({id: runeId, amount: BigInt(1e5), output: BigInt(1)}),
                 new Edict({id: runeId, amount: BigInt(10000000000 - 1e5), output: BigInt(2)}),
             ],
-            cenotaph: false,
         });
         const encipher = runeStone.encipher();
         const outputs = [
@@ -439,8 +426,23 @@ describe('Issue/Mint/Transfer/Burn', () => {
         // balance location: txid:vout
         const location = ':1';
         let input = utxos.find(e => e.txid + ':' + e.vout === location)!;
+        let runeId = new RuneId(BigInt(2584592), BigInt(58));
         const runeStone = new RuneStone({
-            cenotaph: true,
+            edicts: [
+                // burn 1e5 tokens
+                new Edict({
+                    id: runeId,
+                    amount: BigInt(1e5),
+                    // to op_return output index
+                    output: BigInt(0),
+                }),
+                // remaining tokens
+                new Edict({
+                    id: runeId,
+                    amount: BigInt(10000000000 - 1e5),
+                    output: BigInt(1),
+                }),
+            ]
         });
         const encipher = runeStone.encipher();
         const outputs = [
@@ -448,6 +450,10 @@ describe('Issue/Mint/Transfer/Burn', () => {
                 script: encipher,
                 value: 0,
             },
+            {
+                script: output,
+                value: input.value
+            }
         ];
         let amount = outputs.reduce((a, b) => a + b.value, 0) - input!.value;
         const txResult = prepareTx({
