@@ -59,9 +59,6 @@ export class RunesService {
       .createQueryBuilder()
       .where('rune_id = :id', { id })
       .getOne();
-    const _rune = new Rune(BigInt('5115427209785002519722332359899692'));
-    console.log('_rune :>> ', _rune.id);
-    console.log('rune.c :>> ', _rune.toString());
 
     return rune;
   }

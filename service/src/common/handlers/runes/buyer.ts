@@ -136,7 +136,6 @@ export namespace BuyerHandler {
     ) {
       throw new InvalidArgumentError('Buyer address is not set');
     }
-
     /// List all Seller's items
     if (seller_items.length === 0) {
       throw new InvalidArgumentError('Sellers not found');
@@ -147,7 +146,6 @@ export namespace BuyerHandler {
     let _platform_fee = 0;
     let _seller_listing_prices = 0;
     let _seller_total_tokens = BigInt(0);
-
     for (let i = 0; i < seller_items.length; i++) {
       const seller = seller_items[i];
       if (
@@ -184,7 +182,6 @@ export namespace BuyerHandler {
     /// Step 5, add buyer BTC input
     let total_buyer_inputs_value = 0;
     const _buyers_inputs: SellerInput[] = [];
-
     for (const utxo of buyer_state.buyer.buyerPaymentUTXOs!) {
       const input: any = {
         hash: utxo.txid,
@@ -223,12 +220,12 @@ export namespace BuyerHandler {
     if (!runeId) {
       throw new Error('Invalid Rune ID');
     }
-
     // const edict = new Edict(
     //   runeId as RuneId,
     //   BigInt(_seller_outputs.length + 2),
     //   _seller_total_tokens,
     // );
+
     const edict = new Edict({
       id: runeId as RuneId,
       amount: _seller_total_tokens,
@@ -244,7 +241,6 @@ export namespace BuyerHandler {
       value: 0,
       script: rs.encipher(),
     };
-
     /// Step 6, add platform BTC input
     // _platform_fee = _platform_fee > DUST_AMOUNT ? _platform_fee : 0;
 
@@ -259,7 +255,6 @@ export namespace BuyerHandler {
       psbt.addInput(_all_inputs[i] as any);
     }
     /// Adding all Outputs except change fee:
-
     const _all_outputs_except_change = [
       ..._seller_outputs,
       op_return_output,
@@ -279,14 +274,14 @@ export namespace BuyerHandler {
       (partialSum, a) => partialSum + a.value,
       0,
     );
-    const changeValue = total_buyer_inputs_value - totalOutput - fee;
+
+    const changeValue = total_buyer_inputs_value - fee;
     if (changeValue < 0) {
-      throw `Your wallet address doesn't have enough funds to buy this inscription.
+      throw new Error(`Your wallet address doesn't have enough funds to buy this inscription.
   Price:      ${satToBtc(_seller_listing_prices)} BTC
   Required:   ${satToBtc(totalOutput + fee)} BTC
-  Missing:    ${satToBtc(-changeValue)} BTC`;
+  Missing:    ${satToBtc(-changeValue)} BTC`);
     }
-
     // Change utxo
     if (changeValue > DUST_AMOUNT) {
       psbt.addOutput({
@@ -294,7 +289,6 @@ export namespace BuyerHandler {
         value: changeValue,
       });
     }
-
     buyer_state.buyer.unsignedBuyingPSBTBase64 = psbt.toBase64();
     buyer_state.buyer.unsignedBuyingPSBTInputSize = psbt.data.inputs.length;
     buyer_state.buyer.itemMapping = _seller_outputs.map((e, i) => {

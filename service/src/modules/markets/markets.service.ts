@@ -195,7 +195,6 @@ export class MarketsService implements OnModuleInit {
     if (orders.length !== body.orderIds.length) {
       throw new BadRequestException('Invalid order ids');
     }
-
     const seller_items = orders.map(
       (order) =>
         ({
