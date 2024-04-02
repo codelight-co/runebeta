@@ -47,7 +47,7 @@ export namespace BuyerHandler {
           (await service.getRuneByTxIdAndIndex(utxo.txid, utxo.vout)) !== null
         );
       } catch (err) {
-        return true; // if error, we pretend that the utxo contains an inscription for safety
+        return false; // if error, we pretend that the utxo contains an inscription for safety
       }
     }
 
@@ -97,7 +97,6 @@ export namespace BuyerHandler {
       }
 
       // TODO - check if the utxo contains runes
-
       selectedUtxos.push(utxo);
       selectedAmount += utxo.value;
 

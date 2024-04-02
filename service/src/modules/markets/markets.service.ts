@@ -22,6 +22,7 @@ import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addre
 import { BuyerOrderDto } from './dto/buyer-order.dto';
 import { MergeSingers } from 'src/common/handlers/runes/merge';
 import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class MarketsService implements OnModuleInit {
@@ -31,6 +32,7 @@ export class MarketsService implements OnModuleInit {
     private orderRepository: Repository<Order>,
     @Inject('RUNE_ENTRY_REPOSITORY')
     private runeEntryRepository: Repository<TransactionRuneEntry>,
+    private readonly usersService: UsersService,
   ) {}
 
   private rpcService: RPCService;
@@ -258,6 +260,27 @@ export class MarketsService implements OnModuleInit {
     return MergeSingers.mergeSignedBuyingPSBTBase64(
       body.buyerState,
       seller_items,
+    );
+  }
+
+  async selectUTXOsForBuying(body: BuyerOrderDto, user: User): Promise<any> {
+    const utxos = await this.usersService.getMyUtxo(user);
+    // Get order by ids
+    const orders = await this.orderRepository
+      .createQueryBuilder('order')
+      .where('order.id IN (:...ids)', { ids: body.orderIds })
+      .getMany();
+    if (orders.length !== body.orderIds.length) {
+      throw new BadRequestException('Invalid order ids');
+    }
+
+    return BuyerHandler.selectPaymentUTXOs(
+      utxos as AddressTxsUtxo[],
+      Number(orders[0].runeItem.tokenValue),
+      2,
+      3,
+      'minimumFee',
+      this.rpcService,
     );
   }
 }

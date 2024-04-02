@@ -99,4 +99,14 @@ export class MarketsController {
   ): Promise<any> {
     return this.marketsService.mergeSignedBuyingPSBT(body, user);
   }
+
+  // Select utxos for buying
+  @Post('orders/buy/select-utxos')
+  @UseGuards(AuthGuard)
+  async selectUTXOsForBuying(
+    @Body() body: any,
+    @UserDecorator() user: User,
+  ): Promise<any> {
+    return this.marketsService.selectUTXOsForBuying(body, user);
+  }
 }
