@@ -21,6 +21,7 @@ import { BASE_URL } from 'src/environments';
 import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
 import { BuyerOrderDto } from './dto/buyer-order.dto';
 import { MergeSingers } from 'src/common/handlers/runes/merge';
+import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
 
 @Injectable()
 export class MarketsService implements OnModuleInit {
@@ -28,6 +29,8 @@ export class MarketsService implements OnModuleInit {
     private readonly httpService: HttpService,
     @Inject('ORDER_REPOSITORY')
     private orderRepository: Repository<Order>,
+    @Inject('RUNE_ENTRY_REPOSITORY')
+    private runeEntryRepository: Repository<TransactionRuneEntry>,
   ) {}
 
   private rpcService: RPCService;
@@ -37,13 +40,26 @@ export class MarketsService implements OnModuleInit {
   }
 
   async getRunes(marketRuneFilterDto: MarketRuneFilterDto) {
-    const res = await this.httpService
-      .get('https://api.runealpha.xyz/market/runes', {
-        params: marketRuneFilterDto,
-      })
-      .toPromise();
+    const builder = this.runeEntryRepository
+      .createQueryBuilder()
+      .offset(marketRuneFilterDto.offset)
+      .limit(marketRuneFilterDto.limit);
 
-    return res.data?.data;
+    if (marketRuneFilterDto.sortBy) {
+      builder.orderBy(
+        marketRuneFilterDto.sortBy,
+        marketRuneFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+          ? 'DESC'
+          : 'ASC',
+      );
+    }
+
+    return {
+      total: await builder.getCount(),
+      limit: marketRuneFilterDto.limit,
+      offset: marketRuneFilterDto.offset,
+      runes: await builder.getMany(),
+    };
   }
 
   async getRunesById(
