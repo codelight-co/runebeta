@@ -238,7 +238,6 @@ export namespace BuyerHandler {
     const rs = new RuneStone({
       edicts: [edict],
       etching: null,
-      cenotaph: false,
       mint: null,
       pointer: null,
     });
