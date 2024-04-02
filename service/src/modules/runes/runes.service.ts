@@ -97,7 +97,7 @@ export class RunesService {
     if (currentBlockHeight) {
       const etchRunes = await this.etchRuneEntryRepository
         .createQueryBuilder('rune')
-        .where('rune.mint_block_height >= :currentBlockHeight', {
+        .where('rune.mint_block_height <= :currentBlockHeight', {
           currentBlockHeight,
         })
         .andWhere('rune.status = :status', {
