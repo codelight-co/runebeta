@@ -95,18 +95,18 @@ export class RunesService {
   async processEtching(): Promise<void> {
     const currentBlockHeight = await this.statsService.getBlockHeight();
     if (currentBlockHeight) {
-      try {
-        const etchRunes = await this.etchRuneEntryRepository
-          .createQueryBuilder('rune')
-          .where('rune.mint_block_height >= :currentBlockHeight', {
-            currentBlockHeight,
-          })
-          .andWhere('rune.status = :status', {
-            status: EEtchRuneStatus.COMMITTED,
-          })
-          .getMany();
-        if (etchRunes.length) {
-          for (const etchRune of etchRunes) {
+      const etchRunes = await this.etchRuneEntryRepository
+        .createQueryBuilder('rune')
+        .where('rune.mint_block_height >= :currentBlockHeight', {
+          currentBlockHeight,
+        })
+        .andWhere('rune.status = :status', {
+          status: EEtchRuneStatus.COMMITTED,
+        })
+        .getMany();
+      if (etchRunes.length) {
+        for (const etchRune of etchRunes) {
+          try {
             this.logger.log('Processing etching', etchRune.id);
             const tx = await this.transactionsService.broadcastTransaction({
               rawTransaction: etchRune.mint_tx_hex,
@@ -116,12 +116,15 @@ export class RunesService {
 
             await this.etchRuneEntryRepository.update(etchRune.id, {
               status: EEtchRuneStatus.MINTED,
-              mint_block_height: tx.blockHeight,
+            });
+          } catch (error) {
+            this.logger.error('Error processing etching', error);
+
+            await this.etchRuneEntryRepository.update(etchRune.id, {
+              status: EEtchRuneStatus.FAILED,
             });
           }
         }
-      } catch (error) {
-        this.logger.error('Error processing etching', error);
       }
     } else {
       this.logger.log('Cant not get block number');
