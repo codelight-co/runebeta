@@ -30,6 +30,7 @@ export namespace MergeSingers {
         throw new Error('Not found signed listing psbt for id: ' + id);
       }
     });
-    return buyerSignedPsbt.toBase64();
+
+    return buyerSignedPsbt.toHex();
   }
 }

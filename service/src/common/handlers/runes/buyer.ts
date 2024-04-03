@@ -174,6 +174,7 @@ export namespace BuyerHandler {
           (buyer_state.buyer.takerFeeBp + seller.seller.makerFeeBp)) /
           10000,
       );
+
       _seller_listing_prices += seller.seller.price;
       _seller_total_tokens += BigInt(seller.seller.runeItem.tokenValue);
       /// push _token_output to _token_outputs,and sort them later, and join FT value together
@@ -183,13 +184,16 @@ export namespace BuyerHandler {
     let total_buyer_inputs_value = 0;
     const _buyers_inputs: SellerInput[] = [];
     for (const utxo of buyer_state.buyer.buyerPaymentUTXOs!) {
+      const hex = await FullnodeRPC.getrawtransaction(utxo.txid);
+      console.log('hex :>> ', hex);
+
+      console.log('utxo :>> ', utxo);
       const input: any = {
         hash: utxo.txid,
         index: utxo.vout,
-        nonWitnessUtxo: bitcoin.Transaction.fromHex(
-          await FullnodeRPC.getrawtransaction(utxo.txid),
-        ).toBuffer(),
+        nonWitnessUtxo: bitcoin.Transaction.fromHex(hex).toBuffer(),
       };
+      console.log('input :>> ', input);
 
       const p2shInputWitnessUTXOUn: any = {};
       const p2shInputRedeemScriptUn: any = {};
@@ -241,13 +245,14 @@ export namespace BuyerHandler {
       value: 0,
       script: rs.encipher(),
     };
+    console.log('_platform_fee :>> ', _platform_fee);
     /// Step 6, add platform BTC input
-    // _platform_fee = _platform_fee > DUST_AMOUNT ? _platform_fee : 0;
-
-    // const platform_output = {
-    //   address: PLATFORM_FEE_ADDRESS,
-    //   value: _platform_fee,
-    // };
+    _platform_fee = _platform_fee > DUST_AMOUNT ? _platform_fee : 0;
+    console.log('_platform_fee :>> ', _platform_fee);
+    const platform_output = {
+      address: PLATFORM_FEE_ADDRESS,
+      value: _platform_fee,
+    };
 
     /// Adding all Inputs:
     const _all_inputs = [..._seller_inputs, ..._buyers_inputs];
@@ -258,8 +263,9 @@ export namespace BuyerHandler {
     const _all_outputs_except_change = [
       ..._seller_outputs,
       op_return_output,
-      // platform_output,
+      platform_output,
     ];
+    console.log('_all_outputs_except_change :>> ', _all_outputs_except_change);
     for (let i = 0; i < _all_outputs_except_change.length; i++) {
       psbt.addOutput(_all_outputs_except_change[i] as any);
     }

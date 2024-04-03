@@ -84,13 +84,42 @@ export class RunesService {
     };
   }
 
-  async getRuneById(id: string): Promise<TransactionRuneEntry> {
+  async getRuneById(id: string): Promise<any> {
     const rune = await this.runeEntryRepository
       .createQueryBuilder()
       .where('rune_id = :id', { id })
       .getOne();
 
-    return rune;
+    return {
+      rows: {
+        id: rune.id,
+        rune_id: rune.rune_id,
+        supply: rune.supply,
+        token_holders: 0,
+        burned: rune.burned,
+        collection_description: null,
+        collection_metadata: null,
+        collection_minted: 0,
+        collection_owner: null,
+        collection_total_supply: null,
+        deploy_transaction: rune.tx_hash,
+        divisibility: rune.divisibility,
+        end_block: rune.number,
+        holder_count: 0,
+        is_collection: false,
+        is_hot: true,
+        is_nft: false,
+        limit: 0,
+        nft_collection: null,
+        nft_metadata: null,
+        rune: rune.spaced_rune,
+        symbol: rune.symbol,
+        term: 0,
+        timestamp: rune.timestamp,
+        transaction_count: 0,
+        unit: 1,
+      },
+    };
   }
 
   async getTopHolders(id: string): Promise<any> {
