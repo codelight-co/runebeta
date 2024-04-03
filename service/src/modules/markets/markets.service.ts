@@ -224,6 +224,7 @@ export class MarketsService implements OnModuleInit {
     if (!seller) {
       throw new BadRequestException('No Seller data found');
     }
+    console.log('body :>> ', body);
 
     return SellerHandler.generateUnsignedPsbt(body);
   }
@@ -349,7 +350,7 @@ export class MarketsService implements OnModuleInit {
 
     return BuyerHandler.selectPaymentUTXOs(
       utxos as AddressTxsUtxo[],
-      Number(orders[0].runeItem.tokenValue),
+      Number(orders[0].runeItem.outputValue),
       2,
       3,
       'minimumFee',
