@@ -124,6 +124,7 @@ export class MarketsService implements OnModuleInit {
       limit: marketRuneOrderFilterDto.limit,
       offset: marketRuneOrderFilterDto.offset,
       runes: orders.map((order) => ({
+        id: order.id,
         amount_rune: order.runeItem.tokenValue,
         amount_rune_remain_seller: order.runeItem.outputValue,
         amount_satoshi: Number(order.runeItem.tokenValue) * order.price,
