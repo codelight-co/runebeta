@@ -12,6 +12,7 @@ import { StatsService } from '../stats/stats.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { BroadcastTransactionDto } from '../transactions/dto';
 import e from 'express';
+import { run } from 'node:test';
 
 @Injectable()
 export class RunesService {
@@ -46,11 +47,40 @@ export class RunesService {
       );
     }
 
+    const runes = await builder.getMany();
+
     return {
       total: await builder.getCount(),
       limit: runeFilterDto.limit,
       offset: runeFilterDto.offset,
-      runes: await builder.getMany(),
+      runes: runes.map((rune) => ({
+        id: rune.id,
+        rune_id: rune.rune_id,
+        supply: rune.supply,
+        token_holders: 0,
+        burned: rune.burned,
+        collection_description: null,
+        collection_metadata: null,
+        collection_minted: 0,
+        collection_owner: null,
+        collection_total_supply: null,
+        deploy_transaction: rune.tx_hash,
+        divisibility: rune.divisibility,
+        end_block: rune.number,
+        holder_count: 0,
+        is_collection: false,
+        is_hot: true,
+        is_nft: false,
+        limit: 0,
+        nft_collection: null,
+        nft_metadata: null,
+        rune: rune.spaced_rune,
+        symbol: rune.symbol,
+        term: 0,
+        timestamp: rune.timestamp,
+        transaction_count: 0,
+        unit: 1,
+      })),
     };
   }
 

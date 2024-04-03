@@ -56,11 +56,26 @@ export class MarketsService implements OnModuleInit {
       );
     }
 
+    const runes = await builder.getMany();
+
     return {
       total: await builder.getCount(),
       limit: marketRuneFilterDto.limit,
       offset: marketRuneFilterDto.offset,
-      runes: await builder.getMany(),
+      runes: runes.map((rune) => ({
+        change_24h: 0,
+        floor_price: 0,
+        last_price: 0,
+        marketcap: 0,
+        order_sold: 0,
+        token_holders: 0,
+        id: rune.id,
+        rune_id: rune.rune_id,
+        rune_name: rune.spaced_rune,
+        total_supply: rune.supply,
+        total_volume: 0,
+        unit: 1,
+      })),
     };
   }
 
