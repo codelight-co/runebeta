@@ -8,7 +8,7 @@ export declare class RuneId {
     toString(): string;
     static fromString(s: string): RuneId | Error;
     delta(next: RuneId): [bigint, bigint] | null;
-    next(block: bigint, tx: bigint): RuneId | null;
+    next(block: bigint, tx: bigint): RuneId | Error;
     encodeBalance(balance: bigint, buffer: number[]): void;
     static decodeBalance(buffer: Uint8Array): [RuneId, bigint] | null;
 }

@@ -6,6 +6,7 @@ export declare const RESERVED: bigint;
 export declare const MAX_SPACERS = 134217727;
 export declare const MAGIC_NUMBER = 93;
 export declare const OP_VERIFY = 105;
+export declare const COMMIT_INTERVAL = 6;
 export declare const STEPS: bigint[];
 export declare class Rune {
     value: bigint;

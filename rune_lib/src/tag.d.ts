@@ -4,7 +4,7 @@ export declare enum Tag {
     Rune = 4,
     Premine = 6,
     Cap = 8,
-    Limit = 10,
+    Amount = 10,
     HeightStart = 12,
     HeightEnd = 14,
     OffsetStart = 16,

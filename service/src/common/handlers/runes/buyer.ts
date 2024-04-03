@@ -1,10 +1,18 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as bitcoin from 'bitcoinjs-lib';
 import * as ecc from 'tiny-secp256k1';
 import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
 import { IRuneListingState, InvalidArgumentError, WitnessUtxo } from './types';
 import { RPCService, network } from 'src/common/utils/rpc';
-import { satToBtc, isP2SHAddress, toXOnly } from 'src/common/utils/util';
-import { RUNE_TAG, DUST_AMOUNT, PLATFORM_FEE_ADDRESS } from 'src/environments';
+import {
+  satToBtc,
+  isP2SHAddress,
+  toXOnly,
+  getAddressType,
+  AddressType,
+  addressToOutputScript,
+} from 'src/common/utils/util';
+import { DUST_AMOUNT, PLATFORM_FEE_ADDRESS } from 'src/environments';
 import {
   calculateTxBytesFee,
   getSellerRuneOutputValue,
@@ -188,6 +196,10 @@ export namespace BuyerHandler {
       console.log('hex :>> ', hex);
 
       console.log('utxo :>> ', utxo);
+      const [addrType, network] = getAddressType(
+        buyer_state.buyer.buyerAddress,
+      );
+
       const input: any = {
         hash: utxo.txid,
         index: utxo.vout,
@@ -195,8 +207,19 @@ export namespace BuyerHandler {
       };
       console.log('input :>> ', input);
 
+      if (addrType === AddressType.P2TR) {
+        input.witnessUtxo = {
+          value: utxo.value,
+          script: addressToOutputScript(buyer_state.buyer.buyerAddress),
+        };
+        input.tapInternalKey = toXOnly(
+          Buffer.from(buyer_state.buyer.buyerPublicKey!, 'hex'),
+        );
+      }
+
       const p2shInputWitnessUTXOUn: any = {};
       const p2shInputRedeemScriptUn: any = {};
+
       if (isP2SHAddress(buyer_state.buyer.buyerAddress, network)) {
         const redeemScript = bitcoin.payments.p2wpkh({
           pubkey: Buffer.from(buyer_state.buyer.buyerPublicKey!, 'hex'),
@@ -249,6 +272,7 @@ export namespace BuyerHandler {
     /// Step 6, add platform BTC input
     _platform_fee = _platform_fee > DUST_AMOUNT ? _platform_fee : 0;
     console.log('_platform_fee :>> ', _platform_fee);
+
     const platform_output = {
       address: PLATFORM_FEE_ADDRESS,
       value: _platform_fee,

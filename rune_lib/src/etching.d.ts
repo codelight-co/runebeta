@@ -20,5 +20,8 @@ export declare class Etching {
     static fromJsonString(str: string): Etching;
     toJson(): IEtching;
     toJsonString(): string;
+    supply(): bigint | null;
 }
+export declare function addU128(a: bigint, b: bigint): bigint;
+export declare function mulU128(a: bigint, b: bigint): bigint;
 export {};
