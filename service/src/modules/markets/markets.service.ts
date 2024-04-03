@@ -82,28 +82,86 @@ export class MarketsService implements OnModuleInit {
   async getRunesById(
     id: string,
     marketRuneOrderFilterDto: MarketRuneOrderFilterDto,
-  ) {
+  ): Promise<any> {
     const builder = await this.orderRepository
-      .createQueryBuilder()
-      .where(`rune_item ->> 'id' = :id`, { id });
+      .createQueryBuilder('order')
+      .innerJoinAndMapOne(
+        'order.runeInfo',
+        TransactionRuneEntry,
+        'runeInfo',
+        `runeInfo.rune_id = order.rune_item ->> 'id'`,
+      )
+      .where(`order.rune_item ->> 'id' = :id`, { id });
 
     if (marketRuneOrderFilterDto.status) {
-      builder.andWhere('status = :status', {
+      builder.andWhere('order.status = :status', {
         status: marketRuneOrderFilterDto.status,
       });
     }
     if (marketRuneOrderFilterDto.sortBy) {
       builder.orderBy(
-        marketRuneOrderFilterDto.sortBy,
+        `order.${marketRuneOrderFilterDto.sortBy}`,
         marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
           ? 'DESC'
           : 'ASC',
       );
     } else {
-      builder.orderBy('created_at', 'DESC');
+      builder.orderBy('order.created_at', 'DESC');
     }
 
-    return builder.getMany();
+    const total = await builder.getCount();
+
+    if (marketRuneOrderFilterDto.offset) {
+      builder
+        .skip(marketRuneOrderFilterDto.offset)
+        .take(marketRuneOrderFilterDto.limit || 10);
+    }
+
+    const orders = await builder.getMany();
+
+    return {
+      total,
+      limit: marketRuneOrderFilterDto.limit,
+      offset: marketRuneOrderFilterDto.offset,
+      runes: orders.map((order) => ({
+        amount_rune: order.runeItem.tokenValue,
+        amount_rune_remain_seller: order.runeItem.outputValue,
+        amount_satoshi: Number(order.runeItem.tokenValue) * order.price,
+        buyer: null,
+        buyer_id: null,
+        confirmed: false,
+        confirmed_at_block: 0,
+        owner: {
+          wallet_address: order.sellerRuneAddress,
+        },
+        owner_id: order.userId,
+        price_per_unit: order.price,
+        received_address: null,
+        rune_hex: '',
+        rune_id: order.runeItem.id,
+        rune_name: order.runeInfo.spaced_rune,
+        rune_utxo: [
+          {
+            id: order.runeItem.id,
+            address: order.sellerRuneAddress,
+            amount: order.runeItem.tokenValue,
+            status: 'available',
+            txid: order.runeItem.txid,
+            type: 'payment',
+            vout: order.runeItem.vout,
+            value: order.runeItem.tokenValue,
+          },
+        ],
+        seller_ordinal_address: null,
+        service_fee: 0,
+        status: order.status,
+        total_value_input_seller: order.runeItem.outputValue,
+        type: 'listing',
+        unit: '1',
+        utxo_address: order.sellerRuneAddress,
+        utxo_address_type: 'payment',
+      })),
+    };
   }
 
   async getStats() {

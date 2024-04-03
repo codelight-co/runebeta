@@ -7,13 +7,15 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { User } from './user.entity';
+import { TransactionRuneEntry } from './rune-entry.entity';
 
 @Entity()
 export class Order {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'int4' })
   @Index()
   userId: number;
 
@@ -54,4 +56,7 @@ export class Order {
   @Column()
   @UpdateDateColumn()
   updatedAt: Date;
+
+  user: User;
+  runeInfo: TransactionRuneEntry;
 }
