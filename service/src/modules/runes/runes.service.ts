@@ -29,9 +29,9 @@ export class RunesService {
       .offset(runeFilterDto.offset)
       .limit(runeFilterDto.limit);
 
-    if (runeFilterDto.type === 'Fairmint') {
+    if (runeFilterDto.type === 'fairmint') {
       builder.where(`mint_entry ->> 'cap' is null`);
-    } else if (runeFilterDto.type === 'FixedCap') {
+    } else if (runeFilterDto.type === 'fixed-cap') {
       builder.where(`mint_entry ->> 'cap' is not null`);
     }
 
