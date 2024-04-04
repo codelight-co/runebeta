@@ -332,7 +332,6 @@ export class MarketsService implements OnModuleInit {
           },
         }) as IRuneListingState,
     );
-
     const txHash = MergeSingers.mergeSignedBuyingPSBTBase64(
       body.buyerState,
       seller_items,
