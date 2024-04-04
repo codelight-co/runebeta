@@ -29,6 +29,11 @@ export class TransactionsService {
     transactionFilterDto: TransactionFilterDto,
   ): Promise<any> {
     const builder = this.transactionRepository.createQueryBuilder();
+    let total = 0;
+
+    if (!transactionFilterDto.runeId && !transactionFilterDto.address) {
+      total = await builder.getCount();
+    }
 
     builder
       .leftJoinAndSelect('Transaction.vin', 'TransactionIns')
@@ -41,12 +46,16 @@ export class TransactionsService {
       );
 
     if (transactionFilterDto.runeId) {
-      builder.innerJoinAndMapOne(
-        'Transaction.outpointRuneBalances',
-        OutpointRuneBalance,
-        'outpoint',
-        'outpoint.tx_hash = TransactionOut.tx_hash',
-      );
+      builder
+        .innerJoinAndMapOne(
+          'Transaction.outpointRuneBalances',
+          OutpointRuneBalance,
+          'outpoint',
+          'outpoint.tx_hash = TransactionOut.tx_hash',
+        )
+        .where('outpoint.rune_id = :runeid', {
+          runeid: transactionFilterDto.runeId,
+        });
     }
 
     if (transactionFilterDto.address) {
@@ -55,7 +64,9 @@ export class TransactionsService {
       });
     }
 
-    const total = await builder.getCount();
+    if (transactionFilterDto.runeId || transactionFilterDto.address) {
+      total = await builder.getCount();
+    }
 
     this.addTransactionFilter(builder, transactionFilterDto);
 

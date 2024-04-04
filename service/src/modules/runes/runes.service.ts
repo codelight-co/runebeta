@@ -1,6 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { RuneFilterDto } from './dto';
-import { HttpService } from '@nestjs/axios';
 import { Repository } from 'typeorm';
 import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
 import { EtchRuneDto } from './dto/etch-rune-filter.dto';
@@ -14,7 +13,6 @@ import { BroadcastTransactionDto } from '../transactions/dto';
 @Injectable()
 export class RunesService {
   constructor(
-    private readonly httpService: HttpService,
     private readonly statsService: StatsService,
     private readonly transactionsService: TransactionsService,
     @Inject('RUNE_ENTRY_REPOSITORY')
