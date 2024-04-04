@@ -141,7 +141,7 @@ export namespace SellerHandler {
     const expectedOutput = getSellerRuneOutputValue(
       req.price,
       makerFeeBp, // await feeProvider.getMakerFeeBp(runeItem.owner),
-      runeItem.outputValue,
+      Number(runeItem.tokenValue),
     );
     if (output.value !== expectedOutput) {
       throw new InvalidArgumentError(`Invalid price`);
