@@ -183,9 +183,9 @@ export namespace BuyerHandler {
           10000,
       );
 
-      _seller_total_tokens += BigInt(seller.seller.runeItem.tokenValue);
+      _seller_total_tokens += BigInt(seller.seller.runeItem.outputValue);
       _seller_listing_prices +=
-        seller.seller.price * seller.seller.runeItem.outputValue;
+        seller.seller.price * Number(seller.seller.runeItem.tokenValue);
       /// push _token_output to _token_outputs,and sort them later, and join FT value together
     }
 
