@@ -89,7 +89,7 @@ export class TransactionsService {
         'Block',
         'Block.block_height = Transaction.block_height',
       )
-      .where('tx_hash = :tx_hash', { tx_hash })
+      .where('Transaction.tx_hash = :tx_hash', { tx_hash })
       .getOne();
   }
 
