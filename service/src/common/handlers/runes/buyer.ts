@@ -381,7 +381,7 @@ export namespace BuyerHandler {
         value: getSellerRuneOutputValue(
           listing.seller.price,
           listing.seller.makerFeeBp,
-          listing.seller.runeItem.outputValue,
+          Number(listing.seller.runeItem.tokenValue),
         ),
       },
     };
