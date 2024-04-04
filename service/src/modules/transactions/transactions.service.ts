@@ -78,8 +78,8 @@ export class TransactionsService {
     };
   }
 
-  async getTransactionById(tx_hash: string): Promise<Transaction> {
-    return this.transactionRepository
+  async getTransactionById(tx_hash: string): Promise<any> {
+    const transaction = await this.transactionRepository
       .createQueryBuilder()
       .leftJoinAndSelect('Transaction.vin', 'TransactionIns')
       .leftJoinAndSelect('Transaction.vout', 'TransactionOut')
@@ -91,6 +91,14 @@ export class TransactionsService {
       )
       .where('Transaction.tx_hash = :tx_hash', { tx_hash })
       .getOne();
+
+    return {
+      ...transaction,
+      timestamp: transaction.block.block_time,
+      fee: 0,
+      vsize: 0,
+      txid: transaction.tx_hash,
+    };
   }
 
   private async addTransactionFilter(
