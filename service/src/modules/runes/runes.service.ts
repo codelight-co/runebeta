@@ -9,10 +9,7 @@ import { User } from '../database/entities/user.entity';
 import { EEtchRuneStatus } from 'src/common/enums';
 import { StatsService } from '../stats/stats.service';
 import { TransactionsService } from '../transactions/transactions.service';
-import {
-  BroadcastTransactionDto,
-  TransactionFilterDto,
-} from '../transactions/dto';
+import { BroadcastTransactionDto } from '../transactions/dto';
 
 @Injectable()
 export class RunesService {
@@ -195,15 +192,5 @@ export class RunesService {
     }
 
     return;
-  }
-
-  getRuneTransactions(
-    runeId: string,
-    transactionFilterDto: TransactionFilterDto,
-  ): Promise<any> {
-    return this.transactionsService.getTransactionByRuneId(runeId, {
-      limit: transactionFilterDto.limit,
-      offset: transactionFilterDto.offset,
-    });
   }
 }

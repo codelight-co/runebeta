@@ -38,7 +38,6 @@ export class TransactionsService {
     transactionFilterDto: TransactionFilterDto,
   ): Promise<any> {
     const builder = this.transactionRepository.createQueryBuilder();
-    const total = await builder.getCount();
 
     builder
       .leftJoinAndSelect('Transaction.vin', 'TransactionIns')
@@ -49,6 +48,23 @@ export class TransactionsService {
         'Block',
         'Block.block_height = Transaction.block_height',
       );
+
+    if (transactionFilterDto.runeId) {
+      builder.innerJoinAndMapOne(
+        'Transaction.outpointRuneBalances',
+        OutpointRuneBalance,
+        'outpoint',
+        'outpoint.tx_hash = TransactionOut.tx_hash',
+      );
+    }
+
+    if (transactionFilterDto.address) {
+      builder.where('TransactionOut.address = :address', {
+        address: transactionFilterDto.address,
+      });
+    }
+
+    const total = await builder.getCount();
 
     this.addTransactionFilter(builder, transactionFilterDto);
 
@@ -85,15 +101,6 @@ export class TransactionsService {
 
     if (filter.limit) {
       builder.take(filter.limit);
-    }
-
-    if (filter.runeId) {
-      builder.innerJoin(
-        'TxidRune',
-        'txid_rune',
-        'txid_rune.tx_hash = Transaction.tx_hash',
-      );
-      builder.where('txid_rune.runeid = :runeid', { runeid: filter.runeId });
     }
 
     if (filter.sortBy) {
@@ -136,40 +143,5 @@ export class TransactionsService {
 
       throw new BadRequestException('Error broadcasting transaction');
     }
-  }
-
-  async getTransactionByRuneId(
-    runeId: string,
-    transactionFilterDto: TransactionFilterDto,
-  ): Promise<any> {
-    const builder = this.transactionRepository
-      .createQueryBuilder()
-      .leftJoinAndSelect('Transaction.vin', 'TransactionIns')
-      .leftJoinAndSelect('Transaction.vout', 'TransactionOut')
-      .innerJoinAndMapOne(
-        'Transaction.block',
-        'Transaction.block',
-        'Block',
-        'Block.block_height = Transaction.block_height',
-      )
-      .innerJoinAndMapOne(
-        'Transaction.outpointRuneBalances',
-        OutpointRuneBalance,
-        'outpoint',
-        'outpoint.tx_hash = TransactionOut.tx_hash',
-      )
-      .where('outpoint.rune_id = :runeid', { runeid: runeId });
-
-    const total = await builder.getCount();
-
-    builder.take(transactionFilterDto.limit || 10);
-    builder.skip(transactionFilterDto.offset || 0);
-
-    return {
-      total,
-      limit: transactionFilterDto.limit || 10,
-      offset: transactionFilterDto.offset || 0,
-      transactions: await builder.getMany(),
-    };
   }
 }
