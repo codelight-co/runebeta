@@ -356,7 +356,7 @@ export class MarketsService implements OnModuleInit {
 
     return BuyerHandler.selectPaymentUTXOs(
       utxos as AddressTxsUtxo[],
-      Number(orders[0].runeItem.outputValue),
+      Number(orders[0].runeItem.tokenValue),
       2,
       3,
       'minimumFee',
