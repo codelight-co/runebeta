@@ -29,8 +29,10 @@ export class RunesService {
       .offset(runeFilterDto.offset)
       .limit(runeFilterDto.limit);
 
-    if (runeFilterDto.type) {
-      builder.where('type = :type', { type: runeFilterDto.type });
+    if (runeFilterDto.type === 'Fairmint') {
+      builder.where(`mint_entry ->> 'cap' is null`);
+    } else if (runeFilterDto.type === 'FixedCap') {
+      builder.where(`mint_entry ->> 'cap' is not null`);
     }
 
     if (runeFilterDto.sortBy) {
