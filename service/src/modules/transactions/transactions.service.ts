@@ -17,6 +17,7 @@ import {
   BITCOIN_RPC_PORT,
   BITCOIN_RPC_USER,
 } from 'src/environments';
+import { OutpointRuneBalance } from '../database/entities/sequence-number-runeid.entity';
 
 @Injectable()
 export class TransactionsService {
@@ -135,5 +136,40 @@ export class TransactionsService {
 
       throw new BadRequestException('Error broadcasting transaction');
     }
+  }
+
+  async getTransactionByRuneId(
+    runeId: string,
+    transactionFilterDto: TransactionFilterDto,
+  ): Promise<any> {
+    const builder = this.transactionRepository
+      .createQueryBuilder()
+      .leftJoinAndSelect('Transaction.vin', 'TransactionIns')
+      .leftJoinAndSelect('Transaction.vout', 'TransactionOut')
+      .innerJoinAndMapOne(
+        'Transaction.block',
+        'Transaction.block',
+        'Block',
+        'Block.block_height = Transaction.block_height',
+      )
+      .innerJoinAndMapOne(
+        'Transaction.outpointRuneBalances',
+        OutpointRuneBalance,
+        'outpoint',
+        'outpoint.tx_hash = TransactionOut.tx_hash',
+      )
+      .where('outpoint.rune_id = :runeid', { runeid: runeId });
+
+    const total = await builder.getCount();
+
+    builder.take(transactionFilterDto.limit || 10);
+    builder.skip(transactionFilterDto.offset || 0);
+
+    return {
+      total,
+      limit: transactionFilterDto.limit || 10,
+      offset: transactionFilterDto.offset || 0,
+      transactions: await builder.getMany(),
+    };
   }
 }

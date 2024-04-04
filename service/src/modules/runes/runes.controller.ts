@@ -15,6 +15,7 @@ import { EtchRuneDto } from './dto/etch-rune-filter.dto';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { UserDecorator } from 'src/common/decorators/user.decorator';
 import { User } from '../database/entities/user.entity';
+import { TransactionFilterDto } from '../transactions/dto';
 
 @Controller('runes')
 @UseInterceptors(CoreTransformInterceptor)
@@ -47,5 +48,14 @@ export class RunesController {
     @UserDecorator() user: User,
   ): Promise<any> {
     return this.runesService.etchRune(user, body);
+  }
+
+  // Get rune transactions
+  @Get(':id/transactions')
+  async getRuneTransactions(
+    @Param('id') id: string,
+    @Query() transactionFilterDto: TransactionFilterDto,
+  ): Promise<any> {
+    return this.runesService.getRuneTransactions(id, transactionFilterDto);
   }
 }

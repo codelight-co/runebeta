@@ -3,16 +3,16 @@ import { RuneFilterDto } from './dto';
 import { HttpService } from '@nestjs/axios';
 import { Repository } from 'typeorm';
 import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
-import { Rune } from 'rune_lib';
 import { EtchRuneDto } from './dto/etch-rune-filter.dto';
 import { EtchRune } from '../database/entities';
 import { User } from '../database/entities/user.entity';
 import { EEtchRuneStatus } from 'src/common/enums';
 import { StatsService } from '../stats/stats.service';
 import { TransactionsService } from '../transactions/transactions.service';
-import { BroadcastTransactionDto } from '../transactions/dto';
-import e from 'express';
-import { run } from 'node:test';
+import {
+  BroadcastTransactionDto,
+  TransactionFilterDto,
+} from '../transactions/dto';
 
 @Injectable()
 export class RunesService {
@@ -195,5 +195,15 @@ export class RunesService {
     }
 
     return;
+  }
+
+  getRuneTransactions(
+    runeId: string,
+    transactionFilterDto: TransactionFilterDto,
+  ): Promise<any> {
+    return this.transactionsService.getTransactionByRuneId(runeId, {
+      limit: transactionFilterDto.limit,
+      offset: transactionFilterDto.offset,
+    });
   }
 }
