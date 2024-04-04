@@ -305,7 +305,7 @@ export namespace BuyerHandler {
       0,
     );
 
-    const changeValue = total_buyer_inputs_value - fee;
+    const changeValue = total_buyer_inputs_value - _seller_listing_prices - fee;
     if (changeValue < 0) {
       throw new Error(`Your wallet address doesn't have enough funds to buy this inscription.
   Price:      ${satToBtc(_seller_listing_prices)} BTC
