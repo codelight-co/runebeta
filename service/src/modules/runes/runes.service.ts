@@ -134,7 +134,11 @@ export class RunesService {
 
     return {
       topAddress: data.map((d: any) => ({
-        ...d,
+        address: d.address,
+        amount: d.balance_value,
+        amount_decimal: d.balance_value,
+        id: d.id,
+        rune_id: d.rune_id,
       })),
     };
   }
