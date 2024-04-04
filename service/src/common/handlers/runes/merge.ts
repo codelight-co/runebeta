@@ -39,10 +39,9 @@ export namespace MergeSingers {
 
     console.log('buyerSignedPsbt txInputs :>> ', buyerSignedPsbt.txInputs);
     console.log('buyerSignedPsbt txOutputs :>> ', buyerSignedPsbt.txOutputs);
-    console.log('buyerSignedPsbt toBase64 :>> ', buyerSignedPsbt.toBase64());
 
-    buyerSignedPsbt.extractTransaction();
+    const commitTx = buyerSignedPsbt.extractTransaction();
 
-    return buyerSignedPsbt.toHex();
+    return commitTx.toHex();
   }
 }

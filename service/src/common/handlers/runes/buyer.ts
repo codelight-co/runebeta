@@ -183,8 +183,9 @@ export namespace BuyerHandler {
           10000,
       );
 
-      _seller_listing_prices += seller.seller.price;
       _seller_total_tokens += BigInt(seller.seller.runeItem.tokenValue);
+      _seller_listing_prices +=
+        seller.seller.price * seller.seller.runeItem.outputValue;
       /// push _token_output to _token_outputs,and sort them later, and join FT value together
     }
 
@@ -193,9 +194,6 @@ export namespace BuyerHandler {
     const _buyers_inputs: SellerInput[] = [];
     for (const utxo of buyer_state.buyer.buyerPaymentUTXOs!) {
       const hex = await FullnodeRPC.getrawtransaction(utxo.txid);
-      console.log('hex :>> ', hex);
-
-      console.log('utxo :>> ', utxo);
       const [addrType, network] = getAddressType(
         buyer_state.buyer.buyerAddress,
       );
@@ -205,7 +203,6 @@ export namespace BuyerHandler {
         index: utxo.vout,
         nonWitnessUtxo: bitcoin.Transaction.fromHex(hex).toBuffer(),
       };
-      console.log('input :>> ', input);
 
       if (addrType === AddressType.P2TR) {
         input.witnessUtxo = {
@@ -268,10 +265,8 @@ export namespace BuyerHandler {
       value: 0,
       script: rs.encipher(),
     };
-    console.log('_platform_fee :>> ', _platform_fee);
     /// Step 6, add platform BTC input
-    _platform_fee = _platform_fee > DUST_AMOUNT ? _platform_fee : 0;
-    console.log('_platform_fee :>> ', _platform_fee);
+    _platform_fee = _platform_fee > DUST_AMOUNT ? _platform_fee : 1000;
 
     const platform_output = {
       address: PLATFORM_FEE_ADDRESS,
@@ -289,7 +284,6 @@ export namespace BuyerHandler {
       op_return_output,
       platform_output,
     ];
-    console.log('_all_outputs_except_change :>> ', _all_outputs_except_change);
     for (let i = 0; i < _all_outputs_except_change.length; i++) {
       psbt.addOutput(_all_outputs_except_change[i] as any);
     }
@@ -305,7 +299,8 @@ export namespace BuyerHandler {
       0,
     );
 
-    const changeValue = total_buyer_inputs_value - _seller_listing_prices - fee;
+    const changeValue =
+      total_buyer_inputs_value - _seller_listing_prices - fee - _platform_fee;
     if (changeValue < 0) {
       throw new Error(`Your wallet address doesn't have enough funds to buy this inscription.
   Price:      ${satToBtc(_seller_listing_prices)} BTC

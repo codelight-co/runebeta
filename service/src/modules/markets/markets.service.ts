@@ -23,6 +23,8 @@ import { BuyerOrderDto } from './dto/buyer-order.dto';
 import { MergeSingers } from 'src/common/handlers/runes/merge';
 import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
 import { UsersService } from '../users/users.service';
+import { TransactionsService } from '../transactions/transactions.service';
+import { BroadcastTransactionDto } from '../transactions/dto';
 
 @Injectable()
 export class MarketsService implements OnModuleInit {
@@ -33,6 +35,7 @@ export class MarketsService implements OnModuleInit {
     @Inject('RUNE_ENTRY_REPOSITORY')
     private runeEntryRepository: Repository<TransactionRuneEntry>,
     private readonly usersService: UsersService,
+    private readonly transactionsService: TransactionsService,
   ) {}
 
   private rpcService: RPCService;
@@ -330,10 +333,14 @@ export class MarketsService implements OnModuleInit {
         }) as IRuneListingState,
     );
 
-    return MergeSingers.mergeSignedBuyingPSBTBase64(
+    const txHash = MergeSingers.mergeSignedBuyingPSBTBase64(
       body.buyerState,
       seller_items,
     );
+
+    return this.transactionsService.broadcastTransaction({
+      rawTransaction: txHash,
+    } as BroadcastTransactionDto);
   }
 
   async selectUTXOsForBuying(body: BuyerOrderDto, user: User): Promise<any> {

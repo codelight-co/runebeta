@@ -132,7 +132,11 @@ export class RunesService {
     order by balance_value desc
     limit 10`);
 
-    return data;
+    return {
+      topAddress: data.map((d: any) => ({
+        ...d,
+      })),
+    };
   }
 
   async etchRune(user: User, etchRuneDto: EtchRuneDto): Promise<any> {
