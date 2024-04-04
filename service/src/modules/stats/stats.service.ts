@@ -4,6 +4,7 @@ import { Inject, Injectable, UseInterceptors } from '@nestjs/common';
 import { ODR_PORT, ODR_URL } from 'src/environments';
 import { Transaction } from '../database/entities/transaction.entity';
 import { Repository } from 'typeorm';
+import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
@@ -12,6 +13,8 @@ export class StatsService {
     private readonly httpService: HttpService,
     @Inject('TRANSACTION_REPOSITORY')
     private transactionRepository: Repository<Transaction>,
+    @Inject('RUNE_ENTRY_REPOSITORY')
+    private runeEntryRepository: Repository<TransactionRuneEntry>,
   ) {}
 
   async getBlockHeight() {
@@ -57,11 +60,39 @@ export class StatsService {
   }
 
   async getStats() {
-    const res = await this.httpService
-      .get('https://api2.runealpha.xyz/stats')
-      .toPromise();
+    const totalRune = await this.runeEntryRepository.count();
+    const totalFreeMintRune = await this.runeEntryRepository
+      .createQueryBuilder('rune')
+      .where(`mint_entry ->> 'cap' is null`)
+      .getCount();
+    const totalTransaction = await this.transactionRepository.count();
+    const totalHolderData = await this.transactionRepository
+      .query(`select count(*) as total
+      from (
+        select address
+        from transaction_outs to2
+        inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash
+        where address is not null and spent = false
+        group by address
+      ) as rp`);
+    let totalFee = 0;
+    const totalFeeData = await this.transactionRepository.query(
+      `select sum(price) from orders o`,
+    );
+    if (totalFeeData.length) {
+      totalFee = parseInt(totalFeeData[0]?.sum) / 100000000;
+    }
 
-    return res.data?.data;
+    return {
+      totalRune,
+      totalFreeMintRune,
+      totalTransaction,
+      totalFee,
+      totalHolder: totalHolderData.length
+        ? parseInt(totalHolderData[0]?.total)
+        : 0,
+      todayRateTransaction: 0,
+    };
   }
 
   async getRecommendedFee() {
