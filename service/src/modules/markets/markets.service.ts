@@ -224,7 +224,6 @@ export class MarketsService implements OnModuleInit {
     if (!seller) {
       throw new BadRequestException('No Seller data found');
     }
-    console.log('body :>> ', body);
 
     return SellerHandler.generateUnsignedPsbt(body);
   }

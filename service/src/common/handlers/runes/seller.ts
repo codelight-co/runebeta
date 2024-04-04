@@ -76,6 +76,7 @@ export namespace SellerHandler {
     });
 
     listing.seller.unsignedListingPSBTBase64 = psbt.toBase64();
+
     return listing;
   }
 
@@ -86,11 +87,9 @@ export namespace SellerHandler {
     // itemProvider: runeItemProvider,
     runeItem: IRuneItem,
   ): Promise<boolean> {
-    console.log('start -----');
     const psbt = bitcoin.Psbt.fromBase64(req.signedListingPSBTBase64, {
       network,
     });
-    console.log('1-------------');
     // Verify that the seller has signed the PSBT if runeicals is held on a taproot and tapInternalKey is present
     psbt.data.inputs.forEach((input) => {
       if (input.tapInternalKey) {
@@ -110,7 +109,6 @@ export namespace SellerHandler {
         }
       }
     });
-    console.log('2-------------');
 
     // verify signatures valid, so that the psbt is signed by the item owner
     if (
@@ -119,7 +117,6 @@ export namespace SellerHandler {
     ) {
       throw new InvalidArgumentError(`Invalid signature`);
     }
-    console.log('3-------------');
 
     // verify that the input's sellerOrdAddress is the same as the sellerOrdAddress of the utxo
     if (psbt.inputCount !== 1) {
@@ -130,8 +127,6 @@ export namespace SellerHandler {
       ':' +
       psbt.txInputs[0].index;
 
-    console.log('4-------------');
-
     // verify that the runId is the same as the seller wants
     // const runeItem = await itemProvider.getTokenByOutput(utxoOutput);
     if (
@@ -140,7 +135,6 @@ export namespace SellerHandler {
     ) {
       throw new InvalidArgumentError(`Invalid tokenId`);
     }
-    console.log('5-------------');
 
     // verify that the ordItem's selling price matches the output value with makerFeeBp
     const output = psbt.txOutputs[0];
@@ -152,7 +146,6 @@ export namespace SellerHandler {
     if (output.value !== expectedOutput) {
       throw new InvalidArgumentError(`Invalid price`);
     }
-    console.log('6-------------');
 
     // verify that the output address is the same as the seller's receive address
     if (output.address !== req.sellerReceiveAddress) {
