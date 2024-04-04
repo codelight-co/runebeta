@@ -193,4 +193,49 @@ export class RunesService {
 
     return;
   }
+
+  async getRuneUtxo(address: string): Promise<any> {
+    const data = await this.runeEntryRepository.query(`
+    select to2.address, tre.* ,orb.*
+    from transaction_outs to2 
+    inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash
+    inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id 
+    where spent = false and to2.address is not null and to2.address = '${address}'
+    order by balance_value desc`);
+    return data.map((d: any) => ({
+      address: d.address,
+      amount: d.balance_value,
+      amount_decimal: d.balance_value,
+      id: d.id,
+      rune_id: d.rune_id,
+      rune: {
+        id: d.id,
+        rune_id: d.rune_id,
+        supply: d.supply,
+        token_holders: 0,
+        burned: d.burned,
+        collection_description: null,
+        collection_metadata: null,
+        collection_minted: 0,
+        collection_owner: null,
+        collection_total_supply: null,
+        deploy_transaction: d.tx_hash,
+        divisibility: d.divisibility,
+        end_block: d.number,
+        holder_count: 0,
+        is_collection: false,
+        is_hot: true,
+        is_nft: false,
+        limit: 0,
+        nft_collection: null,
+        nft_metadata: null,
+        rune: d.spaced_rune,
+        symbol: d.symbol,
+        term: 0,
+        timestamp: d.timestamp,
+        transaction_count: 0,
+        unit: 1,
+      },
+    }));
+  }
 }

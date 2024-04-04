@@ -48,4 +48,10 @@ export class RunesController {
   ): Promise<any> {
     return this.runesService.etchRune(user, body);
   }
+
+  // Get rune utxo by address
+  @Get('utxo/:address')
+  async getRuneUtxo(@Param('address') address: string) {
+    return this.runesService.getRuneUtxo(address);
+  }
 }

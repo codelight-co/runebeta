@@ -8,9 +8,6 @@ import { BroadcastTransactionDto, TransactionFilterDto } from './dto';
 import { HttpService } from '@nestjs/axios';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Transaction } from '../database/entities/transaction.entity';
-import { TransactionIns } from '../database/entities/transaction-ins.entity';
-import { TransactionOut } from '../database/entities/transaction-out.entity';
-import { TxidRune } from '../database/entities/txid-rune.entity';
 import {
   BITCOIN_RPC_HOST,
   BITCOIN_RPC_PASS,
@@ -25,12 +22,6 @@ export class TransactionsService {
     private readonly httpService: HttpService,
     @Inject('TRANSACTION_REPOSITORY')
     private transactionRepository: Repository<Transaction>,
-    @Inject('TRANSACTION_IN_REPOSITORY')
-    private transactionInRepository: Repository<TransactionIns>,
-    @Inject('TRANSACTION_OUT_REPOSITORY')
-    private transactionOutRepository: Repository<TransactionOut>,
-    @Inject('TXID_RUNE_REPOSITORY')
-    private txidRuneRepository: Repository<TxidRune>,
   ) {}
   private logger = new Logger(TransactionsService.name);
 
