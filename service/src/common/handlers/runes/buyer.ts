@@ -179,11 +179,6 @@ export namespace BuyerHandler {
         address: buyer_state.buyer.buyerTokenReceiveAddress, // buyer receiveAddress
       });
       _seller_outputs.push(sellerOutput);
-      _seller_outputs.push({
-        id: seller.seller.runeItem.id, // runes ID
-        value: DUST_AMOUNT, // runes value
-        address: seller.seller.sellerReceiveAddress, // buyer receiveAddress
-      });
 
       _platform_fee += Math.floor(
         (seller.seller.price *
@@ -319,7 +314,7 @@ export namespace BuyerHandler {
       fee -
       _platform_fee -
       DUST_AMOUNT * 2 -
-      2000;
+      100;
     console.log('changeValue :>> ', changeValue);
     if (changeValue < 0) {
       throw new Error(`Your wallet address doesn't have enough funds to buy this inscription.
