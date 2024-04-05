@@ -179,6 +179,12 @@ export namespace BuyerHandler {
         address: buyer_state.buyer.buyerTokenReceiveAddress, // buyer receiveAddress
       });
       _seller_outputs.push(sellerOutput);
+      _seller_outputs.push({
+        id: seller.seller.runeItem.id, // runes ID
+        value: DUST_AMOUNT, // runes value
+        address: seller.seller.sellerReceiveAddress, // buyer receiveAddress
+      });
+
       _platform_fee += Math.floor(
         (seller.seller.price *
           (buyer_state.buyer.takerFeeBp + seller.seller.makerFeeBp)) /
