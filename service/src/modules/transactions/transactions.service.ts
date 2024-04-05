@@ -16,7 +16,6 @@ import {
 } from 'src/environments';
 import { TransactionOut } from '../database/entities/transaction-out.entity';
 import { OutpointRuneBalance } from '../database/entities/outpoint-rune-balance.entity';
-import { address } from 'bitcoinjs-lib';
 
 @Injectable()
 export class TransactionsService {
@@ -138,7 +137,7 @@ export class TransactionsService {
         transaction.vout[index] = {
           ...vout,
           address: vout?.address,
-          value: vout.value,
+          value: vout?.value,
           runeInject: vout?.outpointRuneBalances?.length
             ? vout.outpointRuneBalances.map((outpoint) => ({
                 address: vout.address,
@@ -176,7 +175,7 @@ export class TransactionsService {
         transaction.vin[index] = {
           ...vin,
           address: vout?.address,
-          value: vout.value,
+          value: vout?.value,
           runeInject: vout?.outpointRuneBalances?.length
             ? vout.outpointRuneBalances.map((outpoint) => ({
                 rune_id: outpoint.rune_id,
