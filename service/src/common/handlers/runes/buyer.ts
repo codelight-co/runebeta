@@ -179,11 +179,6 @@ export namespace BuyerHandler {
         address: buyer_state.buyer.buyerTokenReceiveAddress, // buyer receiveAddress
       });
       _seller_outputs.push(sellerOutput);
-      // _seller_outputs.push({
-      //   id: seller.seller.runeItem.id, // runes ID
-      //   value: DUST_AMOUNT, // runes value
-      //   address: seller.seller.sellerReceiveAddress, // buyer receiveAddress
-      // });
       _platform_fee += Math.floor(
         (seller.seller.price *
           (buyer_state.buyer.takerFeeBp + seller.seller.makerFeeBp)) /
@@ -194,7 +189,6 @@ export namespace BuyerHandler {
       _seller_listing_item += BigInt(seller.seller.runeItem.tokenValue);
       _seller_listing_prices +=
         seller.seller.price * Number(seller.seller.runeItem.tokenValue);
-      /// push _token_output to _token_outputs,and sort them later, and join FT value together
     }
 
     /// Step 5, add buyer BTC input
@@ -253,18 +247,18 @@ export namespace BuyerHandler {
       throw new Error('Invalid Rune ID');
     }
 
-    // const sellerEdict = new Edict({
-    //   id: runeId as RuneId,
-    //   amount: _seller_total_tokens - _seller_listing_item,
-    //   output: BigInt(_seller_outputs.length),
-    // });
+    const sellerEdict = new Edict({
+      id: runeId as RuneId,
+      amount: _seller_total_tokens - _seller_listing_item,
+      output: BigInt(_seller_outputs.length - 1),
+    });
     const buyerEdict = new Edict({
       id: runeId as RuneId,
       amount: _seller_listing_item,
-      output: BigInt(_buyer_outputs.length + 1),
+      output: BigInt(_seller_outputs.length + _buyer_outputs.length),
     });
     const rs = new RuneStone({
-      edicts: [buyerEdict],
+      edicts: [sellerEdict, buyerEdict],
       etching: null,
       mint: null,
       pointer: null,

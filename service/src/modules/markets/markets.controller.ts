@@ -50,16 +50,6 @@ export class MarketsController {
     return this.marketsService.getStats();
   }
 
-  // Create sell order
-  @Post('orders/sell')
-  @UseGuards(AuthGuard)
-  async createSellOrder(
-    @Body() body: IRuneListingState,
-    @UserDecorator() user: User,
-  ) {
-    return this.marketsService.createSellOrder(body, user);
-  }
-
   // Generate unsigned listing PSBT
   @Post('orders/sell/unsigned-psbt')
   @UseGuards(AuthGuard)
@@ -68,6 +58,16 @@ export class MarketsController {
     @UserDecorator() user: User,
   ): Promise<IRuneListingState> {
     return this.marketsService.generateUnsignedListingPSBT(body, user);
+  }
+
+  // Create sell order
+  @Post('orders/sell')
+  @UseGuards(AuthGuard)
+  async createSellOrder(
+    @Body() body: IRuneListingState,
+    @UserDecorator() user: User,
+  ) {
+    return this.marketsService.createSellOrder(body, user);
   }
 
   // Select payment UTXOs for buying

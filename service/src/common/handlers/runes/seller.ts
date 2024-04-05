@@ -9,6 +9,7 @@ import {
   IRuneListingState,
 } from './types';
 import * as bitcoin from 'bitcoinjs-lib';
+import { DUST_AMOUNT } from 'src/environments';
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace SellerHandler {
@@ -74,6 +75,11 @@ export namespace SellerHandler {
       address: listing.seller.sellerReceiveAddress,
       value: sellerOutput,
     });
+    psbt.addOutput({
+      id: listing.seller.runeItem.id, // runes ID
+      value: DUST_AMOUNT, // runes value
+      address: listing.seller.sellerReceiveAddress, // buyer receiveAddress
+    } as any);
 
     listing.seller.unsignedListingPSBTBase64 = psbt.toBase64();
 
