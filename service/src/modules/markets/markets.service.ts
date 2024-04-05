@@ -17,7 +17,7 @@ import {
 import { SellerHandler } from 'src/common/handlers/runes/seller';
 import { BuyerHandler } from 'src/common/handlers/runes/buyer';
 import { RPCService, network } from 'src/common/utils/rpc';
-import { BASE_URL } from 'src/environments';
+import { BASE_URL, DUST_AMOUNT } from 'src/environments';
 import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
 import { BuyerOrderDto } from './dto/buyer-order.dto';
 import { MergeSingers } from 'src/common/handlers/runes/merge';
@@ -367,9 +367,9 @@ export class MarketsService implements OnModuleInit {
 
     return BuyerHandler.selectPaymentUTXOs(
       utxos as AddressTxsUtxo[],
-      Number(orders[0].runeItem.tokenValue),
+      Number(orders[0].runeItem.tokenValue) + 1000 + DUST_AMOUNT * 2,
       2,
-      3,
+      5,
       'minimumFee',
       this.rpcService,
     );

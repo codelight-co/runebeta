@@ -107,7 +107,6 @@ export namespace BuyerHandler {
       // TODO - check if the utxo contains runes
       selectedUtxos.push(utxo);
       selectedAmount += utxo.value;
-
       if (
         selectedAmount >=
         amount +
