@@ -49,7 +49,7 @@ export class UsersService implements OnModuleInit {
     const data = await this.transactionOutRepository.query(`
     select to2.address, tre.spaced_rune ,orb.*
     from transaction_outs to2 
-    inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash
+    inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash and to2.vout = orb.vout
     inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id 
     where spent = false and to2.address is not null and to2.address = '${user.walletAddress}'
     order by balance_value desc`);
