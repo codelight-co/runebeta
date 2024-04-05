@@ -307,13 +307,20 @@ export namespace BuyerHandler {
       (partialSum, a) => partialSum + a.value,
       0,
     );
+
+    console.log('total_buyer_inputs_value :>> ', total_buyer_inputs_value);
+    console.log('_seller_listing_prices :>> ', _seller_listing_prices);
+    console.log('fee :>> ', fee);
+    console.log('_platform_fee :>> ', _platform_fee);
+    console.log('DUST_AMOUNT :>> ', DUST_AMOUNT * 2);
     const changeValue =
       total_buyer_inputs_value -
       _seller_listing_prices -
       fee -
       _platform_fee -
       DUST_AMOUNT * 2 -
-      100;
+      1000;
+    console.log('changeValue :>> ', changeValue);
     if (changeValue < 0) {
       throw new Error(`Your wallet address doesn't have enough funds to buy this inscription.
   Price:      ${satToBtc(_seller_listing_prices)} BTC
@@ -336,8 +343,8 @@ export namespace BuyerHandler {
       };
     });
 
-    console.log('psbt :>> ', psbt.txInputs);
-    console.log('psbt :>> ', psbt.txOutputs);
+    console.log('psbt txInputs:>> ', psbt.txInputs);
+    console.log('psbt txOutputs:>> ', psbt.txOutputs);
 
     return buyer_state;
   }
