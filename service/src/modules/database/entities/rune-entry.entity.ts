@@ -1,4 +1,11 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { OutpointRuneBalance } from './outpoint-rune-balance.entity';
 
 @Entity({ synchronize: false })
 export class TransactionRuneEntry {
@@ -46,4 +53,11 @@ export class TransactionRuneEntry {
 
   @Column({ type: 'int4' })
   timestamp: number;
+
+  @OneToMany(
+    () => OutpointRuneBalance,
+    (outpointRuneBalance) => outpointRuneBalance.rune,
+  )
+  @JoinColumn({ name: 'rune_id', referencedColumnName: 'rune_id' })
+  outpointRuneBalances: OutpointRuneBalance[];
 }

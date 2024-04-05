@@ -14,8 +14,9 @@ import {
   BITCOIN_RPC_PORT,
   BITCOIN_RPC_USER,
 } from 'src/environments';
-import { OutpointRuneBalance } from '../database/entities/sequence-number-runeid.entity';
 import { TransactionOut } from '../database/entities/transaction-out.entity';
+import { OutpointRuneBalance } from '../database/entities/outpoint-rune-balance.entity';
+import { address } from 'bitcoinjs-lib';
 
 @Injectable()
 export class TransactionsService {
@@ -41,6 +42,8 @@ export class TransactionsService {
     builder
       .leftJoinAndSelect('Transaction.vin', 'TransactionIns')
       .leftJoinAndSelect('Transaction.vout', 'TransactionOut')
+      .leftJoinAndSelect('TransactionOut.outpointRuneBalances', 'Outpoint')
+      .leftJoinAndSelect('Outpoint.rune', 'rune')
       .innerJoinAndMapOne(
         'Transaction.block',
         'Transaction.block',
@@ -73,11 +76,43 @@ export class TransactionsService {
 
     this.addTransactionFilter(builder, transactionFilterDto);
 
+    const transactions = await builder.getMany();
+    if (transactions?.length) {
+      for (let index = 0; index < transactions.length; index++) {
+        const transaction = transactions[index];
+        if (transaction?.vout.length > 0) {
+          for (let index = 0; index < transaction.vout.length; index++) {
+            const vout = transaction.vout[index];
+            transaction.vout[index] = {
+              ...vout,
+              address: vout?.address,
+              value: vout.value,
+              runeInject: vout?.outpointRuneBalances?.length
+                ? vout.outpointRuneBalances.map((outpoint) => ({
+                    address: vout.address,
+                    rune_id: outpoint.rune_id,
+                    deploy_transaction: outpoint.rune.tx_hash,
+                    timestamp: outpoint.rune.timestamp,
+                    rune: outpoint.rune.spaced_rune,
+                    divisibility: outpoint.rune.divisibility,
+                    symbol: outpoint.rune.symbol,
+                    utxo_type: 'transfer',
+                    amount: outpoint.balance_value,
+                    is_etch: false,
+                    is_claim: false,
+                  }))
+                : null,
+            } as any;
+          }
+        }
+      }
+    }
+
     return {
       total,
       limit: transactionFilterDto.limit,
       offset: transactionFilterDto.offset,
-      transactions: await builder.getMany(),
+      transactions,
     };
   }
 
@@ -86,6 +121,8 @@ export class TransactionsService {
       .createQueryBuilder()
       .leftJoinAndSelect('Transaction.vin', 'TransactionIns')
       .leftJoinAndSelect('Transaction.vout', 'TransactionOut')
+      .leftJoinAndSelect('TransactionOut.outpointRuneBalances', 'Outpoint')
+      .leftJoinAndSelect('Outpoint.rune', 'rune')
       .innerJoinAndMapOne(
         'Transaction.block',
         'Transaction.block',
@@ -94,12 +131,40 @@ export class TransactionsService {
       )
       .where('Transaction.tx_hash = :tx_hash', { tx_hash })
       .getOne();
+
+    if (transaction?.vout.length > 0) {
+      for (let index = 0; index < transaction.vout.length; index++) {
+        const vout = transaction.vout[index];
+        transaction.vout[index] = {
+          ...vout,
+          address: vout?.address,
+          value: vout.value,
+          runeInject: vout?.outpointRuneBalances?.length
+            ? vout.outpointRuneBalances.map((outpoint) => ({
+                address: vout.address,
+                rune_id: outpoint.rune_id,
+                deploy_transaction: outpoint.rune.tx_hash,
+                timestamp: outpoint.rune.timestamp,
+                rune: outpoint.rune.spaced_rune,
+                divisibility: outpoint.rune.divisibility,
+                symbol: outpoint.rune.symbol,
+                utxo_type: 'transfer',
+                amount: outpoint.balance_value,
+                is_etch: false,
+                is_claim: false,
+              }))
+            : null,
+        } as any;
+      }
+    }
     if (transaction?.vin.length > 0) {
       for (let index = 0; index < transaction.vin.length; index++) {
         const vin = transaction.vin[index];
 
         const vout = await this.transactionOutRepository
           .createQueryBuilder('out')
+          .leftJoinAndSelect('out.outpointRuneBalances', 'outpoint')
+          .leftJoinAndSelect('outpoint.rune', 'rune')
           .where('out.tx_hash = :tx_hash', {
             tx_hash: vin.previous_output_hash,
           })
@@ -112,6 +177,20 @@ export class TransactionsService {
           ...vin,
           address: vout?.address,
           value: vout.value,
+          runeInject: vout?.outpointRuneBalances?.length
+            ? vout.outpointRuneBalances.map((outpoint) => ({
+                rune_id: outpoint.rune_id,
+                deploy_transaction: outpoint.rune.tx_hash,
+                timestamp: outpoint.rune.timestamp,
+                rune: outpoint.rune.spaced_rune,
+                divisibility: outpoint.rune.divisibility,
+                symbol: outpoint.rune.symbol,
+                utxo_type: 'claim',
+                amount: outpoint.balance_value,
+                is_etch: false,
+                is_claim: false,
+              }))
+            : null,
         } as any;
       }
     }

@@ -1,27 +1,38 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  PrimaryColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { TransactionOut } from './transaction-out.entity';
+import { TransactionRuneEntry } from './rune-entry.entity';
 
 @Entity({ synchronize: false })
-export class TxidRune {
+export class OutpointRuneBalance {
   @PrimaryColumn()
   id!: number;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar' })
   tx_hash: string;
 
-  @Column({ type: 'text' })
-  rune: string;
+  @Column({ type: 'int4' })
+  vout: number;
 
-  @Column()
-  @CreateDateColumn()
-  createdAt: Date;
+  @Column({ type: 'varchar' })
+  rune_id: string;
 
-  @Column()
-  @UpdateDateColumn()
-  updatedAt: Date;
+  @Column({ type: 'varchar' })
+  balance_value: string;
+
+  @ManyToOne(
+    () => TransactionOut,
+    (transactionOut) => transactionOut.outpointRuneBalances,
+  )
+  @JoinColumn([
+    { name: 'tx_hash', referencedColumnName: 'tx_hash' },
+    { name: 'vout', referencedColumnName: 'vout' },
+  ])
+  txOut: TransactionOut;
+
+  @ManyToOne(
+    () => TransactionRuneEntry,
+    (transactionRuneEntry) => transactionRuneEntry.outpointRuneBalances,
+  )
+  @JoinColumn({ name: 'rune_id', referencedColumnName: 'rune_id' })
+  rune: TransactionRuneEntry;
 }
