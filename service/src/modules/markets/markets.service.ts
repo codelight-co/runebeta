@@ -212,6 +212,7 @@ export class MarketsService implements OnModuleInit {
     return this.orderRepository.save({
       userId: user.id,
       ...body.seller,
+      status: 'listing',
     } as Order);
   }
 
@@ -337,9 +338,20 @@ export class MarketsService implements OnModuleInit {
       seller_items,
     );
 
-    return this.transactionsService.broadcastTransaction({
-      rawTransaction: txHash,
-    } as BroadcastTransactionDto);
+    const broadcastTransaction =
+      await this.transactionsService.broadcastTransaction({
+        rawTransaction: txHash,
+      } as BroadcastTransactionDto);
+    if (broadcastTransaction) {
+      await this.orderRepository
+        .createQueryBuilder()
+        .update(Order)
+        .set({ status: 'completed' })
+        .where('id IN (:...ids)', { ids: body.orderIds })
+        .execute();
+    }
+
+    return broadcastTransaction;
   }
 
   async selectUTXOsForBuying(body: BuyerOrderDto, user: User): Promise<any> {
