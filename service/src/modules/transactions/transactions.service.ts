@@ -15,6 +15,7 @@ import {
   BITCOIN_RPC_USER,
 } from 'src/environments';
 import { OutpointRuneBalance } from '../database/entities/sequence-number-runeid.entity';
+import { TransactionOut } from '../database/entities/transaction-out.entity';
 
 @Injectable()
 export class TransactionsService {
@@ -22,6 +23,8 @@ export class TransactionsService {
     private readonly httpService: HttpService,
     @Inject('TRANSACTION_REPOSITORY')
     private transactionRepository: Repository<Transaction>,
+    @Inject('TRANSACTION_OUT_REPOSITORY')
+    private transactionOutRepository: Repository<TransactionOut>,
   ) {}
   private logger = new Logger(TransactionsService.name);
 
@@ -91,6 +94,27 @@ export class TransactionsService {
       )
       .where('Transaction.tx_hash = :tx_hash', { tx_hash })
       .getOne();
+    if (transaction?.vin.length > 0) {
+      for (let index = 0; index < transaction.vin.length; index++) {
+        const vin = transaction.vin[index];
+
+        const vout = await this.transactionOutRepository
+          .createQueryBuilder('out')
+          .where('out.tx_hash = :tx_hash', {
+            tx_hash: vin.previous_output_hash,
+          })
+          .andWhere('out.vout = :vout', {
+            vout: vin.previous_output_vout,
+          })
+          .getOne();
+
+        transaction.vin[index] = {
+          ...vin,
+          address: vout?.address,
+          value: vout.value,
+        } as any;
+      }
+    }
 
     return {
       ...transaction,
