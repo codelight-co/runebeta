@@ -179,11 +179,11 @@ export namespace BuyerHandler {
         address: buyer_state.buyer.buyerTokenReceiveAddress, // buyer receiveAddress
       });
       _seller_outputs.push(sellerOutput);
-      _seller_outputs.push({
-        id: seller.seller.runeItem.id, // runes ID
-        value: DUST_AMOUNT, // runes value
-        address: seller.seller.sellerReceiveAddress, // buyer receiveAddress
-      });
+      // _seller_outputs.push({
+      //   id: seller.seller.runeItem.id, // runes ID
+      //   value: DUST_AMOUNT, // runes value
+      //   address: seller.seller.sellerReceiveAddress, // buyer receiveAddress
+      // });
       _platform_fee += Math.floor(
         (seller.seller.price *
           (buyer_state.buyer.takerFeeBp + seller.seller.makerFeeBp)) /
@@ -253,18 +253,18 @@ export namespace BuyerHandler {
       throw new Error('Invalid Rune ID');
     }
 
-    const sellerEdict = new Edict({
-      id: runeId as RuneId,
-      amount: _seller_total_tokens - _seller_listing_item,
-      output: BigInt(_seller_outputs.length + 1),
-    });
+    // const sellerEdict = new Edict({
+    //   id: runeId as RuneId,
+    //   amount: _seller_total_tokens - _seller_listing_item,
+    //   output: BigInt(_seller_outputs.length),
+    // });
     const buyerEdict = new Edict({
       id: runeId as RuneId,
       amount: _seller_listing_item,
-      output: BigInt(_seller_outputs.length + _buyer_outputs.length + 1),
+      output: BigInt(_buyer_outputs.length + 1),
     });
     const rs = new RuneStone({
-      edicts: [sellerEdict, buyerEdict],
+      edicts: [buyerEdict],
       etching: null,
       mint: null,
       pointer: null,
@@ -319,7 +319,7 @@ export namespace BuyerHandler {
       fee -
       _platform_fee -
       DUST_AMOUNT * 2 -
-      1000;
+      100;
     console.log('changeValue :>> ', changeValue);
     if (changeValue < 0) {
       throw new Error(`Your wallet address doesn't have enough funds to buy this inscription.
