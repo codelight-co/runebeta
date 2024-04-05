@@ -86,7 +86,7 @@ export class TransactionsService {
             transaction.vout[index] = {
               ...vout,
               address: vout?.address,
-              value: vout.value,
+              value: vout?.value || 0,
               runeInject: vout?.outpointRuneBalances?.length
                 ? vout.outpointRuneBalances.map((outpoint) => ({
                     address: vout.address,
