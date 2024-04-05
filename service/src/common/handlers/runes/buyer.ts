@@ -319,7 +319,7 @@ export namespace BuyerHandler {
       fee -
       _platform_fee -
       DUST_AMOUNT * 2 -
-      100;
+      2000;
     console.log('changeValue :>> ', changeValue);
     if (changeValue < 0) {
       throw new Error(`Your wallet address doesn't have enough funds to buy this inscription.
