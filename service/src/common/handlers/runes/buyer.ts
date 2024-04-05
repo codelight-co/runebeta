@@ -151,9 +151,12 @@ export namespace BuyerHandler {
 
     const _seller_inputs: SellerInput[] = [];
     const _seller_outputs: SellerOutput[] = [];
+    const _buyer_outputs: TokenOutput[] = [];
     let _platform_fee = 0;
     let _seller_listing_prices = 0;
     let _seller_total_tokens = BigInt(0);
+    let _seller_listing_item = BigInt(0);
+
     for (let i = 0; i < seller_items.length; i++) {
       const seller = seller_items[i];
       if (
@@ -171,12 +174,17 @@ export namespace BuyerHandler {
       _seller_inputs.push(sellerInput);
       /// push all seller item as inputs to psbt
 
-      //   const _token_output: TokenOutput = {
-      //     id: seller.seller.runeItem.id, // runes ID
-      //     value: seller.seller.runeItem.outputValue, // runes value
-      //     address: buyer_state.buyer.buyerTokenReceiveAddress, // buyer receiveAddress
-      //   };
+      _buyer_outputs.push({
+        id: seller.seller.runeItem.id, // runes ID
+        value: DUST_AMOUNT, // runes value
+        address: buyer_state.buyer.buyerTokenReceiveAddress, // buyer receiveAddress
+      });
       _seller_outputs.push(sellerOutput);
+      _seller_outputs.push({
+        id: seller.seller.runeItem.id, // runes ID
+        value: DUST_AMOUNT, // runes value
+        address: seller.seller.sellerReceiveAddress, // buyer receiveAddress
+      });
       _platform_fee += Math.floor(
         (seller.seller.price *
           (buyer_state.buyer.takerFeeBp + seller.seller.makerFeeBp)) /
@@ -184,6 +192,7 @@ export namespace BuyerHandler {
       );
 
       _seller_total_tokens += BigInt(seller.seller.runeItem.outputValue);
+      _seller_listing_item += BigInt(seller.seller.runeItem.tokenValue);
       _seller_listing_prices +=
         seller.seller.price * Number(seller.seller.runeItem.tokenValue);
       /// push _token_output to _token_outputs,and sort them later, and join FT value together
@@ -244,19 +253,19 @@ export namespace BuyerHandler {
     if (!runeId) {
       throw new Error('Invalid Rune ID');
     }
-    // const edict = new Edict(
-    //   runeId as RuneId,
-    //   BigInt(_seller_outputs.length + 2),
-    //   _seller_total_tokens,
-    // );
 
-    const edict = new Edict({
+    const sellerEdict = new Edict({
       id: runeId as RuneId,
-      amount: _seller_total_tokens,
-      output: BigInt(_seller_outputs.length + 2),
+      amount: _seller_total_tokens - _seller_listing_item,
+      output: BigInt(_seller_outputs.length + 1),
+    });
+    const buyerEdict = new Edict({
+      id: runeId as RuneId,
+      amount: _seller_listing_item,
+      output: BigInt(_seller_outputs.length + _buyer_outputs.length + 1),
     });
     const rs = new RuneStone({
-      edicts: [edict],
+      edicts: [sellerEdict, buyerEdict],
       etching: null,
       mint: null,
       pointer: null,
@@ -282,6 +291,7 @@ export namespace BuyerHandler {
     const _all_outputs_except_change = [
       ..._seller_outputs,
       op_return_output,
+      ..._buyer_outputs,
       platform_output,
     ];
     for (let i = 0; i < _all_outputs_except_change.length; i++) {
@@ -298,12 +308,12 @@ export namespace BuyerHandler {
       (partialSum, a) => partialSum + a.value,
       0,
     );
-
     const changeValue =
       total_buyer_inputs_value -
       _seller_listing_prices -
       fee -
       _platform_fee -
+      DUST_AMOUNT * 2 -
       100;
     if (changeValue < 0) {
       throw new Error(`Your wallet address doesn't have enough funds to buy this inscription.
@@ -326,6 +336,9 @@ export namespace BuyerHandler {
         id: e.id!,
       };
     });
+
+    console.log('psbt :>> ', psbt.txInputs);
+    console.log('psbt :>> ', psbt.txOutputs);
 
     return buyer_state;
   }
