@@ -137,7 +137,7 @@ export class TransactionsService {
         transaction.vout[index] = {
           ...vout,
           address: vout?.address,
-          value: vout?.value,
+          value: vout?.value ? vout.value / 100000000 : 0,
           runeInject: vout?.outpointRuneBalances?.length
             ? vout.outpointRuneBalances.map((outpoint) => ({
                 address: vout.address,
@@ -175,7 +175,7 @@ export class TransactionsService {
         transaction.vin[index] = {
           ...vin,
           address: vout?.address,
-          value: vout?.value,
+          value: vout?.value ? vout.value / 100000000 : 0,
           runeInject: vout?.outpointRuneBalances?.length
             ? vout.outpointRuneBalances.map((outpoint) => ({
                 rune_id: outpoint.rune_id,
