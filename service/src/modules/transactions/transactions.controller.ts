@@ -8,7 +8,11 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
-import { BroadcastTransactionDto, TransactionFilterDto } from './dto';
+import {
+  BroadcastTransactionDto,
+  RetrieveRuneDto,
+  TransactionFilterDto,
+} from './dto';
 import { CoreTransformInterceptor } from 'src/common/interceptors/coreTransform.interceptor';
 
 @Controller('transactions')
@@ -32,5 +36,11 @@ export class TransactionsController {
   @Post('broadcast')
   async broadcastTransaction(@Body() txDto: BroadcastTransactionDto) {
     return this.transactionsService.broadcastTransaction(txDto);
+  }
+
+  // Retrieve rune by tx id
+  @Post('retrieve/rune')
+  async retrieveRuneByTxIDs(@Body() txDto: RetrieveRuneDto): Promise<any> {
+    return this.transactionsService.retrieveRuneByTxIDs(txDto);
   }
 }

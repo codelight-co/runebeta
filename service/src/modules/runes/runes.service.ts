@@ -140,6 +140,13 @@ export class RunesService {
     };
   }
 
+  async getRuneByRuneIDs(runeIDs: string[]): Promise<any> {
+    return this.runeEntryRepository
+      .createQueryBuilder()
+      .where('rune_id IN (:...runeIDs)', { runeIDs })
+      .getMany();
+  }
+
   async etchRune(user: User, etchRuneDto: EtchRuneDto): Promise<any> {
     const rune = await this.etchRuneEntryRepository.save({
       name: etchRuneDto.runeName || '',

@@ -18,6 +18,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { TaskModule } from './modules/task-schedule/task.module';
 import { BullModule } from '@nestjs/bull';
 import { WorkersModule } from './modules/workers/workers.module';
+import { IndexersModule } from './modules/indexers/indexers.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { WorkersModule } from './modules/workers/workers.module';
     MarketsModule,
     AuthModule,
     WorkersModule,
+    IndexersModule,
   ],
   controllers: [AppController],
   providers: [

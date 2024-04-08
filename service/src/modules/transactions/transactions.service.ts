@@ -4,7 +4,11 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
-import { BroadcastTransactionDto, TransactionFilterDto } from './dto';
+import {
+  BroadcastTransactionDto,
+  RetrieveRuneDto,
+  TransactionFilterDto,
+} from './dto';
 import { HttpService } from '@nestjs/axios';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Transaction } from '../database/entities/transaction.entity';
@@ -16,6 +20,7 @@ import {
 } from 'src/environments';
 import { TransactionOut } from '../database/entities/transaction-out.entity';
 import { OutpointRuneBalance } from '../database/entities/outpoint-rune-balance.entity';
+import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
 
 @Injectable()
 export class TransactionsService {
@@ -25,6 +30,8 @@ export class TransactionsService {
     private transactionRepository: Repository<Transaction>,
     @Inject('TRANSACTION_OUT_REPOSITORY')
     private transactionOutRepository: Repository<TransactionOut>,
+    @Inject('RUNE_ENTRY_REPOSITORY')
+    private runeEntryRepository: Repository<TransactionRuneEntry>,
   ) {}
   private logger = new Logger(TransactionsService.name);
 
@@ -255,5 +262,35 @@ export class TransactionsService {
 
       throw new BadRequestException('Error broadcasting transaction');
     }
+  }
+
+  async retrieveRuneByTxIDs(txDto: RetrieveRuneDto): Promise<any> {
+    const runeData = await this.transactionRepository
+      .query(`select tx_hash, string_agg(rune_id, '#') as rune_string from (
+        select to2.tx_hash, orb.rune_id
+        from transaction_outs to2
+        left join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash and to2.vout = orb.vout 
+        where to2.tx_hash in (${txDto.tx_ids.map((txid) => `'${txid}'`).join(',')})
+        group by to2.tx_hash, orb.rune_id
+      ) as rp
+      group by tx_hash`);
+    if (runeData.length === 0) {
+      return txDto.tx_ids.map(() => null);
+    }
+
+    return Promise.all(
+      runeData.map(async (data: { tx_hash: string; rune_string: string }) => {
+        if (!data.rune_string) {
+          return null;
+        }
+
+        return this.runeEntryRepository
+          .createQueryBuilder('rune')
+          .where('rune.rune_id in (:...ids)', {
+            ids: data.rune_string.split('#'),
+          })
+          .getMany();
+      }),
+    );
   }
 }

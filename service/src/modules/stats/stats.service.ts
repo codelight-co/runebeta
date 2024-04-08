@@ -171,10 +171,12 @@ from (
 	where tre.rune_id = '${rune.rune_id}' and CAST(orb.balance_value  AS DECIMAL) > 0 and to2.spent = false 
 	group  by to2.address
 ) as rp2`)) as Array<{ name: string; total: number }>;
+
     const payload = {} as any;
     for (let index = 0; index < stats.length; index++) {
       const stat = stats[index];
       payload[stat.name] = stat.total;
+
       await this.runeStatRepository.save({
         id: runeStats?.id,
         rune_id: rune.rune_id,
