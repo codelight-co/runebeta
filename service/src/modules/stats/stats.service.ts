@@ -1,6 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import { CacheInterceptor } from '@nestjs/cache-manager';
-import { Inject, Injectable, UseInterceptors } from '@nestjs/common';
+import { Inject, Injectable, Logger, UseInterceptors } from '@nestjs/common';
 import { ODR_PORT, ODR_URL } from 'src/environments';
 import { Transaction } from '../database/entities/transaction.entity';
 import { Repository } from 'typeorm';
@@ -16,6 +16,8 @@ export class StatsService {
     @Inject('RUNE_ENTRY_REPOSITORY')
     private runeEntryRepository: Repository<TransactionRuneEntry>,
   ) {}
+
+  private readonly logger = new Logger(StatsService.name);
 
   async getBlockHeight() {
     const res = await this.httpService
@@ -101,5 +103,25 @@ export class StatsService {
       .toPromise();
 
     return res.data;
+  }
+
+  async calculateNetworkStats() {
+    this.logger.log('Calculating network stats...');
+    const blockHeight = await this.getBlockHeight();
+
+    const blockSyncNumber = await this.getBlockSyncNumber();
+    const btcPrice = await this.getBtcPrice();
+    const dailyTransactionCount = await this.getDailyTransactionCount();
+    const stats = await this.getStats();
+    const recommendedFee = await this.getRecommendedFee();
+
+    return {
+      blockHeight,
+      blockSyncNumber,
+      btcPrice,
+      dailyTransactionCount,
+      stats,
+      recommendedFee,
+    };
   }
 }

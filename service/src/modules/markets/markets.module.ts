@@ -11,5 +11,6 @@ import { TransactionsModule } from '../transactions/transactions.module';
   imports: [HttpModule, DatabaseModule, UsersModule, TransactionsModule],
   controllers: [MarketsController],
   providers: [MarketsService, ...ordersProviders],
+  exports: [MarketsService],
 })
 export class MarketsModule {}

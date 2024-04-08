@@ -230,7 +230,7 @@ export class RunesService {
         nft_collection: null,
         nft_metadata: null,
         rune: d.spaced_rune,
-        symbol: d.symbol,
+        symbol: d.symbol ? d.symbol : '¤',
         term: 0,
         timestamp: d.timestamp,
         transaction_count: 0,

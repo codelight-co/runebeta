@@ -25,14 +25,14 @@ export class AuthService {
     }
 
     // Uncomment this code to verify signature
-    // const isPass = Verifier.verifySignature(
-    //   verifyDto.address,
-    //   nonce,
-    //   verifyDto.signature,
-    // );
-    // if (!isPass) {
-    //   throw new UnauthorizedException('Signature not match');
-    // }
+    const isPass = Verifier.verifySignature(
+      verifyDto.address,
+      nonce,
+      verifyDto.signature,
+    );
+    if (!isPass) {
+      throw new UnauthorizedException('Signature not match');
+    }
 
     // Check if user exists in database
     let user = await this.userService.findOneByWalletAddress(verifyDto.address);

@@ -1,4 +1,5 @@
 import {
+  AfterLoad,
   Column,
   Entity,
   JoinColumn,
@@ -60,4 +61,11 @@ export class TransactionRuneEntry {
   )
   @JoinColumn({ name: 'rune_id', referencedColumnName: 'rune_id' })
   outpointRuneBalances: OutpointRuneBalance[];
+
+  @AfterLoad()
+  afterLoad() {
+    if (!this.symbol) {
+      this.symbol = '¤';
+    }
+  }
 }
