@@ -6,6 +6,9 @@ import { HttpModule } from '@nestjs/axios';
   imports: [
     HttpModule.register({
       timeout: 15000,
+      headers: {
+        Accept: 'application/json',
+      },
     }),
   ],
   providers: [IndexersService],

@@ -11,6 +11,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { PROCESS, PROCESSOR } from 'src/common/enums';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
+import { IndexersService } from '../indexers/indexers.service';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
@@ -25,6 +26,7 @@ export class StatsService {
     @Inject('RUNE_STAT_REPOSITORY')
     private runeStatRepository: Repository<RuneStat>,
     @InjectQueue(PROCESSOR.STAT_QUEUE) private statQueue: Queue,
+    private readonly indexersService: IndexersService,
   ) {}
 
   private readonly logger = new Logger(StatsService.name);
@@ -176,13 +178,22 @@ from (
     for (let index = 0; index < stats.length; index++) {
       const stat = stats[index];
       payload[stat.name] = stat.total;
-
-      await this.runeStatRepository.save({
-        id: runeStats?.id,
-        rune_id: rune.rune_id,
-        ...payload,
-      });
     }
+    const runeIndex = await this.indexersService.getRuneDetails(rune.rune_id);
+    const premine = runeIndex?.premine || 0;
+    const mints = runeIndex?.mints || 0;
+    const burned = runeIndex?.burned || 0;
+    const amount = runeIndex?.terms?.amount || 0;
+    const supply = premine + mints * amount;
+
+    await this.runeStatRepository.save({
+      id: runeStats?.id,
+      rune_id: rune.rune_id,
+      total_supply: supply || 0,
+      total_mints: mints || 0,
+      total_burns: burned || 0,
+      ...payload,
+    });
 
     return;
   }

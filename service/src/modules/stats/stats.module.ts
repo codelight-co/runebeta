@@ -6,6 +6,7 @@ import { statsProviders } from './stats.providers';
 import { DatabaseModule } from '../database/database.module';
 import { BullModule } from '@nestjs/bull';
 import { PROCESSOR } from 'src/common/enums';
+import { IndexersModule } from '../indexers/indexers.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { PROCESSOR } from 'src/common/enums';
     BullModule.registerQueue({
       name: PROCESSOR.STAT_QUEUE,
     }),
+    IndexersModule,
   ],
   providers: [StatsService, ...statsProviders],
   controllers: [StatsController],
