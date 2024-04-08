@@ -9,6 +9,7 @@ import {
 import { Transaction } from './transaction.entity';
 import { TxidRune } from './txid-rune.entity';
 import { OutpointRuneBalance } from './outpoint-rune-balance.entity';
+import { RuneStone } from 'rune_lib';
 
 @Entity({ synchronize: false })
 export class TransactionOut {
@@ -38,6 +39,24 @@ export class TransactionOut {
 
   @Column({ type: 'bool' })
   spent: boolean;
+
+  @Column({ type: 'jsonb', name: 'runestone' })
+  rune_stone: RuneStone;
+
+  @Column({ type: 'int4' })
+  edicts: number;
+
+  @Column({ type: 'jsonb' })
+  cenotaph: any;
+
+  @Column({ type: 'bool' })
+  mint: boolean;
+
+  @Column({ type: 'bool' })
+  etching: boolean;
+
+  @Column({ type: 'bool' })
+  burn: boolean;
 
   @ManyToOne(() => Transaction, (transaction) => transaction.vout)
   @JoinColumn({ name: 'tx_hash', referencedColumnName: 'tx_hash' })
