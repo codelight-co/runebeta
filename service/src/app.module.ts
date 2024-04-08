@@ -16,6 +16,8 @@ import { RedisModule } from '@nestjs-modules/ioredis';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtModule } from '@nestjs/jwt';
 import { TaskModule } from './modules/task-schedule/task.module';
+import { BullModule } from '@nestjs/bull';
+import { WorkersModule } from './modules/workers/workers.module';
 
 @Module({
   imports: [
@@ -32,6 +34,12 @@ import { TaskModule } from './modules/task-schedule/task.module';
       url: `redis://${REDIS_HOST}:${REDIS_PORT}`,
       options: {},
     }),
+    BullModule.forRoot({
+      redis: {
+        host: REDIS_HOST,
+        port: REDIS_PORT,
+      },
+    }),
     JwtModule.register({
       global: true,
       secret: JWT_SECRET,
@@ -44,6 +52,7 @@ import { TaskModule } from './modules/task-schedule/task.module';
     TransfersModule,
     MarketsModule,
     AuthModule,
+    WorkersModule,
   ],
   controllers: [AppController],
   providers: [

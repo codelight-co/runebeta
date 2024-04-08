@@ -196,9 +196,9 @@ export class RunesService {
 
   async getRuneUtxo(address: string): Promise<any> {
     const data = await this.runeEntryRepository.query(`
-    select to2.address, tre.* ,orb.*
+    select to2.address, to2.tx_hash as utxo_tx_hash, to2.vout as utxo_vout, to2.value as utxo_value, tre.* ,orb.*
     from transaction_outs to2 
-    inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash
+    inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash and orb.vout = to2.vout
     inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id 
     where spent = false and to2.address is not null and to2.address = '${address}'
     order by balance_value desc`);
@@ -208,6 +208,11 @@ export class RunesService {
       amount_decimal: d.balance_value,
       id: d.id,
       rune_id: d.rune_id,
+      utxo: {
+        tx_hash: d.utxo_tx_hash,
+        vout: d.utxo_vout,
+        value: d.utxo_value,
+      },
       rune: {
         id: d.id,
         rune_id: d.rune_id,

@@ -24,7 +24,6 @@ export class AuthService {
       throw new UnauthorizedException('Nonce not found');
     }
 
-    // Uncomment this code to verify signature
     const isPass = Verifier.verifySignature(
       verifyDto.address,
       nonce,
