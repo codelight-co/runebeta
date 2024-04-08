@@ -4,6 +4,7 @@ import { TransactionIns } from '../database/entities/transaction-ins.entity';
 import { TransactionOut } from '../database/entities/transaction-out.entity';
 import { TxidRune } from '../database/entities/txid-rune.entity';
 import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
+import { OutpointRuneBalance } from '../database/entities/outpoint-rune-balance.entity';
 
 export const transactionsProviders = [
   {
@@ -33,6 +34,12 @@ export const transactionsProviders = [
     provide: 'RUNE_ENTRY_REPOSITORY',
     useFactory: (dataSource: DataSource) =>
       dataSource.getRepository(TransactionRuneEntry),
+    inject: ['DATA_SOURCE'],
+  },
+  {
+    provide: 'OUTPOINT_RUNE_BALANCE_REPOSITORY',
+    useFactory: (dataSource: DataSource) =>
+      dataSource.getRepository(OutpointRuneBalance),
     inject: ['DATA_SOURCE'],
   },
 ];

@@ -32,6 +32,8 @@ export class TransactionsService {
     private transactionOutRepository: Repository<TransactionOut>,
     @Inject('RUNE_ENTRY_REPOSITORY')
     private runeEntryRepository: Repository<TransactionRuneEntry>,
+    @Inject('OUTPOINT_RUNE_BALANCE_REPOSITORY')
+    private outpointRuneBalanceRepository: Repository<OutpointRuneBalance>,
   ) {}
   private logger = new Logger(TransactionsService.name);
 
@@ -265,31 +267,35 @@ export class TransactionsService {
   }
 
   async retrieveRuneByTxIDs(txDto: RetrieveRuneDto): Promise<any> {
-    const runeData = await this.transactionRepository
-      .query(`select tx_hash, string_agg(rune_id, '#') as rune_string from (
-        select to2.tx_hash, orb.rune_id
-        from transaction_outs to2
-        left join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash and to2.vout = orb.vout 
-        where to2.tx_hash in (${txDto.tx_ids.map((txid) => `'${txid}'`).join(',')})
-        group by to2.tx_hash, orb.rune_id
-      ) as rp
-      group by tx_hash`);
-    if (runeData.length === 0) {
-      return txDto.tx_ids.map(() => null);
-    }
+    const runeData = await Promise.all(
+      txDto.tx_locations.map(async (location) => {
+        const arrLocation = location.split(':');
+        if (arrLocation.length != 2) {
+          return null;
+        }
+        console.log('arrLocation :>> ', arrLocation);
+
+        try {
+          return this.outpointRuneBalanceRepository.findOne({
+            where: { tx_hash: arrLocation[0], vout: parseInt(arrLocation[1]) },
+          });
+        } catch (error) {
+          this.logger.error('Error retrieving rune by tx id', error);
+          return null;
+        }
+      }),
+    );
+    console.log('runeData :>> ', runeData);
 
     return Promise.all(
-      runeData.map(async (data: { tx_hash: string; rune_string: string }) => {
-        if (!data.rune_string) {
+      runeData.map((rune) => {
+        if (!rune) {
           return null;
         }
 
-        return this.runeEntryRepository
-          .createQueryBuilder('rune')
-          .where('rune.rune_id in (:...ids)', {
-            ids: data.rune_string.split('#'),
-          })
-          .getMany();
+        return this.runeEntryRepository.findOne({
+          where: { rune_id: rune.rune_id },
+        });
       }),
     );
   }
