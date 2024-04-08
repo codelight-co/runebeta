@@ -273,11 +273,11 @@ export class TransactionsService {
         if (arrLocation.length != 2) {
           return null;
         }
-        console.log('arrLocation :>> ', arrLocation);
 
         try {
-          return this.outpointRuneBalanceRepository.findOne({
+          return this.outpointRuneBalanceRepository.find({
             where: { tx_hash: arrLocation[0], vout: parseInt(arrLocation[1]) },
+            relations: ['rune'],
           });
         } catch (error) {
           this.logger.error('Error retrieving rune by tx id', error);
@@ -285,18 +285,7 @@ export class TransactionsService {
         }
       }),
     );
-    console.log('runeData :>> ', runeData);
 
-    return Promise.all(
-      runeData.map((rune) => {
-        if (!rune) {
-          return null;
-        }
-
-        return this.runeEntryRepository.findOne({
-          where: { rune_id: rune.rune_id },
-        });
-      }),
-    );
+    return runeData.map((rune) => (rune?.length ? rune : null));
   }
 }
