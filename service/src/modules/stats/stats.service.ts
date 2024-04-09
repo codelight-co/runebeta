@@ -119,32 +119,34 @@ export class StatsService {
   }
 
   async calculateNetworkStats(): Promise<void> {
-    const blockHeight = await this.getBlockHeight();
-    const currentBlockHeight = await this.redis.get('currentBlockHeight');
-    if (parseInt(currentBlockHeight) >= parseInt(blockHeight)) {
-      return;
+    try {
+      const blockHeight = await this.getBlockHeight();
+      const currentBlockHeight = await this.redis.get('currentBlockHeight');
+      if (parseInt(currentBlockHeight) >= parseInt(blockHeight)) {
+        return;
+      }
+
+      await this.redis.set('currentBlockHeight', blockHeight);
+      this.logger.log(`Calculating network stats on block ${blockHeight} ...`);
+
+      const runes = await this.runeEntryRepository.find({});
+      for (let index = 0; index < runes.length; index++) {
+        const rune = runes[index];
+        await this.statQueue.add(
+          PROCESS.STAT_QUEUE.CALCULATE_RUNE_STAT,
+          {
+            blockHeight,
+            rune,
+          },
+          {
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        );
+      }
+    } catch (error) {
+      this.logger.error('Error calculating network stats', error);
     }
-
-    await this.redis.set('currentBlockHeight', blockHeight);
-    this.logger.log(`Calculating network stats on block ${blockHeight} ...`);
-
-    const runes = await this.runeEntryRepository.find({});
-    for (let index = 0; index < runes.length; index++) {
-      const rune = runes[index];
-      await this.statQueue.add(
-        PROCESS.STAT_QUEUE.CALCULATE_RUNE_STAT,
-        {
-          blockHeight,
-          rune,
-        },
-        {
-          removeOnComplete: true,
-          removeOnFail: true,
-        },
-      );
-    }
-
-    return;
   }
 
   async calculateRuneStat(
