@@ -1,11 +1,13 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { User } from '../database/entities/user.entity';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import mempoolJS from '@mempool/mempool.js';
 import { BITCOIN_NETWORK } from 'src/environments';
 import { MempoolReturn } from '@mempool/mempool.js/lib/interfaces/index';
 import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
 import { TransactionOut } from '../database/entities/transaction-out.entity';
+import { TransactionsService } from '../transactions/transactions.service';
+import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -14,6 +16,9 @@ export class UsersService implements OnModuleInit {
     private userRepository: Repository<User>,
     @Inject('TRANSACTION_OUT_REPOSITORY')
     private transactionOutRepository: Repository<TransactionOut>,
+    @Inject('RUNE_ENTRY_REPOSITORY')
+    private runeEntryRepository: Repository<TransactionRuneEntry>,
+    private readonly transactionsService: TransactionsService,
   ) {}
 
   private mempoolClient: MempoolReturn['bitcoin'];
@@ -67,5 +72,49 @@ export class UsersService implements OnModuleInit {
     order by balance_value desc`);
 
     return data;
+  }
+
+  async search(query: string): Promise<any> {
+    // Is transaction hash
+    if (query.length === 64) {
+      const transaction =
+        await this.transactionsService.getTransactionById(query);
+      if (transaction) {
+        return {
+          type: 'transaction',
+          query,
+          data: [transaction],
+        };
+      }
+    }
+
+    // Is address
+    if (query.length >= 34 && query.length <= 62) {
+      const address = await this.getMyUtxo({
+        walletAddress: query.trim(),
+      } as User);
+      if (address) {
+        return {
+          type: 'address',
+          query,
+          data: [address],
+        };
+      }
+    }
+
+    // Is rune id
+    const rune = await this.runeEntryRepository
+      .createQueryBuilder()
+      .where(`spaced_rune ILIKE '%${query.trim().split(' ').join('_')}%'`)
+      .getMany();
+    if (rune) {
+      return {
+        type: 'rune',
+        query,
+        data: rune,
+      };
+    }
+
+    return null;
   }
 }

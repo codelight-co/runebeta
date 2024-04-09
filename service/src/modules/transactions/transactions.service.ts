@@ -127,10 +127,10 @@ export class TransactionsService {
   async getTransactionById(tx_hash: string): Promise<any> {
     const transaction = await this.transactionRepository
       .createQueryBuilder()
-      .leftJoinAndSelect('Transaction.vin', 'TransactionIns')
-      .leftJoinAndSelect('Transaction.vout', 'TransactionOut')
-      .leftJoinAndSelect('TransactionOut.outpointRuneBalances', 'Outpoint')
-      .leftJoinAndSelect('Outpoint.rune', 'rune')
+      .innerJoinAndSelect('Transaction.vin', 'TransactionIns')
+      .innerJoinAndSelect('Transaction.vout', 'TransactionOut')
+      .innerJoinAndSelect('TransactionOut.outpointRuneBalances', 'Outpoint')
+      .innerJoinAndSelect('Outpoint.rune', 'rune')
       .innerJoinAndMapOne(
         'Transaction.block',
         'Transaction.block',
@@ -139,6 +139,9 @@ export class TransactionsService {
       )
       .where('Transaction.tx_hash = :tx_hash', { tx_hash })
       .getOne();
+    if (!transaction) {
+      throw new BadRequestException('Transaction not found');
+    }
 
     if (transaction?.vout.length > 0) {
       for (let index = 0; index < transaction.vout.length; index++) {

@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Param,
+  Query,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -42,5 +43,12 @@ export class UsersController {
   @Get('my-runes/:id')
   getMyRuneById(@UserDecorator() user: User, @Param('id') id: string) {
     return this.usersService.getMyRuneById(user, id);
+  }
+
+  // Search address/rune/transaction
+  @UseGuards(AuthGuard)
+  @Get('search')
+  search(@Query('query') query: string) {
+    return this.usersService.search(query);
   }
 }
