@@ -48,10 +48,10 @@ export class TransactionsService {
     }
 
     builder
-      .leftJoinAndSelect('Transaction.vin', 'TransactionIns')
-      .leftJoinAndSelect('Transaction.vout', 'TransactionOut')
-      .leftJoinAndSelect('TransactionOut.outpointRuneBalances', 'Outpoint')
-      .leftJoinAndSelect('Outpoint.rune', 'rune')
+      .innerJoinAndSelect('Transaction.vin', 'TransactionIns')
+      .innerJoinAndSelect('Transaction.vout', 'TransactionOut')
+      .innerJoinAndSelect('TransactionOut.outpointRuneBalances', 'Outpoint')
+      .innerJoinAndSelect('Outpoint.rune', 'rune')
       .innerJoinAndMapOne(
         'Transaction.block',
         'Transaction.block',
