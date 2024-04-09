@@ -24,4 +24,6 @@ export class RuneFilterDto {
   sortBy?: string;
 
   sortOrder?: string;
+
+  search?: string;
 }

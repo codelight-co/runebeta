@@ -35,10 +35,16 @@ export class RunesService {
       .offset(runeFilterDto.offset)
       .limit(runeFilterDto.limit);
 
-    if (runeFilterDto.type === 'fairmint') {
-      builder.where(`rune.mint_entry ->> 'cap' is null`);
-    } else if (runeFilterDto.type === 'fixed-cap') {
-      builder.where(`rune.mint_entry ->> 'cap' is not null`);
+    if (runeFilterDto.type) {
+      builder.where(`rune_stat.mint_type = :type`, {
+        type: runeFilterDto.type,
+      });
+    }
+
+    if (runeFilterDto.search) {
+      builder.andWhere(`rune.spaced_rune ILIKE :search`, {
+        search: `%${runeFilterDto.search.split(' ').join('_')}%`,
+      });
     }
 
     if (runeFilterDto.sortBy) {
