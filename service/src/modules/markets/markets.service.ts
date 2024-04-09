@@ -5,7 +5,11 @@ import {
   Injectable,
   OnModuleInit,
 } from '@nestjs/common';
-import { MarketRuneFilterDto, MarketRuneOrderFilterDto } from './dto';
+import {
+  CancelOrderDto,
+  MarketRuneFilterDto,
+  MarketRuneOrderFilterDto,
+} from './dto';
 import { User } from '../database/entities/user.entity';
 import { Repository } from 'typeorm';
 import { Order } from '../database/entities/order.entity';
@@ -373,5 +377,31 @@ export class MarketsService implements OnModuleInit {
       'minimumFee',
       this.rpcService,
     );
+  }
+
+  async cancelSellOrder(body: CancelOrderDto, user: User): Promise<any> {
+    // Get order by ids
+    const orders = await this.orderRepository
+      .createQueryBuilder('order')
+      .where('order.id IN (:...ids)', { ids: body.orderIds })
+      .andWhere('order.user_id = :userId', { userId: user.id })
+      .andWhere('order.status = :status', { status: 'listing' })
+      .getMany();
+    if (orders.length !== body.orderIds.length) {
+      throw new BadRequestException('Invalid order ids');
+    }
+    const updated = await this.orderRepository
+      .createQueryBuilder()
+      .update()
+      .set({ status: 'cancelled' })
+      .where('id IN (:...ids)', { ids: body.orderIds })
+      .andWhere('user_id = :userId', { userId: user.id })
+      // .andWhere('status = :status', { status: 'listing' })
+      .execute();
+    if (!updated.affected) {
+      throw new BadRequestException('Failed to cancel order');
+    }
+
+    return { message: 'Order cancelled' };
   }
 }

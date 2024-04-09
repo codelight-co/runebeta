@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { MarketsService } from './markets.service';
 import {
+  CancelOrderDto,
   CreateOrderDto,
   MarketRuneFilterDto,
   MarketRuneOrderFilterDto,
@@ -108,5 +109,15 @@ export class MarketsController {
     @UserDecorator() user: User,
   ): Promise<any> {
     return this.marketsService.selectUTXOsForBuying(body, user);
+  }
+
+  // Seller cancel order
+  @Post('orders/sell/cancel')
+  @UseGuards(AuthGuard)
+  async cancelSellOrder(
+    @Body() body: CancelOrderDto,
+    @UserDecorator() user: User,
+  ) {
+    return this.marketsService.cancelSellOrder(body, user);
   }
 }
