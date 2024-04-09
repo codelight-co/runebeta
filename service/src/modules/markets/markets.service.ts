@@ -63,6 +63,12 @@ export class MarketsService implements OnModuleInit {
       );
     }
 
+    if (marketRuneFilterDto.search) {
+      builder.andWhere('spaced_rune ILIKE :search', {
+        search: `%${marketRuneFilterDto.search.split(' ').join('_')}%`,
+      });
+    }
+
     const runes = await builder.getMany();
 
     return {
