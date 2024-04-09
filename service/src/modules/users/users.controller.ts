@@ -46,7 +46,6 @@ export class UsersController {
   }
 
   // Search address/rune/transaction
-  @UseGuards(AuthGuard)
   @Get('search')
   search(@Query('query') query: string) {
     return this.usersService.search(query);
