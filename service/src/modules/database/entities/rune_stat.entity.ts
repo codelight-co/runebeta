@@ -51,6 +51,9 @@ export class RuneStat {
   @Column({ type: 'jsonb', nullable: true })
   offset: Array<number>;
 
+  @Column({ type: 'jsonb', nullable: true })
+  entry: any;
+
   @Column({ type: 'varchar', nullable: true })
   mint_type: string;
 

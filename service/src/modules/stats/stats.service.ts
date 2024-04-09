@@ -211,6 +211,7 @@ from (
           : 0,
       height: runeIndex?.entry?.terms?.height || [],
       offset: runeIndex?.entry?.terms?.offset || [],
+      entry: runeIndex?.entry || null,
       mint_type,
       ...payload,
     } as RuneStat);

@@ -88,6 +88,7 @@ export class RunesService {
         timestamp: rune.timestamp,
         transaction_count: rune?.stat?.total_transactions || 0,
         mint_type: rune?.stat?.mint_type || '',
+        entry: rune?.stat?.entry || null,
         unit: 1,
       })),
     };
