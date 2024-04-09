@@ -3,7 +3,7 @@ import { RuneFilterDto } from './dto';
 import { Repository } from 'typeorm';
 import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
 import { EtchRuneDto } from './dto/etch-rune-filter.dto';
-import { EtchRune } from '../database/entities';
+import { EtchRune, RuneStat } from '../database/entities';
 import { User } from '../database/entities/user.entity';
 import { EEtchRuneStatus } from 'src/common/enums';
 import { StatsService } from '../stats/stats.service';
@@ -25,19 +25,25 @@ export class RunesService {
 
   async getRunes(runeFilterDto: RuneFilterDto): Promise<any> {
     const builder = this.runeEntryRepository
-      .createQueryBuilder()
+      .createQueryBuilder('rune')
+      .innerJoinAndMapOne(
+        'rune.stat',
+        RuneStat,
+        'rune_stat',
+        'rune_stat.rune_id = rune.rune_id',
+      )
       .offset(runeFilterDto.offset)
       .limit(runeFilterDto.limit);
 
     if (runeFilterDto.type === 'fairmint') {
-      builder.where(`mint_entry ->> 'cap' is null`);
+      builder.where(`rune.mint_entry ->> 'cap' is null`);
     } else if (runeFilterDto.type === 'fixed-cap') {
-      builder.where(`mint_entry ->> 'cap' is not null`);
+      builder.where(`rune.mint_entry ->> 'cap' is not null`);
     }
 
     if (runeFilterDto.sortBy) {
       builder.orderBy(
-        runeFilterDto.sortBy,
+        `rune.${runeFilterDto.sortBy}`,
         runeFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
           ? 'DESC'
           : 'ASC',
@@ -45,7 +51,6 @@ export class RunesService {
     }
 
     const runes = await builder.getMany();
-
     return {
       total: await builder.getCount(),
       limit: runeFilterDto.limit,
@@ -53,7 +58,7 @@ export class RunesService {
       runes: runes.map((rune) => ({
         id: rune.id,
         rune_id: rune.rune_id,
-        supply: rune.supply,
+        supply: rune?.stat?.total_supply || rune.supply || 0,
         token_holders: 0,
         burned: rune.burned,
         collection_description: null,
@@ -64,7 +69,7 @@ export class RunesService {
         deploy_transaction: rune.tx_hash,
         divisibility: rune.divisibility,
         end_block: rune.number,
-        holder_count: 0,
+        holder_count: rune?.stat?.total_holders || 0,
         is_collection: false,
         is_hot: true,
         is_nft: false,
@@ -73,9 +78,10 @@ export class RunesService {
         nft_metadata: null,
         rune: rune.spaced_rune,
         symbol: rune.symbol,
-        term: 0,
+        term: rune?.stat?.term || 0,
         timestamp: rune.timestamp,
-        transaction_count: 0,
+        transaction_count: rune?.stat?.total_transactions || 0,
+        mint_type: rune?.stat?.mint_type || '',
         unit: 1,
       })),
     };

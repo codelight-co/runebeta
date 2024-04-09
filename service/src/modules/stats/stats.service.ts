@@ -12,6 +12,7 @@ import { PROCESS, PROCESSOR } from 'src/common/enums';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import { IndexersService } from '../indexers/indexers.service';
+import { min } from 'class-validator';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
@@ -180,11 +181,13 @@ from (
       payload[stat.name] = stat.total;
     }
     const runeIndex = await this.indexersService.getRuneDetails(rune.rune_id);
+
     const premine = runeIndex?.premine || 0;
     const mints = runeIndex?.mints || 0;
     const burned = runeIndex?.burned || 0;
     const amount = runeIndex?.terms?.amount || 0;
     const supply = premine + mints * amount;
+    const mint_type = runeIndex?.entry?.terms ? 'fairmint' : 'fixed-cap';
 
     await this.runeStatRepository.save({
       id: runeStats?.id,
@@ -192,8 +195,23 @@ from (
       total_supply: supply || 0,
       total_mints: mints || 0,
       total_burns: burned || 0,
+      mintable: runeIndex?.mintable || false,
+      term: runeIndex?.entry?.terms?.amount || 0,
+      start_block:
+        runeIndex?.entry?.terms?.height &&
+        runeIndex?.entry?.terms?.height.length > 0
+          ? runeIndex?.entry?.terms?.height[0]
+          : 0,
+      end_block:
+        runeIndex?.entry?.terms?.height &&
+        runeIndex?.entry?.terms?.height.length > 1
+          ? runeIndex?.entry?.terms?.height[1]
+          : 0,
+      height: runeIndex?.entry?.terms?.height || [],
+      offset: runeIndex?.entry?.terms?.offset || [],
+      mint_type,
       ...payload,
-    });
+    } as RuneStat);
 
     return;
   }
