@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { OutpointRuneBalance } from './outpoint-rune-balance.entity';
 import { RuneStat } from './rune_stat.entity';
+import { Order } from './order.entity';
 
 @Entity({ synchronize: false })
 export class TransactionRuneEntry {
@@ -63,6 +64,10 @@ export class TransactionRuneEntry {
   )
   @JoinColumn({ name: 'rune_id', referencedColumnName: 'rune_id' })
   outpointRuneBalances: OutpointRuneBalance[];
+
+  @OneToMany(() => Order, (order) => order.runeInfo)
+  @JoinColumn({ name: 'rune_id', referencedColumnName: 'rune_id' })
+  orders: Order[];
 
   @OneToOne(() => RuneStat, (runeStat) => runeStat.rune)
   @JoinColumn({ name: 'rune_id', referencedColumnName: 'rune_id' })

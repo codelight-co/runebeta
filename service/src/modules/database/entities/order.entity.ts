@@ -4,6 +4,8 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -19,14 +21,29 @@ export class Order {
   @Index()
   userId: number;
 
+  @Column({ type: 'int4', nullable: true })
+  @Index()
+  buyerId: number;
+
   @Column({ type: 'integer' })
   makerFeeBp: number;
 
   @Column({ type: 'varchar' })
   sellerRuneAddress: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  buyerRuneAddress: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  @Index()
+  tx_hash?: string;
+
   @Column({ type: 'integer' })
   price: number;
+
+  @Column({ type: 'varchar', nullable: true })
+  @Index()
+  rune_id: string;
 
   @Column({ type: 'jsonb' })
   runeItem: IRuneItem;
@@ -57,6 +74,12 @@ export class Order {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  user: User;
+  @ManyToOne(
+    () => TransactionRuneEntry,
+    (transactionRuneEntry) => transactionRuneEntry.orders,
+  )
+  @JoinColumn({ name: 'rune_id', referencedColumnName: 'rune_id' })
   runeInfo: TransactionRuneEntry;
+
+  user: User;
 }

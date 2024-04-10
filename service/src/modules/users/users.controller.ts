@@ -12,6 +12,7 @@ import { CoreTransformInterceptor } from 'src/common/interceptors/coreTransform.
 import { User } from '../database/entities/user.entity';
 import { UsersService } from './users.service';
 import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
+import { MarketRuneOrderFilterDto } from '../markets/dto';
 
 @Controller('users')
 @UseInterceptors(CoreTransformInterceptor)
@@ -49,5 +50,15 @@ export class UsersController {
   @Get('search')
   search(@Query('query') query: string) {
     return this.usersService.search(query);
+  }
+
+  // Get my orders
+  @UseGuards(AuthGuard)
+  @Get('my-orders')
+  getMyOrders(
+    @UserDecorator() user: User,
+    @Query() marketRuneOrderFilterDto: MarketRuneOrderFilterDto,
+  ) {
+    return this.usersService.getMyOrders(user, marketRuneOrderFilterDto);
   }
 }

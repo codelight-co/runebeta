@@ -221,6 +221,7 @@ export class MarketsService implements OnModuleInit {
 
     return this.orderRepository.save({
       userId: user.id,
+      rune_id: String(seller.runeItem.id),
       ...body.seller,
       status: 'listing',
     } as Order);
@@ -352,11 +353,19 @@ export class MarketsService implements OnModuleInit {
       await this.transactionsService.broadcastTransaction({
         rawTransaction: txHash,
       } as BroadcastTransactionDto);
+
     if (broadcastTransaction) {
+      console.log('broadcastTransaction :>> ', broadcastTransaction);
+
       await this.orderRepository
         .createQueryBuilder()
-        .update(Order)
-        .set({ status: 'completed' })
+        .update()
+        .set({
+          status: 'completed',
+          // tx_hash: broadcastTransaction.txid,
+          buyerId: user.id,
+          buyerRuneAddress: buyer.buyerTokenReceiveAddress,
+        })
         .where('id IN (:...ids)', { ids: body.orderIds })
         .execute();
     }

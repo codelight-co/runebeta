@@ -1,6 +1,6 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { User } from '../database/entities/user.entity';
-import { Like, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import mempoolJS from '@mempool/mempool.js';
 import { BITCOIN_NETWORK } from 'src/environments';
 import { MempoolReturn } from '@mempool/mempool.js/lib/interfaces/index';
@@ -8,6 +8,8 @@ import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addre
 import { TransactionOut } from '../database/entities/transaction-out.entity';
 import { TransactionsService } from '../transactions/transactions.service';
 import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
+import { Order } from '../database/entities/order.entity';
+import { MarketRuneOrderFilterDto } from '../markets/dto';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -18,6 +20,8 @@ export class UsersService implements OnModuleInit {
     private transactionOutRepository: Repository<TransactionOut>,
     @Inject('RUNE_ENTRY_REPOSITORY')
     private runeEntryRepository: Repository<TransactionRuneEntry>,
+    @Inject('ORDER_REPOSITORY')
+    private orderRepository: Repository<Order>,
     private readonly transactionsService: TransactionsService,
   ) {}
 
@@ -116,5 +120,87 @@ export class UsersService implements OnModuleInit {
     }
 
     return null;
+  }
+
+  async getMyOrders(
+    user: User,
+    marketRuneOrderFilterDto: MarketRuneOrderFilterDto,
+  ): Promise<any> {
+    const builder = this.orderRepository
+      .createQueryBuilder('order')
+      .innerJoinAndSelect('order.runeInfo', 'runeInfo')
+      .where('order.user_id = :userId', { userId: user.id });
+
+    if (marketRuneOrderFilterDto.status) {
+      builder.andWhere('order.status = :status', {
+        status: marketRuneOrderFilterDto.status,
+      });
+    }
+    if (marketRuneOrderFilterDto.sortBy) {
+      builder.orderBy(
+        `order.${marketRuneOrderFilterDto.sortBy}`,
+        marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+          ? 'DESC'
+          : 'ASC',
+      );
+    } else {
+      builder.orderBy('order.created_at', 'DESC');
+    }
+
+    const total = await builder.getCount();
+    if (
+      total &&
+      (marketRuneOrderFilterDto.offset || marketRuneOrderFilterDto.limit)
+    ) {
+      builder
+        .offset(marketRuneOrderFilterDto.offset)
+        .limit(marketRuneOrderFilterDto.limit);
+    }
+
+    const orders = await builder.getMany();
+
+    return {
+      total,
+      limit: marketRuneOrderFilterDto.limit,
+      offset: marketRuneOrderFilterDto.offset,
+      runes: orders.map((order) => ({
+        id: order.id,
+        amount_rune: order?.runeItem.tokenValue,
+        amount_rune_remain_seller: order?.runeItem.outputValue,
+        amount_satoshi: Number(order?.runeItem.tokenValue) * order.price,
+        buyer: null,
+        buyer_id: null,
+        confirmed: false,
+        confirmed_at_block: 0,
+        owner: {
+          wallet_address: order.sellerRuneAddress,
+        },
+        owner_id: order.userId,
+        price_per_unit: order.price,
+        received_address: null,
+        rune_hex: '',
+        rune_id: order?.runeItem.id,
+        rune_name: order?.runeInfo.spaced_rune,
+        rune_utxo: [
+          {
+            id: order?.runeItem.id,
+            address: order.sellerRuneAddress,
+            amount: order?.runeItem.tokenValue,
+            status: 'available',
+            txid: order?.runeItem.txid,
+            type: 'payment',
+            vout: order?.runeItem.vout,
+            value: order?.runeItem.tokenValue,
+          },
+        ],
+        seller_ordinal_address: null,
+        service_fee: 0,
+        status: order.status,
+        total_value_input_seller: order.runeItem.outputValue,
+        type: 'listing',
+        utxo_address: order.sellerRuneAddress,
+        utxo_address_type: 'payment',
+      })),
+    };
   }
 }

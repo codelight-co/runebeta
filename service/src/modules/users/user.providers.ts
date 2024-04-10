@@ -3,6 +3,7 @@ import { User } from '../database/entities/user.entity';
 import { TransactionOut } from '../database/entities/transaction-out.entity';
 import { Transaction } from '../database/entities/transaction.entity';
 import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
+import { Order } from '../database/entities/order.entity';
 
 export const userProviders = [
   {
@@ -26,6 +27,11 @@ export const userProviders = [
     provide: 'RUNE_ENTRY_REPOSITORY',
     useFactory: (dataSource: DataSource) =>
       dataSource.getRepository(TransactionRuneEntry),
+    inject: ['DATA_SOURCE'],
+  },
+  {
+    provide: 'ORDER_REPOSITORY',
+    useFactory: (dataSource: DataSource) => dataSource.getRepository(Order),
     inject: ['DATA_SOURCE'],
   },
 ];
