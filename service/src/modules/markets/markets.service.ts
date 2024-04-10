@@ -146,7 +146,10 @@ export class MarketsService implements OnModuleInit {
         amount_rune: order.runeItem.tokenValue,
         amount_rune_remain_seller: order.runeItem.outputValue,
         amount_satoshi: Number(order.runeItem.tokenValue) * order.price,
-        buyer: null,
+        buyer: {
+          wallet_address: order.buyerRuneAddress || '',
+        },
+        txs: order.tx_hash || '',
         buyer_id: null,
         confirmed: false,
         confirmed_at_block: 0,
