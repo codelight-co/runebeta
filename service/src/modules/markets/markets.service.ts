@@ -179,6 +179,8 @@ export class MarketsService implements OnModuleInit {
         unit: '1',
         utxo_address: order.sellerRuneAddress,
         utxo_address_type: 'payment',
+        created_at: order.createdAt,
+        updated_at: order.updatedAt,
       })),
     };
   }
