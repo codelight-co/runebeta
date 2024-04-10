@@ -104,11 +104,16 @@ export class MarketsService implements OnModuleInit {
         'runeInfo',
         `runeInfo.rune_id = order.rune_item ->> 'id'`,
       )
-      .where(`order.rune_item ->> 'id' = :id`, { id });
+      .where(`order.rune_id = :id`, { id });
 
     if (marketRuneOrderFilterDto.status) {
       builder.andWhere('order.status = :status', {
         status: marketRuneOrderFilterDto.status,
+      });
+    }
+    if (marketRuneOrderFilterDto.owner_id) {
+      builder.andWhere('order.user_id = :owner_id', {
+        owner_id: marketRuneOrderFilterDto.owner_id,
       });
     }
     if (marketRuneOrderFilterDto.sortBy) {
@@ -179,11 +184,13 @@ export class MarketsService implements OnModuleInit {
   }
 
   async getStats() {
-    const res = await this.httpService
-      .get('https://api.runealpha.xyz/market/stats')
-      .toPromise();
+    const order_sold = await this.orderRepository.count({
+      where: { status: 'completed' },
+    });
 
-    return res.data?.data;
+    return {
+      order_sold,
+    };
   }
 
   async createSellOrder(body: IRuneListingState, user: User): Promise<Order> {

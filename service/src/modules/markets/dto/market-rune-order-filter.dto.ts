@@ -19,4 +19,6 @@ export class MarketRuneOrderFilterDto {
   sortOrder?: string;
 
   status?: string;
+
+  owner_id?: string;
 }

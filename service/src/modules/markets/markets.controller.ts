@@ -11,7 +11,6 @@ import {
 import { MarketsService } from './markets.service';
 import {
   CancelOrderDto,
-  CreateOrderDto,
   MarketRuneFilterDto,
   MarketRuneOrderFilterDto,
 } from './dto';
