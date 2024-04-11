@@ -18,7 +18,7 @@ export class RuneStat {
   @Index()
   rune_id: string;
 
-  @Column({ type: 'int8', nullable: true, default: 0 })
+  @Column({ type: 'decimal', nullable: true })
   total_transactions: number;
 
   @Column({ type: 'int8', nullable: true, default: 0 })
@@ -27,32 +27,38 @@ export class RuneStat {
   @Column({ type: 'int8', nullable: true, default: 0 })
   total_burns: number;
 
-  @Column({ type: 'int8', nullable: true, default: 0 })
+  @Column({ type: 'decimal', nullable: true })
   total_supply: number;
 
   @Column({ type: 'int8', nullable: true, default: 0 })
   total_holders: number;
 
-  @Column({ type: 'int8', nullable: true, default: 0 })
+  @Column({ type: 'decimal', nullable: true })
   change_24h: number;
 
-  @Column({ type: 'int8', nullable: true, default: 0 })
+  @Column({ type: 'decimal', nullable: true })
   volume_24h: number;
 
-  @Column({ type: 'int8', nullable: true, default: 0 })
+  @Column({ type: 'decimal', nullable: true })
   prev_volume_24h: number;
 
-  @Column({ type: 'int8', nullable: true, default: 0 })
+  @Column({ type: 'decimal', nullable: true })
   total_volume: number;
 
-  @Column({ type: 'int8', nullable: true, default: 0 })
+  @Column({ type: 'decimal', nullable: true })
   market_cap: number;
 
   @Column({ type: 'boolean', nullable: true, default: false })
   mintable: boolean;
 
-  @Column({ type: 'int8', nullable: true })
-  term: number;
+  @Column({ type: 'decimal', nullable: true })
+  term: bigint;
+
+  @Column({ type: 'decimal', nullable: true })
+  limit: number;
+
+  @Column({ type: 'decimal', nullable: true })
+  premine: number;
 
   @Column({ type: 'int8', nullable: true, default: 0 })
   start_block: number;

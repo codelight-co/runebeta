@@ -153,11 +153,12 @@ export class StatsService {
     blockHeight: number,
     rune: TransactionRuneEntry,
   ): Promise<void> {
-    const runeStats = await this.runeStatRepository.findOne({
-      where: { rune_id: rune.rune_id },
-    });
-    const stats = (await this.runeStatRepository
-      .query(`select 'total_transactions' as name, count(*) as total
+    try {
+      const runeStats = await this.runeStatRepository.findOne({
+        where: { rune_id: rune.rune_id },
+      });
+      const stats = (await this.runeStatRepository
+        .query(`select 'total_transactions' as name, count(*) as total
 from (
 	select to2.tx_hash
 	from transaction_outs to2 
@@ -177,50 +178,66 @@ from (
 	group  by to2.address
 ) as rp2`)) as Array<{ name: string; total: number }>;
 
-    const payload = {} as any;
-    for (let index = 0; index < stats.length; index++) {
-      const stat = stats[index];
-      payload[stat.name] = stat.total;
-    }
-    const runeIndex = await this.indexersService.getRuneDetails(rune.rune_id);
+      const payload = {} as any;
+      for (let index = 0; index < stats.length; index++) {
+        const stat = stats[index];
+        payload[stat.name] = stat.total;
+      }
+      const runeIndex = await this.indexersService.getRuneDetails(rune.rune_id);
+      const premine = runeIndex?.entry.premine || 0;
+      const mints = runeIndex?.entry.mints || 0;
+      const burned = runeIndex?.entry.burned || 0;
+      const amount = runeIndex?.entry.terms?.amount || 0;
+      const supply = premine + mints * amount;
+      const mint_type = runeIndex?.entry?.terms ? 'fairmint' : 'fixed-cap';
+      const limit = runeIndex?.entry?.terms?.amount || 0;
 
-    const premine = runeIndex?.premine || 0;
-    const mints = runeIndex?.mints || 0;
-    const burned = runeIndex?.burned || 0;
-    const amount = runeIndex?.terms?.amount || 0;
-    const supply = premine + mints * amount;
-    const mint_type = runeIndex?.entry?.terms ? 'fairmint' : 'fixed-cap';
-
-    await this.runeStatRepository.save({
-      id: runeStats?.id,
-      rune_id: rune.rune_id,
-      total_supply: supply || 0,
-      total_mints: mints || 0,
-      total_burns: burned || 0,
-      change_24h: 0,
-      volume_24h: 0,
-      prev_volume_24h: 0,
-      total_volume: 0,
-      market_cap: 0,
-      mintable: runeIndex?.mintable || false,
-      term: runeIndex?.entry?.terms?.amount || 0,
-      start_block:
-        runeIndex?.entry?.terms?.height &&
-        runeIndex?.entry?.terms?.height.length > 0
-          ? runeIndex?.entry?.terms?.height[0]
-          : 0,
-      end_block:
+      let term = 0;
+      if (
         runeIndex?.entry?.terms?.height &&
         runeIndex?.entry?.terms?.height.length > 1
-          ? runeIndex?.entry?.terms?.height[1]
-          : 0,
-      height: runeIndex?.entry?.terms?.height || [],
-      offset: runeIndex?.entry?.terms?.offset || [],
-      entry: runeIndex?.entry || null,
-      mint_type,
-      ...payload,
-    } as RuneStat);
+      ) {
+        term = runeIndex?.entry?.terms?.height[1];
+      } else if (
+        runeIndex?.entry?.offset?.length === 2 &&
+        runeIndex?.entry?.offset[1] > 0
+      ) {
+        term = runeIndex?.entry?.offset[1];
+      }
 
-    return;
+      await this.runeStatRepository.save({
+        id: runeStats?.id,
+        rune_id: rune.rune_id,
+        total_supply: supply || 0,
+        total_mints: mints || 0,
+        total_burns: burned || 0,
+        change_24h: 0,
+        volume_24h: 0,
+        prev_volume_24h: 0,
+        total_volume: 0,
+        market_cap: 0,
+        mintable: runeIndex?.mintable || false,
+        term,
+        start_block:
+          runeIndex?.entry?.terms?.height &&
+          runeIndex?.entry?.terms?.height.length > 0
+            ? runeIndex?.entry?.terms?.height[0]
+            : 0,
+        end_block:
+          runeIndex?.entry?.terms?.height &&
+          runeIndex?.entry?.terms?.height.length > 1
+            ? runeIndex?.entry?.terms?.height[1]
+            : 0,
+        height: runeIndex?.entry?.terms?.height || [],
+        offset: runeIndex?.entry?.terms?.offset || [],
+        entry: runeIndex?.entry || null,
+        limit,
+        premine,
+        mint_type,
+        ...payload,
+      } as RuneStat);
+    } catch (error) {
+      this.logger.error('Error calculating rune stat', error);
+    }
   }
 }
