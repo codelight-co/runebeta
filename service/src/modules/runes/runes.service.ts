@@ -46,14 +46,38 @@ export class RunesService {
         search: `%${runeFilterDto.search.split(' ').join('_')}%`,
       });
     }
-
     if (runeFilterDto.sortBy) {
-      builder.orderBy(
-        `rune.${runeFilterDto.sortBy}`,
-        runeFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
-          ? 'DESC'
-          : 'ASC',
-      );
+      switch (runeFilterDto.sortBy) {
+        case 'supply':
+          builder.orderBy(
+            `rune_stat.total_supply`,
+            runeFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'holders':
+          builder.orderBy(
+            `rune_stat.total_holders`,
+            runeFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'transactions':
+          builder.orderBy(
+            `rune_stat.total_transactions`,
+            runeFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        default:
+          break;
+      }
     }
 
     const runes = await builder.getMany();
