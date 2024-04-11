@@ -75,11 +75,16 @@ export class RunesService {
         is_hot: true,
         rune: rune.spaced_rune,
         symbol: rune.symbol,
-        term: rune?.stat?.term || 0,
+        term:
+          rune?.stat?.entry?.end_block ||
+          rune?.stat?.entry?.offset?.length === 2
+            ? rune?.stat?.entry?.offset[1]
+            : 0,
         timestamp: rune.timestamp,
         transaction_count: rune?.stat?.total_transactions || 0,
         mint_type: rune?.stat?.mint_type || '',
         terms: rune?.stat?.entry?.terms || null,
+        limit: rune?.stat?.entry?.term?.amount || 0,
       })),
     };
   }
