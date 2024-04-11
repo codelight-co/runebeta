@@ -151,14 +151,15 @@ export class MarketsService implements OnModuleInit {
         },
         txs: order.tx_hash || '',
         buyer_id: null,
-        confirmed: false,
         confirmed_at_block: 0,
         owner: {
           wallet_address: order.sellerRuneAddress,
         },
         owner_id: order.userId,
         price_per_unit: order.price,
-        received_address: null,
+        received_address:
+          order.status === 'completed' ? order.buyerRuneAddress : '',
+        confirmed: order.status === 'completed',
         rune_hex: '',
         rune_id: order.runeItem.id,
         rune_name: order.runeInfo.spaced_rune,
