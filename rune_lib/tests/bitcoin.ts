@@ -538,13 +538,13 @@ export function calcP2TRFee(feeRate: number, inputs: number, outputs: Output[]):
         if (script) {
             const v = bitcoin.script.decompile(script);
             if (v?.[0] == bitcoin.opcodes.OP_RETURN) {
-                outputWithOPReturn += Math.max(script.length, OUTPUT_BYTES_BASE);
+                outputWithOPReturn += script.length + 10;
                 continue;
             }
         }
         normalOutput += OUTPUT_BYTES_BASE;
     }
-    return Math.ceil(feeRate * (BASE_BYTES + inputs * INPUT_BYTES_BASE + normalOutput + outputWithOPReturn * 0.75));
+    return Math.ceil(feeRate * (BASE_BYTES + inputs * INPUT_BYTES_BASE + normalOutput + outputWithOPReturn));
 }
 
 export function calcSimpleP2TRFee(feeRate: number, inputs: number, outputs: number): number {
@@ -646,15 +646,7 @@ export function calcRevealFee(
         if (script) {
             const v = bitcoin.script.decompile(script) as any;
             if (v?.[0] == bitcoin.opcodes.OP_RETURN) {
-                let len = 0;
-                for (let vi of v) {
-                    if (Buffer.isBuffer(vi)) {
-                        len += vi.length;
-                    } else if (typeof vi === 'number') {
-                        len += 1;
-                    }
-                }
-                outputWithOPReturn += len - 4;
+                outputWithOPReturn += script.length + 10;
                 continue;
             }
         }
@@ -667,9 +659,9 @@ export function calcRevealFee(
             REVEAL_INPUT_BYTES_BASE +
             (hashLockCompactSizeBytes + hashLockP2TROutputLen) / 4 +
             // Additional inputs
-            inputNum * INPUT_BYTES_BASE +
+            (inputNum - 1) * INPUT_BYTES_BASE +
             // Outputs
-            outputWithOPReturn),
+            outputBytes + outputWithOPReturn),
     );
 }
 

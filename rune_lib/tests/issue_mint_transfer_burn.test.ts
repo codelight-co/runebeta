@@ -130,7 +130,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
 
         let commitWallet = new Wallet(wif, network, addressType);
         let signedCommitPsbt = commitWallet.signPsbt(commitPsbt);
-        const commitTx = signedCommitPsbt.extractTransaction();
+        const commitTx = signedCommitPsbt.extractTransaction(true);
         const commitTxRawHex = commitTx.toHex();
         const commitTxId = commitTx.getId();
 
@@ -157,7 +157,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
 
         psbtReveal.signInput(0, fundingKeypair.childNode);
         psbtReveal.finalizeAllInputs();
-        let revealTx = psbtReveal.extractTransaction();
+        let revealTx = psbtReveal.extractTransaction(true);
         const revealTxRawHex = revealTx.toHex();
         console.log({
             commitTxId,
@@ -265,7 +265,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
 
         let commitWallet = new Wallet(wif, network, addressType);
         let signedCommitPsbt = commitWallet.signPsbt(commitPsbt);
-        const commitTx = signedCommitPsbt.extractTransaction();
+        const commitTx = signedCommitPsbt.extractTransaction(true);
         const commitTxRawHex = commitTx.toHex();
         const commitTxId = commitTx.getId();
 
@@ -291,7 +291,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
 
         psbtReveal.signInput(0, fundingKeypair.childNode);
         psbtReveal.finalizeAllInputs();
-        let revealTx = psbtReveal.extractTransaction();
+        let revealTx = psbtReveal.extractTransaction(true);
         const revealTxRawHex = revealTx.toHex();
         console.log({
             commitTxId,
@@ -347,7 +347,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
         let psbt = toPsbt({tx: txResult.ok!, pubkey, rbf: true});
         let wallet = new Wallet(wif, network, addressType);
         let signed = wallet.signPsbt(psbt);
-        let tx = signed.extractTransaction();
+        let tx = signed.extractTransaction(true);
         console.table({
             txid: tx.getId(),
             fee: psbt.getFee(),
@@ -406,7 +406,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
         let psbt = toPsbt({tx: txResult.ok!, pubkey, rbf: true});
         let wallet = new Wallet(wif, network, addressType);
         let signed = wallet.signPsbt(psbt);
-        let tx = signed.extractTransaction();
+        let tx = signed.extractTransaction(true);
         console.table({
             txid: tx.getId(),
             fee: psbt.getFee(),
@@ -472,7 +472,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
         let psbt = toPsbt({tx: txResult.ok!, pubkey, rbf: true});
         let wallet = new Wallet(wif, network, addressType);
         let signed = wallet.signPsbt(psbt);
-        let tx = signed.extractTransaction();
+        let tx = signed.extractTransaction(true);
         console.table({
             txid: tx.getId(),
             fee: psbt.getFee(),
