@@ -30,6 +30,7 @@ import { UsersService } from '../users/users.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { BroadcastTransactionDto } from '../transactions/dto';
 import { RuneStat } from '../database/entities';
+import { EOrderStatus } from 'src/common/enums';
 
 @Injectable()
 export class MarketsService implements OnModuleInit {
@@ -105,7 +106,7 @@ export class MarketsService implements OnModuleInit {
         'runeInfo',
         `runeInfo.rune_id = order.rune_id`,
       )
-      .innerJoinAndMapOne(
+      .leftJoinAndMapOne(
         'order.runeStat',
         RuneStat,
         'rune_stat',
@@ -219,7 +220,6 @@ export class MarketsService implements OnModuleInit {
     }
 
     const orders = await builder.getMany();
-
     return {
       total,
       limit: marketRuneOrderFilterDto.limit,
@@ -457,7 +457,7 @@ export class MarketsService implements OnModuleInit {
         .createQueryBuilder()
         .update()
         .set({
-          status: 'completed',
+          status: EOrderStatus.COMPLETED,
           // tx_hash: broadcastTransaction.txid,
           buyerId: user.id,
           buyerRuneAddress: buyer.buyerTokenReceiveAddress,

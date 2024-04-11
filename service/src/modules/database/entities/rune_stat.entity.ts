@@ -40,6 +40,9 @@ export class RuneStat {
   volume_24h: number;
 
   @Column({ type: 'int8', nullable: true, default: 0 })
+  prev_volume_24h: number;
+
+  @Column({ type: 'int8', nullable: true, default: 0 })
   total_volume: number;
 
   @Column({ type: 'int8', nullable: true, default: 0 })

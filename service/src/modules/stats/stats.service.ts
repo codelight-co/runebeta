@@ -199,6 +199,7 @@ from (
       total_burns: burned || 0,
       change_24h: 0,
       volume_24h: 0,
+      prev_volume_24h: 0,
       total_volume: 0,
       market_cap: 0,
       mintable: runeIndex?.mintable || false,
