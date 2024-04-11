@@ -96,13 +96,13 @@ export class MarketsService implements OnModuleInit {
     id: string,
     marketRuneOrderFilterDto: MarketRuneOrderFilterDto,
   ): Promise<any> {
-    const builder = await this.orderRepository
+    const builder = this.orderRepository
       .createQueryBuilder('order')
       .innerJoinAndMapOne(
         'order.runeInfo',
         TransactionRuneEntry,
         'runeInfo',
-        `runeInfo.rune_id = order.rune_item ->> 'id'`,
+        `runeInfo.rune_id = order.rune_id`,
       )
       .where(`order.rune_id = :id`, { id });
 
@@ -116,6 +116,14 @@ export class MarketsService implements OnModuleInit {
         owner_id: marketRuneOrderFilterDto.owner_id,
       });
     }
+
+    const total = await builder.getCount();
+
+    if (marketRuneOrderFilterDto.offset) {
+      builder
+        .skip(marketRuneOrderFilterDto.offset)
+        .take(marketRuneOrderFilterDto.limit || 10);
+    }
     if (marketRuneOrderFilterDto.sortBy) {
       builder.orderBy(
         `order.${marketRuneOrderFilterDto.sortBy}`,
@@ -124,15 +132,7 @@ export class MarketsService implements OnModuleInit {
           : 'ASC',
       );
     } else {
-      builder.orderBy('order.created_at', 'DESC');
-    }
-
-    const total = await builder.getCount();
-
-    if (marketRuneOrderFilterDto.offset) {
-      builder
-        .skip(marketRuneOrderFilterDto.offset)
-        .take(marketRuneOrderFilterDto.limit || 10);
+      builder.orderBy('order.createdAt', 'DESC');
     }
 
     const orders = await builder.getMany();
