@@ -74,12 +74,6 @@ export class Order {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @ManyToOne(
-    () => TransactionRuneEntry,
-    (transactionRuneEntry) => transactionRuneEntry.orders,
-  )
-  @JoinColumn({ name: 'rune_id', referencedColumnName: 'rune_id' })
   runeInfo: TransactionRuneEntry;
-
   user: User;
 }

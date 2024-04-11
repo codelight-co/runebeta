@@ -18,20 +18,32 @@ export class RuneStat {
   @Index()
   rune_id: string;
 
-  @Column({ type: 'int8', nullable: true })
+  @Column({ type: 'int8', nullable: true, default: 0 })
   total_transactions: number;
 
-  @Column({ type: 'int8', nullable: true })
+  @Column({ type: 'int8', nullable: true, default: 0 })
   total_mints: number;
 
-  @Column({ type: 'int8', nullable: true })
+  @Column({ type: 'int8', nullable: true, default: 0 })
   total_burns: number;
 
-  @Column({ type: 'int8', nullable: true })
+  @Column({ type: 'int8', nullable: true, default: 0 })
   total_supply: number;
 
-  @Column({ type: 'int8', nullable: true })
+  @Column({ type: 'int8', nullable: true, default: 0 })
   total_holders: number;
+
+  @Column({ type: 'int8', nullable: true, default: 0 })
+  change_24h: number;
+
+  @Column({ type: 'int8', nullable: true, default: 0 })
+  volume_24h: number;
+
+  @Column({ type: 'int8', nullable: true, default: 0 })
+  total_volume: number;
+
+  @Column({ type: 'int8', nullable: true, default: 0 })
+  market_cap: number;
 
   @Column({ type: 'boolean', nullable: true, default: false })
   mintable: boolean;

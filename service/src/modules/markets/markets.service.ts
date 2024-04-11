@@ -29,6 +29,7 @@ import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
 import { UsersService } from '../users/users.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { BroadcastTransactionDto } from '../transactions/dto';
+import { RuneStat } from '../database/entities';
 
 @Injectable()
 export class MarketsService implements OnModuleInit {
@@ -104,6 +105,12 @@ export class MarketsService implements OnModuleInit {
         'runeInfo',
         `runeInfo.rune_id = order.rune_id`,
       )
+      .innerJoinAndMapOne(
+        'order.runeStat',
+        RuneStat,
+        'rune_stat',
+        'rune_stat.rune_id = order.rune_id',
+      )
       .where(`order.rune_id = :id`, { id });
 
     if (marketRuneOrderFilterDto.status) {
@@ -131,6 +138,82 @@ export class MarketsService implements OnModuleInit {
           ? 'DESC'
           : 'ASC',
       );
+      switch (marketRuneOrderFilterDto.sortBy) {
+        case 'created_at':
+          builder.orderBy(
+            `order.createdAt`,
+            marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'price':
+          builder.orderBy(
+            `order.price`,
+            marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'change_24h':
+          builder.orderBy(
+            `rune_stat.change_24h`,
+            marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'volume_24h':
+          builder.orderBy(
+            `rune_stat.volume_24h`,
+            marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'total_volume':
+          builder.orderBy(
+            `rune_stat.total_volume`,
+            marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'market_cap':
+          builder.orderBy(
+            `rune_stat.market_cap`,
+            marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'total_supply':
+          builder.orderBy(
+            `rune_stat.total_supply`,
+            marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'holders':
+          builder.orderBy(
+            `rune_stat.total_holders`,
+            marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        default:
+          break;
+      }
     } else {
       builder.orderBy('order.createdAt', 'DESC');
     }

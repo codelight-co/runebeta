@@ -197,6 +197,10 @@ from (
       total_supply: supply || 0,
       total_mints: mints || 0,
       total_burns: burned || 0,
+      change_24h: 0,
+      volume_24h: 0,
+      total_volume: 0,
+      market_cap: 0,
       mintable: runeIndex?.mintable || false,
       term: runeIndex?.entry?.terms?.amount || 0,
       start_block:

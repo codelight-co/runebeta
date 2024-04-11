@@ -75,6 +75,15 @@ export class RunesService {
           );
           break;
 
+        case 'created_at':
+          builder.orderBy(
+            `rune.timestamp`,
+            runeFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
         default:
           break;
       }
