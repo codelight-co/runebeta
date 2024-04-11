@@ -85,6 +85,7 @@ export class RunesService {
         mint_type: rune?.stat?.mint_type || '',
         terms: rune?.stat?.entry?.terms || null,
         limit: rune?.stat?.entry?.term?.amount || 0,
+        mintable: rune?.stat?.mintable || false,
       })),
     };
   }
