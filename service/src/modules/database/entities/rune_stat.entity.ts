@@ -8,6 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { TransactionRuneEntry } from './rune-entry.entity';
+import { IEntry } from 'src/common/interfaces/rune.interface';
 
 @Entity()
 export class RuneStat {
@@ -19,34 +20,34 @@ export class RuneStat {
   rune_id: string;
 
   @Column({ type: 'decimal', nullable: true })
-  total_transactions: number;
+  total_transactions: bigint;
 
   @Column({ type: 'int8', nullable: true, default: 0 })
-  total_mints: number;
+  total_mints: bigint;
 
   @Column({ type: 'int8', nullable: true, default: 0 })
-  total_burns: number;
+  total_burns: bigint;
 
   @Column({ type: 'decimal', nullable: true })
-  total_supply: number;
+  total_supply: bigint;
 
   @Column({ type: 'int8', nullable: true, default: 0 })
-  total_holders: number;
+  total_holders: bigint;
 
   @Column({ type: 'decimal', nullable: true })
-  change_24h: number;
+  change_24h: bigint;
 
   @Column({ type: 'decimal', nullable: true })
-  volume_24h: number;
+  volume_24h: bigint;
 
   @Column({ type: 'decimal', nullable: true })
-  prev_volume_24h: number;
+  prev_volume_24h: bigint;
 
   @Column({ type: 'decimal', nullable: true })
-  total_volume: number;
+  total_volume: bigint;
 
   @Column({ type: 'decimal', nullable: true })
-  market_cap: number;
+  market_cap: bigint;
 
   @Column({ type: 'boolean', nullable: true, default: false })
   mintable: boolean;
@@ -55,10 +56,10 @@ export class RuneStat {
   term: bigint;
 
   @Column({ type: 'decimal', nullable: true })
-  limit: number;
+  limit: bigint;
 
   @Column({ type: 'decimal', nullable: true })
-  premine: number;
+  premine: bigint;
 
   @Column({ type: 'int8', nullable: true, default: 0 })
   start_block: number;
@@ -72,8 +73,41 @@ export class RuneStat {
   @Column({ type: 'jsonb', nullable: true })
   offset: Array<number>;
 
-  @Column({ type: 'jsonb', nullable: true })
-  entry: any;
+  @Column({
+    type: 'jsonb',
+    nullable: true,
+    transformer: {
+      to: (value: any) => {
+        return value;
+      },
+      from: (value: IEntry) => {
+        const remaining =
+          value?.terms?.cap && value?.mints
+            ? (BigInt(value.terms.cap) - BigInt(value.mints)).toString()
+            : null;
+        return {
+          block: value.block.toString(),
+          burned: value.burned,
+          divisibility: value.divisibility,
+          etching: value.etching,
+          mints: value.mints,
+          remaining,
+          number: value.number,
+          premine: value.premine.toString(),
+          spaced_rune: value.spaced_rune,
+          symbol: value.symbol,
+          timestamp: value.timestamp,
+          terms: {
+            amount: value?.terms?.amount?.toString(),
+            cap: value?.terms?.cap?.toString(),
+            height: value?.terms?.height,
+            offset: value?.terms?.offset,
+          },
+        };
+      },
+    },
+  })
+  entry?: IEntry;
 
   @Column({ type: 'varchar', nullable: true })
   mint_type: string;

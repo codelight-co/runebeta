@@ -12,7 +12,6 @@ import { PROCESS, PROCESSOR } from 'src/common/enums';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import { IndexersService } from '../indexers/indexers.service';
-import { min } from 'class-validator';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
@@ -191,7 +190,17 @@ from (
       const supply = premine + mints * amount;
       const mint_type = runeIndex?.entry?.terms ? 'fairmint' : 'fixed-cap';
       const limit = runeIndex?.entry?.terms?.amount || 0;
+      const total_volume = runeIndex?.entry?.terms?.amount || 0;
+      const cap = runeIndex?.entry?.terms?.cap || 0;
 
+      let remaining = BigInt(0);
+      if (mints > 0) {
+        remaining = BigInt(cap) - BigInt(mints);
+      }
+
+      if (rune.rune_id === '2585947:45') {
+        console.log('runeIndex :>> ', runeIndex);
+      }
       let term = 0;
       if (
         runeIndex?.entry?.terms?.height &&
@@ -214,7 +223,7 @@ from (
         change_24h: 0,
         volume_24h: 0,
         prev_volume_24h: 0,
-        total_volume: 0,
+        total_volume,
         market_cap: 0,
         mintable: runeIndex?.mintable || false,
         term,
@@ -233,6 +242,7 @@ from (
         entry: runeIndex?.entry || null,
         limit,
         premine,
+        remaining,
         mint_type,
         ...payload,
       } as RuneStat);

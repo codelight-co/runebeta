@@ -146,3 +146,25 @@ export class InvalidArgumentError extends Error {
     this.name = 'InvalidArgumentError';
   }
 }
+
+export interface ITerms {
+  amount: bigint | null;
+  cap: bigint | null;
+  height: Array<number | null>;
+  offset: Array<number | null>;
+}
+
+export interface IEntry {
+  block: bigint;
+  burned: number;
+  divisibility: number;
+  etching: string;
+  mints: bigint;
+  remaining: bigint | null;
+  number: number;
+  premine: bigint;
+  spaced_rune: string;
+  symbol: null;
+  timestamp: number;
+  terms: ITerms;
+}
