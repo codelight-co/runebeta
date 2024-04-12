@@ -86,6 +86,7 @@ export class MarketsService implements OnModuleInit {
         token_holders: rune.stat.total_holders,
         id: rune.id,
         rune_id: rune.rune_id,
+        rune_hex: rune.rune_hex,
         rune_name: rune.spaced_rune,
         total_supply: rune.stat.total_supply,
         total_volume: rune.stat.total_volume,
@@ -242,7 +243,7 @@ export class MarketsService implements OnModuleInit {
         received_address:
           order.status === 'completed' ? order.buyerRuneAddress : '',
         confirmed: order.status === 'completed',
-        rune_hex: '',
+        rune_hex: order.runeInfo.rune_hex,
         rune_id: order.runeItem.id,
         rune_name: order.runeInfo.spaced_rune,
         rune_utxo: [

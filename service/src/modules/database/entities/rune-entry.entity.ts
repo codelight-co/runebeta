@@ -21,6 +21,8 @@ export class TransactionRuneEntry {
   @Column({ type: 'varchar' })
   rune_id: string;
 
+  rune_hex: string;
+
   @Column({ type: 'text' })
   burned: string;
 
@@ -73,5 +75,6 @@ export class TransactionRuneEntry {
     if (!this.symbol) {
       this.symbol = '¤';
     }
+    this.rune_hex = Buffer.from(this.rune_id).toString('hex');
   }
 }

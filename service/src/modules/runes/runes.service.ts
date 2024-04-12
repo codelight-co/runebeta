@@ -98,6 +98,7 @@ export class RunesService {
       runes: runes.map((rune) => ({
         id: rune.id,
         rune_id: rune.rune_id,
+        rune_hex: rune.rune_hex,
         supply: rune?.stat?.total_supply || rune.supply || 0,
         deploy_transaction: rune.tx_hash,
         divisibility: rune.divisibility,

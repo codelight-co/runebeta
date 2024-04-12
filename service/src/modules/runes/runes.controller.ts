@@ -15,6 +15,7 @@ import { EtchRuneDto } from './dto/etch-rune-filter.dto';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { UserDecorator } from 'src/common/decorators/user.decorator';
 import { User } from '../database/entities/user.entity';
+import { ParseRuneIdPipe } from 'src/common/pipes';
 
 @Controller('runes')
 @UseInterceptors(CoreTransformInterceptor)
@@ -29,13 +30,13 @@ export class RunesController {
 
   // Get rune by id
   @Get(':id/info')
-  async getRuneById(@Param('id') id: string) {
+  async getRuneById(@Param('id', ParseRuneIdPipe) id: string) {
     return this.runesService.getRuneById(id);
   }
 
   // Get top holders of a rune
   @Get(':id/top')
-  async getTopHolders(@Param('id') id: string) {
+  async getTopHolders(@Param('id', ParseRuneIdPipe) id: string) {
     return this.runesService.getTopHolders(id);
   }
 
