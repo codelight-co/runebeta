@@ -96,23 +96,42 @@ export class RuneStat extends BaseTable {
       from: (value: IEntry) => {
         const remaining =
           value?.terms?.cap && value?.mints
-            ? (BigInt(value.terms.cap) - BigInt(value.mints)).toString()
+            ? (BigInt(value.terms.cap) - BigInt(value.mints)).toLocaleString(
+                'fullwide',
+                {
+                  useGrouping: false,
+                },
+              )
             : null;
         return {
-          block: value.block.toString(),
-          burned: value.burned.toString(),
+          block: value.block.toLocaleString('fullwide', {
+            useGrouping: false,
+          }),
+          burned: value.burned.toLocaleString('fullwide', {
+            useGrouping: false,
+          }),
           divisibility: value.divisibility,
           etching: value.etching,
-          mints: value.mints.toString(),
+          mints: value.mints.toLocaleString('fullwide', {
+            useGrouping: false,
+          }),
           remaining,
-          number: value.number.toString(),
-          premine: value.premine.toString(),
+          number: value.number.toLocaleString('fullwide', {
+            useGrouping: false,
+          }),
+          premine: value.premine.toLocaleString('fullwide', {
+            useGrouping: false,
+          }),
           spaced_rune: value.spaced_rune,
           symbol: value.symbol,
           timestamp: value.timestamp,
           terms: {
-            amount: value?.terms?.amount?.toString(),
-            cap: value?.terms?.cap?.toString(),
+            amount: value?.terms?.amount.toLocaleString('fullwide', {
+              useGrouping: false,
+            }),
+            cap: value?.terms?.cap?.toLocaleString('fullwide', {
+              useGrouping: false,
+            }),
             height: value?.terms?.height,
             offset: value?.terms?.offset,
           },

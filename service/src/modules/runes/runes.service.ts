@@ -90,7 +90,6 @@ export class RunesService {
     }
 
     const runes = await builder.getMany();
-
     return {
       total: await builder.getCount(),
       limit: runeFilterDto.limit,
