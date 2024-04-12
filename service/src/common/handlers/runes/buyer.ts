@@ -98,6 +98,12 @@ export namespace BuyerHandler {
     // Sort descending by value,
     utxos = utxos.sort((a, b) => b.value - a.value);
 
+    const buyerFee = await calculateTxBytesFee(
+      vinsLength + selectedUtxos.length,
+      voutsLength,
+      feeRateTier,
+    );
+
     for (const utxo of utxos) {
       // Never spend a utxo that contains an atoms for cardinal purposes
       if (await doesUtxoContainRunes(utxo, service)) {
@@ -107,15 +113,7 @@ export namespace BuyerHandler {
       // TODO - check if the utxo contains runes
       selectedUtxos.push(utxo);
       selectedAmount += utxo.value;
-      if (
-        selectedAmount >=
-        amount +
-          (await calculateTxBytesFee(
-            vinsLength + selectedUtxos.length,
-            voutsLength,
-            feeRateTier,
-          ))
-      ) {
+      if (selectedAmount >= amount + buyerFee) {
         break;
       }
     }
@@ -378,16 +376,23 @@ export namespace BuyerHandler {
       );
     }
 
+    const serviceFee =
+      (listing.seller.price *
+        Number(listing.seller.runeItem.tokenValue) *
+        1.5) /
+      100;
+    const sellerOutputValue = getSellerRuneOutputValue(
+      listing.seller.price * Number(listing.seller.runeItem.tokenValue),
+      serviceFee,
+      Number(listing.seller.runeItem.outputValue),
+    );
+
     const ret = {
       sellerInput,
       sellerOutput: {
         id: listing.seller.runeItem.id,
         address: listing.seller.sellerReceiveAddress,
-        value: getSellerRuneOutputValue(
-          listing.seller.price,
-          listing.seller.makerFeeBp,
-          Number(listing.seller.runeItem.tokenValue),
-        ),
+        value: sellerOutputValue,
       },
     };
 

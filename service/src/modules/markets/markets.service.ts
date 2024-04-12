@@ -290,6 +290,7 @@ export class MarketsService implements OnModuleInit {
     if (!seller) {
       throw new BadRequestException('No Seller data found');
     }
+
     const listing: IRunePostPSBTListing = {
       id: seller.runeItem.id,
       price: seller.price,
@@ -336,19 +337,19 @@ export class MarketsService implements OnModuleInit {
 
     const outputValue = await this.outpoinBalanceRepository
       .createQueryBuilder('outpoint')
-      .innerJoinAndSelect(
-        'outpoint.txOut',
-        'txOut',
-        'txOut.tx_hash = outpoint.tx_hash AND txOut.vout = outpoint.vout',
-      )
+      .innerJoinAndSelect('outpoint.txOut', 'txOut')
       .where('outpoint.tx_hash = :tx_hash', {
         tx_hash: body.seller.runeItem.txid,
+      })
+      .andWhere('outpoint.vout = :vout', {
+        vout: body.seller.runeItem.vout,
       })
       .andWhere('txOut.spent = false')
       .getOne();
     if (!outputValue) {
       throw new BadRequestException('No output value found');
     }
+
     body.seller.runeItem = {
       ...body.seller.runeItem,
       outputValue: outputValue.txOut.value,
@@ -369,9 +370,7 @@ export class MarketsService implements OnModuleInit {
     if (!user) {
       throw new BadRequestException('No user found');
     }
-
     const { utxos, amount, vinsLength, voutsLength, feeRateTier } = body;
-
     return BuyerHandler.selectPaymentUTXOs(
       utxos,
       amount,
@@ -502,12 +501,17 @@ export class MarketsService implements OnModuleInit {
     if (orders.length !== body.orderIds.length) {
       throw new BadRequestException('Invalid order ids');
     }
+    let price = 0;
+    for (let index = 0; index < orders.length; index++) {
+      const order = orders[index];
+      price += Number(order.runeItem.tokenValue) * order.price;
+    }
 
     return BuyerHandler.selectPaymentUTXOs(
       utxos as AddressTxsUtxo[],
-      Number(orders[0].runeItem.tokenValue) + 1000 + DUST_AMOUNT * 2,
+      price + 67 * 259,
       2,
-      5,
+      4,
       'minimumFee',
       this.rpcService,
     );
