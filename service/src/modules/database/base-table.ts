@@ -1,14 +1,16 @@
+import { IsNumber } from 'class-validator';
 import {
   Column,
   BaseEntity,
   CreateDateColumn,
   UpdateDateColumn,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
 
 abstract class BaseTable extends BaseEntity {
-  @PrimaryColumn('uuid')
-  id!: string;
+  @PrimaryGeneratedColumn('increment')
+  @IsNumber()
+  public id: number;
 
   @Column()
   @CreateDateColumn()

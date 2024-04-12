@@ -156,12 +156,12 @@ export interface ITerms {
 
 export interface IEntry {
   block: bigint;
-  burned: number;
-  divisibility: number;
+  burned: bigint;
+  divisibility: bigint;
   etching: string;
   mints: bigint;
   remaining: bigint | null;
-  number: number;
+  number: bigint;
   premine: bigint;
   spaced_rune: string;
   symbol: null;

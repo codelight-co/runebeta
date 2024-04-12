@@ -182,25 +182,31 @@ from (
         const stat = stats[index];
         payload[stat.name] = stat.total;
       }
+
       const runeIndex = await this.indexersService.getRuneDetails(rune.rune_id);
-      const premine = runeIndex?.entry.premine || 0;
-      const mints = runeIndex?.entry.mints || 0;
-      const burned = runeIndex?.entry.burned || 0;
-      const amount = runeIndex?.entry.terms?.amount || 0;
+      const premine = runeIndex?.entry.premine
+        ? BigInt(runeIndex?.entry.premine)
+        : BigInt(0);
+      const mints = runeIndex?.entry.mints
+        ? BigInt(runeIndex?.entry.mints)
+        : BigInt(0);
+      const burned = BigInt(runeIndex?.entry.burned);
+      const amount = runeIndex?.entry.terms?.amount
+        ? BigInt(runeIndex?.entry.terms?.amount)
+        : BigInt(0);
       const supply = premine + mints * amount;
       const mint_type = runeIndex?.entry?.terms ? 'fairmint' : 'fixed-cap';
-      const limit = runeIndex?.entry?.terms?.amount || 0;
-      const total_volume = runeIndex?.entry?.terms?.amount || 0;
-      const cap = runeIndex?.entry?.terms?.cap || 0;
+      const limit = amount;
+      const total_volume = amount;
+      const cap = runeIndex?.entry?.terms?.cap
+        ? BigInt(runeIndex?.entry?.terms?.cap)
+        : BigInt(0);
 
       let remaining = BigInt(0);
       if (mints > 0) {
         remaining = BigInt(cap) - BigInt(mints);
       }
 
-      if (rune.rune_id === '2585947:45') {
-        console.log('runeIndex :>> ', runeIndex);
-      }
       let term = 0;
       if (
         runeIndex?.entry?.terms?.height &&
@@ -214,38 +220,40 @@ from (
         term = runeIndex?.entry?.offset[1];
       }
 
-      await this.runeStatRepository.save({
-        id: runeStats?.id,
-        rune_id: rune.rune_id,
-        total_supply: supply || 0,
-        total_mints: mints || 0,
-        total_burns: burned || 0,
-        change_24h: 0,
-        volume_24h: 0,
-        prev_volume_24h: 0,
-        total_volume,
-        market_cap: 0,
-        mintable: runeIndex?.mintable || false,
-        term,
-        start_block:
-          runeIndex?.entry?.terms?.height &&
-          runeIndex?.entry?.terms?.height.length > 0
-            ? runeIndex?.entry?.terms?.height[0]
-            : 0,
-        end_block:
-          runeIndex?.entry?.terms?.height &&
-          runeIndex?.entry?.terms?.height.length > 1
-            ? runeIndex?.entry?.terms?.height[1]
-            : 0,
-        height: runeIndex?.entry?.terms?.height || [],
-        offset: runeIndex?.entry?.terms?.offset || [],
-        entry: runeIndex?.entry || null,
-        limit,
-        premine,
-        remaining,
-        mint_type,
-        ...payload,
-      } as RuneStat);
+      await this.runeStatRepository.save(
+        new RuneStat({
+          id: runeStats?.id,
+          rune_id: rune.rune_id,
+          total_supply: supply,
+          total_mints: mints,
+          total_burns: burned,
+          change_24h: 0,
+          volume_24h: 0,
+          prev_volume_24h: 0,
+          total_volume,
+          market_cap: 0,
+          mintable: runeIndex?.mintable || false,
+          term,
+          start_block:
+            runeIndex?.entry?.terms?.height &&
+            runeIndex?.entry?.terms?.height.length > 0
+              ? runeIndex?.entry?.terms?.height[0]
+              : 0,
+          end_block:
+            runeIndex?.entry?.terms?.height &&
+            runeIndex?.entry?.terms?.height.length > 1
+              ? runeIndex?.entry?.terms?.height[1]
+              : 0,
+          height: runeIndex?.entry?.terms?.height || [],
+          offset: runeIndex?.entry?.terms?.offset || [],
+          entry: runeIndex?.entry || null,
+          limit,
+          premine,
+          remaining,
+          mint_type,
+          ...payload,
+        }),
+      );
     } catch (error) {
       this.logger.error('Error calculating rune stat', error);
     }

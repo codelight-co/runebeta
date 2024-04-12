@@ -1,17 +1,21 @@
 import {
   Column,
-  CreateDateColumn,
   Entity,
   Index,
   OneToOne,
   PrimaryGeneratedColumn,
-  UpdateDateColumn,
 } from 'typeorm';
 import { TransactionRuneEntry } from './rune-entry.entity';
 import { IEntry } from 'src/common/interfaces/rune.interface';
+import BaseTable from '../base-table';
 
 @Entity()
-export class RuneStat {
+export class RuneStat extends BaseTable {
+  constructor(partial: Partial<RuneStat>) {
+    super();
+    Object.assign(this, partial);
+  }
+
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -22,17 +26,17 @@ export class RuneStat {
   @Column({ type: 'decimal', nullable: true })
   total_transactions: bigint;
 
-  @Column({ type: 'int8', nullable: true, default: 0 })
+  @Column({ type: 'decimal', nullable: true, default: 0 })
   total_mints: bigint;
 
-  @Column({ type: 'int8', nullable: true, default: 0 })
+  @Column({ type: 'decimal', nullable: true, default: 0 })
   total_burns: bigint;
 
   @Column({ type: 'decimal', nullable: true })
   total_supply: bigint;
 
   @Column({ type: 'int8', nullable: true, default: 0 })
-  total_holders: bigint;
+  total_holders: number;
 
   @Column({ type: 'decimal', nullable: true })
   change_24h: bigint;
@@ -87,12 +91,12 @@ export class RuneStat {
             : null;
         return {
           block: value.block.toString(),
-          burned: value.burned,
+          // burned: value.burned.toString(),
           divisibility: value.divisibility,
           etching: value.etching,
-          mints: value.mints,
+          mints: value.mints.toString(),
           remaining,
-          number: value.number,
+          number: value.number.toString(),
           premine: value.premine.toString(),
           spaced_rune: value.spaced_rune,
           symbol: value.symbol,
@@ -111,14 +115,6 @@ export class RuneStat {
 
   @Column({ type: 'varchar', nullable: true })
   mint_type: string;
-
-  @Column()
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @Column()
-  @UpdateDateColumn()
-  updatedAt: Date;
 
   @OneToOne(() => TransactionRuneEntry, (runeEntry) => runeEntry.stat)
   rune: TransactionRuneEntry;
