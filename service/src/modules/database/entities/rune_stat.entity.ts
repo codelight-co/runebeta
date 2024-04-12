@@ -39,7 +39,10 @@ export class RuneStat extends BaseTable {
   total_holders: number;
 
   @Column({ type: 'decimal', nullable: true })
-  change_24h: bigint;
+  price: bigint;
+
+  @Column({ type: 'decimal', nullable: true })
+  change_24h: number;
 
   @Column({ type: 'decimal', nullable: true })
   volume_24h: bigint;
@@ -91,7 +94,7 @@ export class RuneStat extends BaseTable {
             : null;
         return {
           block: value.block.toString(),
-          // burned: value.burned.toString(),
+          burned: value.burned.toString(),
           divisibility: value.divisibility,
           etching: value.etching,
           mints: value.mints.toString(),

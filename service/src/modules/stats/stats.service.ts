@@ -12,6 +12,7 @@ import { PROCESS, PROCESSOR } from 'src/common/enums';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import { IndexersService } from '../indexers/indexers.service';
+import { run } from 'node:test';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
@@ -197,11 +198,9 @@ from (
       const supply = premine + mints * amount;
       const mint_type = runeIndex?.entry?.terms ? 'fairmint' : 'fixed-cap';
       const limit = amount;
-      const total_volume = amount;
       const cap = runeIndex?.entry?.terms?.cap
         ? BigInt(runeIndex?.entry?.terms?.cap)
         : BigInt(0);
-
       let remaining = BigInt(0);
       if (mints > 0) {
         remaining = BigInt(cap) - BigInt(mints);
@@ -220,6 +219,66 @@ from (
         term = runeIndex?.entry?.offset[1];
       }
 
+      // Calculate market stats
+      let total_volume = BigInt(0);
+      const dataVolume = await this.transactionRepository
+        .query(`select sum((rune_item ->> 'tokenValue')::int) as total
+      from orders o 
+      where rune_id = '${rune.rune_id}' and status = 'completed'
+      group by rune_id`);
+      if (dataVolume.length) {
+        total_volume = BigInt(dataVolume[0]?.total);
+      }
+      let volume_24h = BigInt(0);
+      const dataVolume24h = await this.transactionRepository
+        .query(`select sum((rune_item ->> 'tokenValue')::int) as total
+      from orders o 
+      where rune_id = '${rune.rune_id}' and status = 'completed' and created_at >= now() - interval '24 hours'
+      group by rune_id`);
+      if (dataVolume24h.length) {
+        volume_24h = BigInt(dataVolume24h[0]?.total);
+      }
+      let prev_volume_24h = BigInt(0);
+      const dataPrevVolume24h = await this.transactionRepository.query(
+        `select volume_24h as total  from rune_stats rs  where rune_id  = '${rune.rune_id}'`,
+      );
+      if (dataPrevVolume24h.length) {
+        prev_volume_24h =
+          BigInt(dataPrevVolume24h[0]?.total) === BigInt(0)
+            ? volume_24h
+            : BigInt(dataPrevVolume24h[0]?.total);
+      }
+      const diffVolume = volume_24h - prev_volume_24h;
+      const change_24h =
+        diffVolume === BigInt(0)
+          ? BigInt(0)
+          : (diffVolume * BigInt(100)) / prev_volume_24h;
+      let price = BigInt(0);
+      const dataPrice = await this.transactionRepository.query(`
+      select price 
+      from orders o 
+      where rune_id = '${rune.rune_id}' and status in ('listing')
+      order by price asc
+      limit 1
+      `);
+      if (dataPrice.length) {
+        price = BigInt(dataPrice[0]?.price);
+      }
+
+      const dataMAPrice = await this.transactionRepository
+        .query(`select (sum(medium_price)/count(*))::integer as price 
+        from (
+          select DATE_TRUNC('day', created_at) AS date, AVG(price) AS medium_price
+          from orders o
+          where rune_id = '${rune.rune_id}' and status = 'completed' and created_at >= current_date - interval '6 days' 
+          group by date
+          order by date desc
+        ) as rp`);
+      let market_cap = BigInt(0);
+      if (dataMAPrice.length) {
+        market_cap = BigInt(dataMAPrice[0].price || 0) * supply;
+      }
+
       await this.runeStatRepository.save(
         new RuneStat({
           id: runeStats?.id,
@@ -227,11 +286,12 @@ from (
           total_supply: supply,
           total_mints: mints,
           total_burns: burned,
-          change_24h: 0,
-          volume_24h: 0,
-          prev_volume_24h: 0,
+          change_24h,
+          volume_24h,
+          prev_volume_24h,
+          price,
           total_volume,
-          market_cap: 0,
+          market_cap,
           mintable: runeIndex?.mintable || false,
           term,
           start_block:
