@@ -37,9 +37,6 @@ export namespace MergeSingers {
       }
     });
 
-    console.log('buyerSignedPsbt txInputs :>> ', buyerSignedPsbt.txInputs);
-    console.log('buyerSignedPsbt txOutputs :>> ', buyerSignedPsbt.txOutputs);
-
     const commitTx = buyerSignedPsbt.extractTransaction();
 
     return commitTx.toHex();

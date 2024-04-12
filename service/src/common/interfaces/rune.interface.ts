@@ -1,6 +1,6 @@
 import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
 import * as bitcoin from 'bitcoinjs-lib';
-import { IEdict } from 'rune_lib';
+import { IEdict } from 'runes-js';
 
 export interface ListRunesResponse {
   entries: Map<RuneId, RuneItem>[];

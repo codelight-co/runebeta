@@ -9,7 +9,7 @@ import {
 import { Transaction } from './transaction.entity';
 import { TxidRune } from './txid-rune.entity';
 import { OutpointRuneBalance } from './outpoint-rune-balance.entity';
-import { RuneStone } from 'rune_lib';
+import { RuneStone } from 'runes-js';
 
 @Entity({ synchronize: false })
 export class TransactionOut {

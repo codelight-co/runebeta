@@ -31,6 +31,7 @@ import { TransactionsService } from '../transactions/transactions.service';
 import { BroadcastTransactionDto } from '../transactions/dto';
 import { RuneStat } from '../database/entities';
 import { EOrderStatus } from 'src/common/enums';
+import { OutpointRuneBalance } from '../database/entities/outpoint-rune-balance.entity';
 
 @Injectable()
 export class MarketsService implements OnModuleInit {
@@ -40,6 +41,8 @@ export class MarketsService implements OnModuleInit {
     private orderRepository: Repository<Order>,
     @Inject('RUNE_ENTRY_REPOSITORY')
     private runeEntryRepository: Repository<TransactionRuneEntry>,
+    @Inject('OUTPOINT_RUNE_BALANCE_REPOSITORY')
+    private outpoinBalanceRepository: Repository<OutpointRuneBalance>,
     private readonly usersService: UsersService,
     private readonly transactionsService: TransactionsService,
   ) {}
@@ -330,6 +333,26 @@ export class MarketsService implements OnModuleInit {
     if (!user) {
       throw new BadRequestException('No user found');
     }
+
+    const outputValue = await this.outpoinBalanceRepository
+      .createQueryBuilder('outpoint')
+      .innerJoinAndSelect(
+        'outpoint.txOut',
+        'txOut',
+        'txOut.tx_hash = outpoint.tx_hash AND txOut.vout = outpoint.vout',
+      )
+      .where('outpoint.tx_hash = :tx_hash', {
+        tx_hash: body.seller.runeItem.txid,
+      })
+      .andWhere('txOut.spent = false')
+      .getOne();
+    if (!outputValue) {
+      throw new BadRequestException('No output value found');
+    }
+    body.seller.runeItem = {
+      ...body.seller.runeItem,
+      outputValue: outputValue.txOut.value,
+    };
 
     const { seller } = body;
     if (!seller) {

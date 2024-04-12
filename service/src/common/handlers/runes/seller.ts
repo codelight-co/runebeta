@@ -65,21 +65,21 @@ export namespace SellerHandler {
 
     psbt.addInput(input);
 
+    const serviceFee =
+      (listing.seller.price *
+        Number(listing.seller.runeItem.tokenValue) *
+        1.5) /
+      100;
     const sellerOutput = getSellerRuneOutputValue(
-      listing.seller.price,
-      listing.seller.makerFeeBp,
-      Number(listing.seller.runeItem.tokenValue),
+      listing.seller.price * Number(listing.seller.runeItem.tokenValue),
+      serviceFee,
+      Number(listing.seller.runeItem.outputValue),
     );
 
     psbt.addOutput({
       address: listing.seller.sellerReceiveAddress,
       value: sellerOutput,
     });
-    psbt.addOutput({
-      id: listing.seller.runeItem.id, // runes ID
-      value: DUST_AMOUNT, // runes value
-      address: listing.seller.sellerReceiveAddress, // buyer receiveAddress
-    } as any);
 
     listing.seller.unsignedListingPSBTBase64 = psbt.toBase64();
 
@@ -142,12 +142,13 @@ export namespace SellerHandler {
       throw new InvalidArgumentError(`Invalid tokenId`);
     }
 
+    const serviceFee = (req.price * Number(runeItem.tokenValue) * 1.5) / 100;
     // verify that the ordItem's selling price matches the output value with makerFeeBp
     const output = psbt.txOutputs[0];
     const expectedOutput = getSellerRuneOutputValue(
-      req.price,
-      makerFeeBp, // await feeProvider.getMakerFeeBp(runeItem.owner),
-      Number(runeItem.tokenValue),
+      req.price * Number(runeItem.tokenValue),
+      serviceFee, // await feeProvider.getMakerFeeBp(runeItem.owner),
+      Number(runeItem.outputValue),
     );
     if (output.value !== expectedOutput) {
       throw new InvalidArgumentError(`Invalid price`);
