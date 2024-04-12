@@ -80,9 +80,9 @@ export class MarketsService implements OnModuleInit {
       runes: runes.map((rune) => ({
         change_24h: rune.stat.change_24h,
         floor_price: rune.stat.price,
-        last_price: 0,
+        last_price: rune.stat.ma_price,
         marketcap: rune.stat.market_cap,
-        order_sold: 0,
+        order_sold: rune.stat.order_sold,
         token_holders: rune.stat.total_holders,
         id: rune.id,
         rune_id: rune.rune_id,

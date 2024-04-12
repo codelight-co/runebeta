@@ -42,7 +42,13 @@ export class RuneStat extends BaseTable {
   price: bigint;
 
   @Column({ type: 'decimal', nullable: true })
+  ma_price: bigint;
+
+  @Column({ type: 'decimal', nullable: true })
   change_24h: number;
+
+  @Column({ type: 'int8', nullable: true })
+  order_sold: number;
 
   @Column({ type: 'decimal', nullable: true })
   volume_24h: bigint;

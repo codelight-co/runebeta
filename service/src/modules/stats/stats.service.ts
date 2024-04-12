@@ -257,7 +257,7 @@ from (
       const dataPrice = await this.transactionRepository.query(`
       select price 
       from orders o 
-      where rune_id = '${rune.rune_id}' and status in ('listing')
+      where rune_id = '${rune.rune_id}' and status in ('listing','completed')
       order by price asc
       limit 1
       `);
@@ -265,6 +265,7 @@ from (
         price = BigInt(dataPrice[0]?.price);
       }
 
+      let ma_price = BigInt(0);
       const dataMAPrice = await this.transactionRepository
         .query(`select (sum(medium_price)/count(*))::integer as price 
         from (
@@ -276,7 +277,16 @@ from (
         ) as rp`);
       let market_cap = BigInt(0);
       if (dataMAPrice.length) {
+        ma_price = BigInt(dataMAPrice[0]?.price || 0);
         market_cap = BigInt(dataMAPrice[0].price || 0) * supply;
+      }
+
+      let order_sold = BigInt(0);
+      const dataOrderSold = await this.transactionRepository.query(
+        `select count(*) as total from orders o where rune_id = '${rune.rune_id}' and status = 'completed'`,
+      );
+      if (dataOrderSold.length) {
+        order_sold = BigInt(dataOrderSold[0]?.total);
       }
 
       await this.runeStatRepository.save(
@@ -290,6 +300,8 @@ from (
           volume_24h,
           prev_volume_24h,
           price,
+          ma_price,
+          order_sold,
           total_volume,
           market_cap,
           mintable: runeIndex?.mintable || false,
