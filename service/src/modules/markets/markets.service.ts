@@ -52,7 +52,8 @@ export class MarketsService implements OnModuleInit {
 
   async getRunes(marketRuneFilterDto: MarketRuneFilterDto) {
     const builder = this.runeEntryRepository
-      .createQueryBuilder()
+      .createQueryBuilder('rune')
+      .leftJoinAndSelect('rune.stat', 'rune_stat')
       .offset(marketRuneFilterDto.offset)
       .limit(marketRuneFilterDto.limit);
 
@@ -72,24 +73,22 @@ export class MarketsService implements OnModuleInit {
     }
 
     const runes = await builder.getMany();
-
     return {
       total: await builder.getCount(),
       limit: marketRuneFilterDto.limit,
       offset: marketRuneFilterDto.offset,
       runes: runes.map((rune) => ({
-        change_24h: 0,
-        floor_price: 0,
+        change_24h: rune.stat.change_24h,
+        floor_price: rune.stat.price,
         last_price: 0,
-        marketcap: 0,
+        marketcap: rune.stat.market_cap,
         order_sold: 0,
-        token_holders: 0,
+        token_holders: rune.stat.total_holders,
         id: rune.id,
         rune_id: rune.rune_id,
         rune_name: rune.spaced_rune,
-        total_supply: rune.supply,
-        total_volume: 0,
-        unit: 1,
+        total_supply: rune.stat.total_supply,
+        total_volume: rune.stat.total_volume,
       })),
     };
   }

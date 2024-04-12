@@ -9,7 +9,6 @@ import {
 } from 'typeorm';
 import { OutpointRuneBalance } from './outpoint-rune-balance.entity';
 import { RuneStat } from './rune_stat.entity';
-import { Order } from './order.entity';
 
 @Entity({ synchronize: false })
 export class TransactionRuneEntry {
