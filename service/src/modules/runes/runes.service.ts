@@ -220,7 +220,6 @@ export class RunesService {
               } as BroadcastTransactionDto);
 
               console.log('tx :>> ', tx);
-
               await this.etchRuneEntryRepository.update(etchRune.id, {
                 status: EEtchRuneStatus.MINTED,
               });

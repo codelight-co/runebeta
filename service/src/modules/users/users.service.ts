@@ -128,7 +128,12 @@ export class UsersService implements OnModuleInit {
   ): Promise<any> {
     const builder = this.orderRepository
       .createQueryBuilder('order')
-      .innerJoinAndSelect('order.runeInfo', 'runeInfo')
+      .innerJoinAndMapOne(
+        'order.runeInfo',
+        TransactionRuneEntry,
+        'runeInfo',
+        'order.rune_id = runeInfo.rune_id',
+      )
       .where('order.user_id = :userId', { userId: user.id });
 
     if (marketRuneOrderFilterDto.status) {
