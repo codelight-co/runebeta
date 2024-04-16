@@ -40,13 +40,13 @@ export class TransactionOut {
   @Column({ type: 'bool' })
   spent: boolean;
 
-  @Column({ type: 'jsonb', name: 'runestone' })
+  @Column({ type: 'varchar', name: 'runestone' })
   rune_stone: RuneStone;
 
   @Column({ type: 'int4' })
   edicts: number;
 
-  @Column({ type: 'jsonb' })
+  @Column({ type: 'varchar' })
   cenotaph: any;
 
   @Column({ type: 'bool' })

@@ -49,6 +49,7 @@ export class UsersService implements OnModuleInit {
   }
 
   async getMyUtxo(user: User): Promise<AddressTxsUtxo[]> {
+    console.log('user :>> ', user);
     return this.mempoolClient.addresses.getAddressTxsUtxo({
       address: user.walletAddress,
     });

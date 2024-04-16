@@ -186,6 +186,8 @@ export class RunesService {
   }
 
   async etchRune(user: User, etchRuneDto: EtchRuneDto): Promise<any> {
+    console.log('user :>> ', user);
+    console.log('etchRuneDto :>> ', etchRuneDto);
     const rune = await this.etchRuneEntryRepository.save({
       name: etchRuneDto.runeName || '',
       commit_block_height: etchRuneDto.commitBlockHeight,

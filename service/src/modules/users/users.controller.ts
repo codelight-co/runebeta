@@ -13,6 +13,7 @@ import { User } from '../database/entities/user.entity';
 import { UsersService } from './users.service';
 import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
 import { MarketRuneOrderFilterDto } from '../markets/dto';
+import { ParseRuneIdPipe } from 'src/common/pipes';
 
 @Controller('users')
 @UseInterceptors(CoreTransformInterceptor)
@@ -42,7 +43,10 @@ export class UsersController {
   // Get my rune by id
   @UseGuards(AuthGuard)
   @Get('my-runes/:id')
-  getMyRuneById(@UserDecorator() user: User, @Param('id') id: string) {
+  getMyRuneById(
+    @UserDecorator() user: User,
+    @Param('id', ParseRuneIdPipe) id: string,
+  ) {
     return this.usersService.getMyRuneById(user, id);
   }
 
