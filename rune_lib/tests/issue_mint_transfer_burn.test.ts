@@ -534,7 +534,9 @@ describe('Issue/Mint/Transfer/Burn', () => {
         }
     });
     it('test split tokens', async () => {
-        let resp = await fetch(`https://apis.supersats.xyz/testnet/runes/utxo/${address}`).then((res) => res.json());
+        let url = `https://apis.supersats.xyz/testnet/runes/utxo/${address}`;
+        console.log(url);
+        let resp = await fetch(url).then((res) => res.json());
         let runes = resp.data;
         if (Array.isArray(runes)) {
             const map = new Map<string, { runeValue: bigint; runeId: string; }[]>();
@@ -553,7 +555,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
             if (entries.length) {
                 let [key, values] = entries[0];
                 let allUTXOs = await getUTXOs(address, network);
-                let safeUTXOs = allUTXOs.filter(e => e.txid + ':' + e.vout + ':' + e.value === key);
+                let safeUTXOs = allUTXOs.filter(e => e.txid + ':' + e.vout + ':' + e.value !== key);
                 let outputs: Output[] = [];
                 let edicts: Edict[] = [];
                 for (let i = 0; i < values.length; i++) {
