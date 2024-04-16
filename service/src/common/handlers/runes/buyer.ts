@@ -12,7 +12,12 @@ import {
   AddressType,
   addressToOutputScript,
 } from 'src/common/utils/util';
-import { DUST_AMOUNT, PLATFORM_FEE_ADDRESS } from 'src/environments';
+import {
+  DUST_AMOUNT,
+  PLATFORM_FEE_ADDRESS,
+  PLATFORM_SERVICE_FEE,
+  SELLER_SERVICE_FEE,
+} from 'src/environments';
 import {
   calculateTxBytesFee,
   getSellerRuneOutputValue,
@@ -149,7 +154,7 @@ export namespace BuyerHandler {
     const _seller_inputs: SellerInput[] = [];
     const _seller_outputs: SellerOutput[] = [];
     const _buyer_outputs: TokenOutput[] = [];
-    let _platform_fee = 0;
+    let _platform_fee = PLATFORM_SERVICE_FEE;
     let _seller_listing_prices = 0;
     let _seller_total_tokens = BigInt(0);
     let _seller_listing_item = BigInt(0);
@@ -177,12 +182,6 @@ export namespace BuyerHandler {
         address: buyer_state.buyer.buyerTokenReceiveAddress, // buyer receiveAddress
       });
       _seller_outputs.push(sellerOutput);
-
-      _platform_fee += Math.floor(
-        (seller.seller.price *
-          (buyer_state.buyer.takerFeeBp + seller.seller.makerFeeBp)) /
-          10000,
-      );
 
       _seller_total_tokens += BigInt(seller.seller.runeItem.outputValue);
       _seller_listing_item += BigInt(seller.seller.runeItem.tokenValue);
@@ -377,10 +376,9 @@ export namespace BuyerHandler {
     }
 
     const serviceFee =
-      (listing.seller.price *
-        Number(listing.seller.runeItem.tokenValue) *
-        1.5) /
-      100;
+      listing.seller.price *
+      Number(listing.seller.runeItem.tokenValue) *
+      SELLER_SERVICE_FEE;
     const sellerOutputValue = getSellerRuneOutputValue(
       listing.seller.price * Number(listing.seller.runeItem.tokenValue),
       serviceFee,

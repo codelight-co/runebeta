@@ -9,7 +9,7 @@ import {
   IRuneListingState,
 } from './types';
 import * as bitcoin from 'bitcoinjs-lib';
-import { DUST_AMOUNT } from 'src/environments';
+import { SELLER_SERVICE_FEE } from 'src/environments';
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace SellerHandler {
@@ -66,10 +66,9 @@ export namespace SellerHandler {
     psbt.addInput(input);
 
     const serviceFee =
-      (listing.seller.price *
-        Number(listing.seller.runeItem.tokenValue) *
-        1.5) /
-      100;
+      listing.seller.price *
+      Number(listing.seller.runeItem.tokenValue) *
+      SELLER_SERVICE_FEE;
     const sellerOutput = getSellerRuneOutputValue(
       listing.seller.price * Number(listing.seller.runeItem.tokenValue),
       serviceFee,
@@ -142,7 +141,8 @@ export namespace SellerHandler {
       throw new InvalidArgumentError(`Invalid tokenId`);
     }
 
-    const serviceFee = (req.price * Number(runeItem.tokenValue) * 1.5) / 100;
+    const serviceFee =
+      req.price * Number(runeItem.tokenValue) * SELLER_SERVICE_FEE;
     // verify that the ordItem's selling price matches the output value with makerFeeBp
     const output = psbt.txOutputs[0];
     const expectedOutput = getSellerRuneOutputValue(

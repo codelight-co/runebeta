@@ -36,8 +36,6 @@ const ENCRYPTION_IV_LENGTH: number = +process.env.ENCRYPTION_IV_LENGTH || 16;
 // Bitcoin config
 const BITCOIN_NETWORK: string = process.env.BITCOIN_NETWORK || 'testnet';
 const BTC_NETWORK: 'testnet' | 'mainnet' | 'livenet' = 'testnet';
-const PLATFORM_FEE_ADDRESS =
-  'tb1p6q553c7pr7grtshzyhpj2u3djuqazqsvpmtl3ljnyrqhc4h2a45s0g57vc';
 const DUST_AMOUNT = 546;
 const RUNE_TAG = 'R';
 const MAGIC_NUMBER = 93;
@@ -48,6 +46,12 @@ const BITCOIN_RPC_PORT = Number(process.env.BITCOIN_RPC_PORT ?? 18332);
 const BITCOIN_RPC_USER = process.env.BITCOIN_RPC_USER || 'mike';
 const BITCOIN_RPC_PASS = process.env.BITCOIN_RPC_PASS || 'apd3g41pkl';
 const BITCOIN_RPC_TIMEOUT = Number(process.env.BITCOIN_RPC_TIMEOUT ?? 120000);
+
+// Config service fee
+const SELLER_SERVICE_FEE = +process.env.SELLER_SERVICE_FEE || 0.015; // 1.5% service fee
+const PLATFORM_SERVICE_FEE = +process.env.PLATFORM_SERVICE_FEE || 1000; // 1000 satoshi
+const PLATFORM_FEE_ADDRESS =
+  'tb1p6q553c7pr7grtshzyhpj2u3djuqazqsvpmtl3ljnyrqhc4h2a45s0g57vc';
 
 export {
   DATABASE_TYPE,
@@ -78,4 +82,6 @@ export {
   ODR_URL,
   ODR_PORT,
   MAGIC_NUMBER,
+  SELLER_SERVICE_FEE,
+  PLATFORM_SERVICE_FEE,
 };

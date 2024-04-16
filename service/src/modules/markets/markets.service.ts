@@ -21,7 +21,7 @@ import {
 import { SellerHandler } from 'src/common/handlers/runes/seller';
 import { BuyerHandler } from 'src/common/handlers/runes/buyer';
 import { RPCService, network } from 'src/common/utils/rpc';
-import { BASE_URL, DUST_AMOUNT } from 'src/environments';
+import { BASE_URL } from 'src/environments';
 import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
 import { BuyerOrderDto } from './dto/buyer-order.dto';
 import { MergeSingers } from 'src/common/handlers/runes/merge';
@@ -371,6 +371,7 @@ export class MarketsService implements OnModuleInit {
       throw new BadRequestException('No user found');
     }
     const { utxos, amount, vinsLength, voutsLength, feeRateTier } = body;
+
     return BuyerHandler.selectPaymentUTXOs(
       utxos,
       amount,
@@ -534,7 +535,7 @@ export class MarketsService implements OnModuleInit {
       .set({ status: 'cancelled' })
       .where('id IN (:...ids)', { ids: body.orderIds })
       .andWhere('user_id = :userId', { userId: user.id })
-      // .andWhere('status = :status', { status: 'listing' })
+      .andWhere('status = :status', { status: 'listing' })
       .execute();
     if (!updated.affected) {
       throw new BadRequestException('Failed to cancel order');
