@@ -5,6 +5,7 @@ import {
     ECPair,
     getKeypairInfo,
     logToJSON,
+    Output,
     prepareCommitAndRevealTx,
     prepareCommitRevealConfig,
     prepareTx,
@@ -27,9 +28,11 @@ describe('Issue/Mint/Transfer/Burn', () => {
     const network = bitcoin.networks.testnet;
 
     // replace with your own fee rate
-    const feeRate = 1;
+    const feeRate = 14;
     const signer = ECPair.fromWIF(wif, network);
     let pubkey = signer.publicKey;
+
+    let dustAmount = network === bitcoin.networks.testnet ? 1 : 546;
 
     let addressType = AddressType.P2TR;
     let address = publicKeyToAddress(pubkey, addressType, network)!;
@@ -484,5 +487,126 @@ describe('Issue/Mint/Transfer/Burn', () => {
         console.log(stone);
         // let txid = await broadcast(rawhex, network);
         // console.log(txid);
+    });
+    it('test merge tokens', async () => {
+        let resp = await fetch(`https://apis.supersats.xyz/testnet/runes/utxo/${address}`).then((res) => res.json());
+        if (Array.isArray(resp.data)) {
+            let runeUTXOs = resp.data.map(e => e.utxo).map(e => ({
+                txid: e.tx_hash,
+                vout: Number(e.vout),
+                value: Number(e.value)
+            }));
+            let runeOutputs = new Set<string>();
+            for (let runeUTXO of runeUTXOs) {
+                runeOutputs.add(runeUTXO.txid + ':' + runeUTXO.vout);
+            }
+            let allUtxos = await getUTXOs(address, network);
+            let safeUTXOs = allUtxos.filter(e => !runeOutputs.has(e.txid + ':' + e.vout));
+            let willMerged = runeUTXOs.slice(0, 3);
+            console.table(willMerged);
+            const txResult = prepareTx({
+                regularUTXOs: safeUTXOs,
+                inputs: willMerged,
+                outputs: [{
+                    script: output,
+                    value: willMerged.reduce((a, b) => a + b.value, 0),
+                }],
+                feeRate,
+                address,
+                amount: 0,
+            });
+            if (txResult.error) {
+                console.error(txResult.error);
+                return;
+            }
+            logToJSON(txResult.ok);
+            let psbt = toPsbt({tx: txResult.ok!, pubkey, rbf: true});
+            let wallet = new Wallet(wif, network, addressType);
+            let signed = wallet.signPsbt(psbt);
+            let tx = signed.extractTransaction(true);
+            console.table({
+                txid: tx.getId(),
+                fee: psbt.getFee(),
+                feeRate: psbt.getFeeRate(),
+            });
+            const rawhex = tx.toHex();
+            console.log(rawhex);
+        }
+    });
+    it('test split tokens', async () => {
+        let resp = await fetch(`https://apis.supersats.xyz/testnet/runes/utxo/${address}`).then((res) => res.json());
+        let runes = resp.data;
+        if (Array.isArray(runes)) {
+            const map = new Map<string, { runeValue: bigint; runeId: string; }[]>();
+            for (const item of runes) {
+                const key = item.utxo.tx_hash + ':' + item.utxo.vout + ':' + item.utxo.value;
+                if (!map.has(key)) {
+                    map.set(key, []);
+                }
+                map.get(key)!.push({
+                    runeValue: BigInt(item.amount),
+                    runeId: item.rune_id
+                });
+            }
+            let entries = Array.from(map.entries()).filter((e) => e[1].length > 1);
+            console.log(entries);
+            if (entries.length) {
+                let [key, values] = entries[0];
+                let allUTXOs = await getUTXOs(address, network);
+                let safeUTXOs = allUTXOs.filter(e => e.txid + ':' + e.vout + ':' + e.value === key);
+                let outputs: Output[] = [];
+                let edicts: Edict[] = [];
+                for (let i = 0; i < values.length; i++) {
+                    let item = values[i];
+                    outputs.push({
+                        script: output,
+                        value: dustAmount,
+                    });
+                    let strings = item.runeId.split(':');
+                    edicts.push(new Edict({
+                        id: new RuneId(BigInt(strings[0]), BigInt(strings[1])),
+                        amount: item.runeValue,
+                        output: BigInt(i),
+                    }));
+                }
+                outputs.push({
+                    script: new RuneStone({
+                        edicts
+                    }).encipher(),
+                    value: 0,
+                });
+                let compressedUTXO = key.split(':');
+                let input = {
+                    txid: compressedUTXO[0],
+                    vout: Number(compressedUTXO[1]),
+                    value: Number(compressedUTXO[2])
+                };
+                let amount = outputs.reduce((a, b) => a + b.value, 0) - input.value;
+                const txResult = prepareTx({
+                    regularUTXOs: safeUTXOs,
+                    inputs: [input],
+                    outputs,
+                    feeRate,
+                    address,
+                    amount,
+                });
+                if (txResult.error) {
+                    console.error(txResult.error);
+                    return;
+                }
+                logToJSON(txResult.ok);
+                let psbt = toPsbt({tx: txResult.ok!, pubkey, rbf: true});
+                let wallet = new Wallet(wif, network, addressType);
+                let signed = wallet.signPsbt(psbt);
+                let tx = signed.extractTransaction(true);
+                console.table({
+                    txid: tx.getId(),
+                    fee: psbt.getFee(),
+                    feeRate: psbt.getFeeRate(),
+                });
+                const rawhex = tx.toHex();
+                console.log(rawhex);
+            }
+        }
     });
 });
