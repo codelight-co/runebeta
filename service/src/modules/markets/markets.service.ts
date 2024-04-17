@@ -337,14 +337,13 @@ export class MarketsService implements OnModuleInit {
 
     const outputValue = await this.outpoinBalanceRepository
       .createQueryBuilder('outpoint')
-      .innerJoinAndSelect('outpoint.txOut', 'txOut')
       .where('outpoint.tx_hash = :tx_hash', {
         tx_hash: body.seller.runeItem.txid,
       })
       .andWhere('outpoint.vout = :vout', {
         vout: body.seller.runeItem.vout,
       })
-      .andWhere('txOut.spent = false')
+      .andWhere('outpoint.spent = false')
       .getOne();
     if (!outputValue) {
       throw new BadRequestException('No output value found');

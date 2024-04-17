@@ -129,8 +129,8 @@ export class TransactionsService {
       .createQueryBuilder()
       .innerJoinAndSelect('Transaction.vin', 'TransactionIns')
       .innerJoinAndSelect('Transaction.vout', 'TransactionOut')
-      .innerJoinAndSelect('TransactionOut.outpointRuneBalances', 'Outpoint')
-      .innerJoinAndSelect('Outpoint.rune', 'rune')
+      .leftJoinAndSelect('TransactionOut.outpointRuneBalances', 'Outpoint')
+      .leftJoinAndSelect('Outpoint.rune', 'rune')
       .innerJoinAndMapOne(
         'Transaction.block',
         'Transaction.block',
@@ -142,14 +142,15 @@ export class TransactionsService {
     if (!transaction) {
       throw new BadRequestException('Transaction not found');
     }
-
     if (transaction?.vout.length > 0) {
       for (let index = 0; index < transaction.vout.length; index++) {
         const vout = transaction.vout[index];
+
+        const value = (vout.value / 100000000).toFixed(8);
         transaction.vout[index] = {
           ...vout,
           address: vout?.address,
-          value: vout?.value ? vout.value / 100000000 : 0,
+          value: vout?.value ? value.toString() : 0,
           runeInject: vout?.outpointRuneBalances?.length
             ? vout.outpointRuneBalances.map((outpoint) => ({
                 address: vout.address,
@@ -184,10 +185,11 @@ export class TransactionsService {
           })
           .getOne();
 
+        const value = (vout.value / 100000000).toFixed(8);
         transaction.vin[index] = {
           ...vin,
           address: vout?.address,
-          value: vout?.value ? vout.value / 100000000 : 0,
+          value: vout?.value ? value.toString() : 0,
           runeInject: vout?.outpointRuneBalances?.length
             ? vout.outpointRuneBalances.map((outpoint) => ({
                 rune_id: outpoint.rune_id,

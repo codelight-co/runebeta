@@ -160,12 +160,11 @@ export class RunesService {
 
   async getTopHolders(id: string): Promise<any> {
     const data = await this.runeEntryRepository.query(`
-    select to2.address, tre.spaced_rune ,orb.*
-    from transaction_outs to2 
-    inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash
+    select tre.spaced_rune ,orb.*
+    from outpoint_rune_balances orb
     inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id 
-    where spent = false and to2.address is not null and tre.rune_id = '${id}'
-    order by balance_value desc
+    where orb.spent = false and orb.address is not null and tre.rune_id = '${id}'
+    order by orb.balance_value desc
     limit 10`);
 
     return {
@@ -244,12 +243,12 @@ export class RunesService {
 
   async getRuneUtxo(address: string): Promise<any> {
     const data = await this.runeEntryRepository.query(`
-    select to2.address, to2.tx_hash as utxo_tx_hash, to2.vout as utxo_vout, to2.value as utxo_value, tre.* ,orb.*
+    select to2.tx_hash as utxo_tx_hash, to2.vout as utxo_vout, to2.value as utxo_value, tre.* ,orb.*
     from transaction_outs to2 
     inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash and orb.vout = to2.vout
     inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id 
-    where spent = false and to2.address is not null and to2.address = '${address}'
-    order by balance_value desc`);
+    where orb.spent = false and orb.address is not null and to2.address = '${address}'
+    order by orb.balance_value desc`);
     return data.map((d: any) => ({
       address: d.address,
       amount: d.balance_value,

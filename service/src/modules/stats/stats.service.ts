@@ -12,7 +12,6 @@ import { PROCESS, PROCESSOR } from 'src/common/enums';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import { IndexersService } from '../indexers/indexers.service';
-import { run } from 'node:test';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
@@ -84,11 +83,10 @@ export class StatsService {
     const totalHolderData = await this.transactionRepository
       .query(`select count(*) as total
       from (
-        select address
-        from transaction_outs to2
-        inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash
-        where address is not null and spent = false
-        group by address
+        select orb.address
+        from outpoint_rune_balances orb
+        where orb.address is not null and orb.spent = false
+        group by orb.address
       ) as rp`);
     let totalFee = 0;
     const totalFeeData = await this.transactionRepository.query(
@@ -160,22 +158,20 @@ export class StatsService {
       const stats = (await this.runeStatRepository
         .query(`select 'total_transactions' as name, count(*) as total
 from (
-	select to2.tx_hash
-	from transaction_outs to2 
-	inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash and orb.vout = to2.vout 
+	select orb.tx_hash
+	from outpoint_rune_balances orb
 	inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id
 	where tre.rune_id = '${rune.rune_id}'
-	group  by to2.tx_hash
+	group  by orb.tx_hash
 ) as rp1
 union all
 select 'total_holders' as name, count(*) as total
 from (
-	select to2.address 
-	from transaction_outs to2 
-	inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash and orb.vout = to2.vout 
+	select orb.address 
+	from outpoint_rune_balances orb
 	inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id
-	where tre.rune_id = '${rune.rune_id}' and CAST(orb.balance_value  AS DECIMAL) > 0 and to2.spent = false 
-	group  by to2.address
+	where tre.rune_id = '${rune.rune_id}' and CAST(orb.balance_value  AS DECIMAL) > 0 and orb.spent = false 
+	group  by orb.address
 ) as rp2`)) as Array<{ name: string; total: number }>;
 
       const payload = {} as any;
