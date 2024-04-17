@@ -12,6 +12,8 @@ import { PROCESS, PROCESSOR } from 'src/common/enums';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import { IndexersService } from '../indexers/indexers.service';
+import { getFeesRecommended } from 'src/vendors/mempool';
+import { FeesRecommended } from '@mempool/mempool.js/lib/interfaces/bitcoin/fees';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
@@ -108,12 +110,8 @@ export class StatsService {
     };
   }
 
-  async getRecommendedFee() {
-    const res = await this.httpService
-      .get('https://mempool.space/api/v1/fees/recommended')
-      .toPromise();
-
-    return res.data;
+  async getRecommendedFee(): Promise<FeesRecommended> {
+    return getFeesRecommended();
   }
 
   async calculateNetworkStats(): Promise<void> {

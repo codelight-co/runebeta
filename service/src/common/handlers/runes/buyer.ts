@@ -94,7 +94,7 @@ export namespace BuyerHandler {
     amount: number, // amount is expected total output (except tx fee)
     vinsLength: number,
     voutsLength: number,
-    feeRateTier: string,
+    feeRateTier: string | number,
     service: RPCService,
   ): Promise<AddressTxsUtxo[]> {
     const selectedUtxos: AddressTxsUtxo[] = [];
@@ -289,19 +289,17 @@ export namespace BuyerHandler {
       psbt.addOutput(_all_outputs_except_change[i] as any);
     }
 
-    console.log('1-----------------', buyer_state);
     /// Adding change fee:
     const fee = await calculateTxBytesFee(
       psbt.txInputs.length,
       psbt.txOutputs.length, // already taken care of the exchange output bytes calculation
-      buyer_state.buyer.feeRateTier,
+      14,
     );
     const totalOutput = psbt.txOutputs.reduce(
       (partialSum, a) => partialSum + a.value,
       0,
     );
 
-    console.log('2-----------------');
     const changeValue =
       total_buyer_inputs_value -
       _seller_listing_prices -
@@ -309,11 +307,6 @@ export namespace BuyerHandler {
       _platform_fee -
       DUST_AMOUNT * 2 -
       100;
-    console.log('total_buyer_inputs_value :>> ', total_buyer_inputs_value);
-    console.log('_seller_listing_prices :>> ', _seller_listing_prices);
-    console.log('fee :>> ', fee);
-    console.log('_platform_fee :>> ', _platform_fee);
-    console.log('changeValue :>> ', changeValue);
     if (changeValue < 0) {
       throw new Error(`Your wallet address doesn't have enough funds to buy this rune.
   Price:      ${satToBtc(_seller_listing_prices)} BTC
@@ -328,7 +321,6 @@ export namespace BuyerHandler {
       });
     }
 
-    console.log('3-----------------');
     buyer_state.buyer.unsignedBuyingPSBTBase64 = psbt.toBase64();
     buyer_state.buyer.unsignedBuyingPSBTInputSize = psbt.data.inputs.length;
     buyer_state.buyer.itemMapping = _seller_outputs.map((e, i) => {
@@ -338,7 +330,6 @@ export namespace BuyerHandler {
       };
     });
 
-    console.log('okie -----------------------');
     return buyer_state;
   }
 
