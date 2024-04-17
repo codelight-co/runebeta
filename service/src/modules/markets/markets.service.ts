@@ -337,13 +337,14 @@ export class MarketsService implements OnModuleInit {
 
     const outputValue = await this.outpoinBalanceRepository
       .createQueryBuilder('outpoint')
+      .innerJoinAndSelect('outpoint.txOut', 'txOut')
       .where('outpoint.tx_hash = :tx_hash', {
         tx_hash: body.seller.runeItem.txid,
       })
       .andWhere('outpoint.vout = :vout', {
         vout: body.seller.runeItem.vout,
       })
-      .andWhere('outpoint.spent = false')
+      .andWhere('txOut.spent = false')
       .getOne();
     if (!outputValue) {
       throw new BadRequestException('No output value found');
@@ -492,6 +493,7 @@ export class MarketsService implements OnModuleInit {
   }
 
   async selectUTXOsForBuying(body: BuyerOrderDto, user: User): Promise<any> {
+    console.log('body :>> ', body);
     const utxos = await this.usersService.getMyUtxo(user);
     // Get order by ids
     const orders = await this.orderRepository
@@ -512,7 +514,7 @@ export class MarketsService implements OnModuleInit {
       price + 67 * 259,
       2,
       4,
-      'minimumFee',
+      'hourFee',
       this.rpcService,
     );
   }

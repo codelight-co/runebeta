@@ -319,6 +319,8 @@ from (
           premine,
           remaining,
           mint_type,
+          etching: runeIndex?.entry.etching,
+          parent: runeIndex?.parent,
           ...payload,
         }),
       );

@@ -86,6 +86,12 @@ export class RuneStat extends BaseTable {
   @Column({ type: 'jsonb', nullable: true })
   offset: Array<number>;
 
+  @Column({ type: 'varchar', nullable: true })
+  etching: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  parent: string;
+
   @Column({
     type: 'jsonb',
     nullable: true,

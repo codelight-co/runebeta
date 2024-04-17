@@ -111,6 +111,8 @@ export class RunesService {
         transaction_count: rune?.stat?.total_transactions || '0',
         mint_type: rune?.stat?.mint_type || '',
         terms: rune?.stat?.entry?.terms || null,
+        etching: rune?.stat?.etching || null,
+        parent: rune?.stat?.parent || null,
         mints: rune?.stat?.total_mints || '0',
         remaining: rune?.stat?.entry.remaining || null,
         burned: rune?.stat?.total_burns || '0',
@@ -122,38 +124,41 @@ export class RunesService {
 
   async getRuneById(id: string): Promise<any> {
     const rune = await this.runeEntryRepository
-      .createQueryBuilder()
-      .where('rune_id = :id', { id })
+      .createQueryBuilder('rune')
+      .innerJoinAndMapOne(
+        'rune.stat',
+        RuneStat,
+        'rune_stat',
+        'rune_stat.rune_id = rune.rune_id',
+      )
+      .where('rune.rune_id = :id', { id })
       .getOne();
 
     return {
       rows: {
         id: rune.id,
         rune_id: rune.rune_id,
-        supply: rune.supply,
-        token_holders: 0,
-        burned: rune.burned,
-        collection_description: null,
-        collection_metadata: null,
-        collection_minted: 0,
-        collection_owner: null,
-        collection_total_supply: null,
+        rune_hex: rune.rune_hex,
+        supply: rune?.stat?.total_supply || rune.supply || 0,
         deploy_transaction: rune.tx_hash,
         divisibility: rune.divisibility,
         end_block: rune.number,
-        holder_count: 0,
-        is_collection: false,
-        is_hot: true,
-        is_nft: false,
-        limit: 0,
-        nft_collection: null,
-        nft_metadata: null,
+        holder_count: rune?.stat?.total_holders || '0',
         rune: rune.spaced_rune,
         symbol: rune.symbol,
-        term: 0,
+        premine: rune?.stat?.premine || '0',
+        term: rune?.stat?.term || 0,
         timestamp: rune.timestamp,
-        transaction_count: 0,
-        unit: 1,
+        transaction_count: rune?.stat?.total_transactions || '0',
+        mint_type: rune?.stat?.mint_type || '',
+        terms: rune?.stat?.entry?.terms || null,
+        etching: rune?.stat?.etching || null,
+        parent: rune?.stat?.parent || null,
+        mints: rune?.stat?.total_mints || '0',
+        remaining: rune?.stat?.entry.remaining || null,
+        burned: rune?.stat?.total_burns || '0',
+        limit: rune?.stat?.limit || '0',
+        mintable: rune?.stat?.mintable || false,
       },
     };
   }
@@ -185,8 +190,6 @@ export class RunesService {
   }
 
   async etchRune(user: User, etchRuneDto: EtchRuneDto): Promise<any> {
-    console.log('user :>> ', user);
-    console.log('etchRuneDto :>> ', etchRuneDto);
     const rune = await this.etchRuneEntryRepository.save({
       name: etchRuneDto.runeName || '',
       commit_block_height: etchRuneDto.commitBlockHeight,
