@@ -9,6 +9,7 @@ import { EEtchRuneStatus } from 'src/common/enums';
 import { StatsService } from '../stats/stats.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { BroadcastTransactionDto } from '../transactions/dto';
+import { start } from 'repl';
 
 @Injectable()
 export class RunesService {
@@ -133,7 +134,6 @@ export class RunesService {
       )
       .where('rune.rune_id = :id', { id })
       .getOne();
-
     return {
       rows: {
         id: rune.id,
@@ -142,7 +142,8 @@ export class RunesService {
         supply: rune?.stat?.total_supply || rune.supply || 0,
         deploy_transaction: rune.tx_hash,
         divisibility: rune.divisibility,
-        end_block: rune.number,
+        end_block: rune.stat?.end_block || null,
+        start_block: rune.stat?.start_block || null,
         holder_count: rune?.stat?.total_holders || '0',
         rune: rune.spaced_rune,
         symbol: rune.symbol,
