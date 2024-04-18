@@ -4,7 +4,7 @@ import { APP_FILTER } from '@nestjs/core';
 import * as redisStore from 'cache-manager-redis-store';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { CACHE_TTL, JWT_SECRET, REDIS_HOST, REDIS_PORT } from './environments';
+import { JWT_SECRET, REDIS_HOST, REDIS_PORT } from './environments';
 import { DatabaseModule } from './modules/database/database.module';
 import { MarketsModule } from './modules/markets/markets.module';
 import { RunesModule } from './modules/runes/runes.module';
@@ -24,7 +24,6 @@ import { IndexersModule } from './modules/indexers/indexers.module';
   imports: [
     DatabaseModule,
     CacheModule.register({
-      ttl: CACHE_TTL,
       isGlobal: true,
       store: redisStore,
       host: REDIS_HOST,

@@ -23,10 +23,13 @@ import {
 import { TransactionOut } from '../database/entities/transaction-out.entity';
 import { OutpointRuneBalance } from '../database/entities/outpoint-rune-balance.entity';
 import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
+import { IndexersService } from '../indexers/indexers.service';
 
 @Injectable()
 export class TransactionsService {
   constructor(
+    @Inject(CACHE_MANAGER) private cacheService: Cache,
     private readonly httpService: HttpService,
     @Inject('TRANSACTION_REPOSITORY')
     private transactionRepository: Repository<Transaction>,
@@ -36,12 +39,21 @@ export class TransactionsService {
     private runeEntryRepository: Repository<TransactionRuneEntry>,
     @Inject('OUTPOINT_RUNE_BALANCE_REPOSITORY')
     private outpointRuneBalanceRepository: Repository<OutpointRuneBalance>,
+    private readonly indexersService: IndexersService,
   ) {}
   private logger = new Logger(TransactionsService.name);
 
   async getTransactions(
     transactionFilterDto: TransactionFilterDto,
   ): Promise<any> {
+    const blockHeight = await this.indexersService.getBlockHeight();
+    const cachedData = await this.cacheService.get(
+      `${blockHeight}:${transactionFilterDto.limit}-${transactionFilterDto.offset}-${transactionFilterDto.sortBy}-${transactionFilterDto.sortOrder}`,
+    );
+    if (cachedData) {
+      return cachedData;
+    }
+
     const builderTotal = this.outpointRuneBalanceRepository
       .createQueryBuilder('outpoint')
       .groupBy('outpoint.tx_hash');
@@ -129,6 +141,17 @@ export class TransactionsService {
         }
       }
     }
+
+    await this.cacheService.set(
+      `${blockHeight}:${transactionFilterDto.limit}-${transactionFilterDto.offset}-${transactionFilterDto.sortBy}-${transactionFilterDto.sortOrder}`,
+      {
+        total,
+        limit: transactionFilterDto.limit,
+        offset: transactionFilterDto.offset,
+        transactions,
+      },
+      900,
+    );
 
     return {
       total,
