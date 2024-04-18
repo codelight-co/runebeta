@@ -13,10 +13,12 @@ import { HttpService } from '@nestjs/axios';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Transaction } from '../database/entities/transaction.entity';
 import {
+  BITCOIN_NETWORK,
   BITCOIN_RPC_HOST,
   BITCOIN_RPC_PASS,
   BITCOIN_RPC_PORT,
   BITCOIN_RPC_USER,
+  FIRST_RUNE_BLOCK,
 } from 'src/environments';
 import { TransactionOut } from '../database/entities/transaction-out.entity';
 import { OutpointRuneBalance } from '../database/entities/outpoint-rune-balance.entity';
@@ -40,24 +42,40 @@ export class TransactionsService {
   async getTransactions(
     transactionFilterDto: TransactionFilterDto,
   ): Promise<any> {
-    const builder = this.transactionRepository.createQueryBuilder();
+    const builderTotal = this.outpointRuneBalanceRepository
+      .createQueryBuilder('outpoint')
+      .groupBy('outpoint.tx_hash');
+
     let total = 0;
-
-    if (!transactionFilterDto.runeId && !transactionFilterDto.address) {
-      total = await builder.getCount();
+    if (transactionFilterDto.runeId) {
+      builderTotal
+        .innerJoin('outpoint.rune', 'rune')
+        .where('rune.rune_id = :runeid', {
+          runeid: transactionFilterDto.runeId,
+        });
     }
+    if (transactionFilterDto.address) {
+      builderTotal.where('outpoint.address = :address', {
+        address: transactionFilterDto.address,
+      });
+    }
+    total = await builderTotal.getCount();
 
-    builder
-      .innerJoinAndSelect('Transaction.vin', 'TransactionIns')
+    const builder = this.transactionRepository
+      .createQueryBuilder()
       .innerJoinAndSelect('Transaction.vout', 'TransactionOut')
       .innerJoinAndSelect('TransactionOut.outpointRuneBalances', 'Outpoint')
+      .innerJoinAndSelect('Transaction.vin', 'TransactionIns')
       .innerJoinAndSelect('Outpoint.rune', 'rune')
       .innerJoinAndMapOne(
         'Transaction.block',
         'Transaction.block',
         'Block',
         'Block.block_height = Transaction.block_height',
-      );
+      )
+      .where('Transaction.block_height >= :height', {
+        height: FIRST_RUNE_BLOCK[BITCOIN_NETWORK],
+      });
 
     if (transactionFilterDto.runeId) {
       builder
@@ -76,10 +94,6 @@ export class TransactionsService {
       builder.where('TransactionOut.address = :address', {
         address: transactionFilterDto.address,
       });
-    }
-
-    if (transactionFilterDto.runeId || transactionFilterDto.address) {
-      total = await builder.getCount();
     }
 
     this.addTransactionFilter(builder, transactionFilterDto);

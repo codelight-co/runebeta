@@ -53,6 +53,12 @@ const PLATFORM_SERVICE_FEE = +process.env.PLATFORM_SERVICE_FEE || 1000; // 1000 
 const PLATFORM_FEE_ADDRESS =
   'tb1p6q553c7pr7grtshzyhpj2u3djuqazqsvpmtl3ljnyrqhc4h2a45s0g57vc';
 
+// Config first rune block
+const FIRST_RUNE_BLOCK = {
+  mainnet: 767430,
+  testnet: 2413343,
+};
+
 export {
   DATABASE_TYPE,
   DATABASE_HOST,
@@ -84,4 +90,5 @@ export {
   MAGIC_NUMBER,
   SELLER_SERVICE_FEE,
   PLATFORM_SERVICE_FEE,
+  FIRST_RUNE_BLOCK,
 };
