@@ -1,12 +1,5 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  ManyToOne,
-  PrimaryColumn,
-  UpdateDateColumn,
-} from 'typeorm';
-import { TransactionOut } from './transaction-out.entity';
+import { Column, Entity, JoinColumn, OneToMany, PrimaryColumn } from 'typeorm';
+import { OutpointRuneBalance } from './outpoint-rune-balance.entity';
 
 @Entity({ synchronize: false })
 export class TxidRune {
@@ -16,17 +9,19 @@ export class TxidRune {
   @Column({ nullable: true })
   tx_hash: string;
 
-  @Column({ type: 'text' })
-  rune: string;
+  @Column({ type: 'int8' })
+  block_height: number;
 
-  @Column()
-  @CreateDateColumn()
-  createdAt: Date;
+  @Column({ type: 'int8' })
+  tx_index: number;
 
-  @Column()
-  @UpdateDateColumn()
-  updatedAt: Date;
+  @Column({ type: 'varchar' })
+  rune_id: string;
 
-  @ManyToOne(() => TransactionOut, (transactionOut) => transactionOut.txidRunes)
-  vout: TransactionOut;
+  @OneToMany(
+    () => OutpointRuneBalance,
+    (outpointRuneBalance) => outpointRuneBalance.rune,
+  )
+  @JoinColumn({ name: 'tx_hash', referencedColumnName: 'tx_hash' })
+  outpointRuneBalances: OutpointRuneBalance[];
 }

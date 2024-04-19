@@ -62,10 +62,6 @@ export class TransactionOut {
   @JoinColumn({ name: 'tx_hash', referencedColumnName: 'tx_hash' })
   transaction: Transaction;
 
-  @OneToMany(() => TxidRune, (txidRune) => txidRune.vout)
-  @JoinColumn({ name: 'tx_hash', referencedColumnName: 'tx_hash' })
-  txidRunes: TxidRune[];
-
   @OneToMany(
     () => OutpointRuneBalance,
     (outpointRuneBalance) => outpointRuneBalance.txOut,

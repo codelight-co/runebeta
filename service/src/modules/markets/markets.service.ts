@@ -61,12 +61,46 @@ export class MarketsService implements OnModuleInit {
       .limit(marketRuneFilterDto.limit);
 
     if (marketRuneFilterDto.sortBy) {
-      builder.orderBy(
-        marketRuneFilterDto.sortBy,
-        marketRuneFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
-          ? 'DESC'
-          : 'ASC',
-      );
+      switch (marketRuneFilterDto.sortBy) {
+        case 'supply':
+          builder.orderBy(
+            `rune_stat.total_supply`,
+            marketRuneFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'holders':
+          builder.orderBy(
+            `rune_stat.total_holders`,
+            marketRuneFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'transactions':
+          builder.orderBy(
+            `rune_stat.total_transactions`,
+            marketRuneFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'created_at':
+          builder.orderBy(
+            `rune.timestamp`,
+            marketRuneFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        default:
+          break;
+      }
     }
 
     if (marketRuneFilterDto.search) {
@@ -81,18 +115,18 @@ export class MarketsService implements OnModuleInit {
       limit: marketRuneFilterDto.limit,
       offset: marketRuneFilterDto.offset,
       runes: runes.map((rune) => ({
-        change_24h: rune.stat.change_24h,
-        floor_price: rune.stat.price,
-        last_price: rune.stat.ma_price,
-        marketcap: rune.stat.market_cap,
-        order_sold: rune.stat.order_sold,
-        token_holders: rune.stat.total_holders,
+        change_24h: rune?.stat?.change_24h,
+        floor_price: rune?.stat?.price,
+        last_price: rune?.stat?.ma_price,
+        marketcap: rune?.stat?.market_cap,
+        order_sold: rune?.stat?.order_sold,
+        token_holders: rune?.stat?.total_holders,
         id: rune.id,
         rune_id: rune.rune_id,
         rune_hex: rune.rune_hex,
         rune_name: rune.spaced_rune,
-        total_supply: rune.stat.total_supply,
-        total_volume: rune.stat.total_volume,
+        total_supply: rune?.stat?.total_supply,
+        total_volume: rune?.stat?.total_volume,
       })),
     };
   }

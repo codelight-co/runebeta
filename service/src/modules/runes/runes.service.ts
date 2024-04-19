@@ -1,4 +1,9 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { RuneFilterDto } from './dto';
 import { Repository } from 'typeorm';
 import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
@@ -9,7 +14,6 @@ import { EEtchRuneStatus } from 'src/common/enums';
 import { StatsService } from '../stats/stats.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { BroadcastTransactionDto } from '../transactions/dto';
-import { start } from 'repl';
 
 @Injectable()
 export class RunesService {
@@ -126,7 +130,7 @@ export class RunesService {
   async getRuneById(id: string): Promise<any> {
     const rune = await this.runeEntryRepository
       .createQueryBuilder('rune')
-      .innerJoinAndMapOne(
+      .leftJoinAndMapOne(
         'rune.stat',
         RuneStat,
         'rune_stat',
@@ -134,6 +138,10 @@ export class RunesService {
       )
       .where('rune.rune_id = :id', { id })
       .getOne();
+    if (!rune) {
+      throw new BadRequestException('Rune not found');
+    }
+
     return {
       rows: {
         id: rune.id,
@@ -142,7 +150,7 @@ export class RunesService {
         supply: rune?.stat?.total_supply || rune.supply || 0,
         deploy_transaction: rune.tx_hash,
         divisibility: rune.divisibility,
-        end_block: rune.stat?.end_block || null,
+        end_block: rune?.stat?.end_block || null,
         start_block: rune.stat?.start_block || null,
         holder_count: rune?.stat?.total_holders || '0',
         rune: rune.spaced_rune,
