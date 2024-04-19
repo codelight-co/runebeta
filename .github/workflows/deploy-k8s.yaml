@@ -12,31 +12,25 @@ jobs:
     - name: Check Out Code
       uses: actions/checkout@v2
 
-    - name: Set up Docker and ECR Environment Variables
+    - name: Set up AWS Credentials
       run: |
-        echo "ECR_REGISTRY=533267050904.dkr.ecr.ap-southeast-1.amazonaws.com" >> $GITHUB_ENV
-        echo "ECR_REPOSITORY=bitcoin-backend" >> $GITHUB_ENV
-        echo "AWS_REGION=ap-southeast-1" >> $GITHUB_ENV
-      env:
-        AWS_REGION: 'ap-southeast-1'
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+        echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+        echo "AWS_DEFAULT_REGION=ap-southeast-1" >> $GITHUB_ENV
 
     - name: Login to Amazon ECR
       run: |
-        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+        aws ecr get-login-password | docker login --username AWS --password-stdin 533267050904.dkr.ecr.ap-southeast-1.amazonaws.com
 
     - name: Build Docker Image
       run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+        docker build -t 533267050904.dkr.ecr.ap-southeast-1.amazonaws.com/bitcoin-backend:latest .
 
     - name: Push Image to Amazon ECR
       run: |
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push 533267050904.dkr.ecr.ap-southeast-1.amazonaws.com/bitcoin-backend:latest
 
     - name: Deploy to Kubernetes
       run: |
-        echo $KUBE_CONFIG_DATA | base64 -d > $HOME/.kube/config
+        echo ${{ secrets.KUBE_CONFIG_DATA }} | base64 -d > $HOME/.kube/config
         kubectl rollout restart deployment/runebeta-testnet
-      env:
-        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
