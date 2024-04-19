@@ -23,6 +23,10 @@ export class RuneStat extends BaseTable {
   @Index()
   rune_id: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  @Index()
+  rune_name: string;
+
   @Column({ type: 'decimal', nullable: true })
   total_transactions: bigint;
 

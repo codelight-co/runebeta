@@ -49,54 +49,47 @@ export class TransactionsService {
     transactionFilterDto: TransactionFilterDto,
   ): Promise<any> {
     const blockHeight = await this.indexersService.getBlockHeight();
-    console.log('blockHeight :>> ', blockHeight);
-    // const cachedData = await this.cacheService.get(
-    //   `${blockHeight}:${transactionFilterDto.limit}-${transactionFilterDto.offset}-${transactionFilterDto.sortBy}-${transactionFilterDto.sortOrder}`,
-    // );
-    // if (cachedData) {
-    //   return cachedData;
-    // }
+    const cachedData = await this.cacheService.get(
+      `${blockHeight}:${transactionFilterDto.limit}-${transactionFilterDto.offset}-${transactionFilterDto.sortBy}-${transactionFilterDto.sortOrder}`,
+    );
+    if (cachedData) {
+      return cachedData;
+    }
 
     const builderTotal = this.txidRuneRepository.createQueryBuilder('txrune');
 
     let total = 0;
-    // if (transactionFilterDto.runeId) {
-    //   builderTotal
-    //     .innerJoin('outpoint.rune', 'rune')
-    //     .where('rune.rune_id = :runeid', {
-    //       runeid: transactionFilterDto.runeId,
-    //     });
-    // }
-    // if (transactionFilterDto.address) {
-    //   builderTotal.where('outpoint.address = :address', {
-    //     address: transactionFilterDto.address,
-    //   });
-    // }
-    total = await builderTotal.getCount();
-    console.log('total :>> ', total);
-    // const builder = this.transactionRepository
-    //   .createQueryBuilder()
-    //   .innerJoinAndSelect('Transaction.vout', 'TransactionOut')
-    //   .innerJoinAndSelect('TransactionOut.outpointRuneBalances', 'Outpoint')
-    //   .innerJoinAndSelect('Transaction.vin', 'TransactionIns')
-    //   .innerJoinAndSelect('Outpoint.rune', 'rune')
-    //   .innerJoinAndMapOne(
-    //     'Transaction.block',
-    //     'Transaction.block',
-    //     'Block',
-    //     'Block.block_height = Transaction.block_height',
-    //   )
-    //   .where('Transaction.block_height >= :height', {
-    //     height: FIRST_RUNE_BLOCK[BITCOIN_NETWORK],
-    //   });
+    if (transactionFilterDto.runeId || transactionFilterDto.address) {
+      builderTotal.innerJoinAndMapOne(
+        'txrune.outpointRuneBalances',
+        OutpointRuneBalance,
+        'outpoint',
+        'outpoint.tx_hash = txrune.tx_hash',
+      );
+    }
+    if (transactionFilterDto.runeId) {
+      builderTotal
+        .where('outpoint.rune_id = :runeid', {
+          runeid: transactionFilterDto.runeId,
+        })
+        .groupBy('txrune.tx_hash');
+    }
+    if (transactionFilterDto.address) {
+      builderTotal
+        .andWhere('outpoint.address = :address', {
+          address: transactionFilterDto.address,
+        })
+        .groupBy('txrune.tx_hash');
+    }
 
+    total = await builderTotal.getCount();
     const builder = this.txidRuneRepository
       .createQueryBuilder('txrune')
       .innerJoinAndMapOne(
         'txrune.block',
         Block,
-        'Block',
-        'Block.block_height = txrune.block_height',
+        'block',
+        `block.block_height = txrune.block_height`,
       )
       .leftJoinAndMapMany(
         'txrune.outpointRuneBalances',
@@ -116,14 +109,13 @@ export class TransactionsService {
         runeid: transactionFilterDto.runeId,
       });
     }
-
     if (transactionFilterDto.address) {
-      builder.where('outpoint.address = :address', {
+      builder.andWhere('outpoint.address = :address', {
         address: transactionFilterDto.address,
       });
     }
-
     this.addTransactionFilter(builder, transactionFilterDto);
+
     const transactions = await builder.getMany();
     if (transactions?.length) {
       for (let index = 0; index < transactions.length; index++) {

@@ -47,8 +47,8 @@ export class RunesService {
     }
 
     if (runeFilterDto.search) {
-      builder.andWhere(`rune.spaced_rune ILIKE :search`, {
-        search: `%${runeFilterDto.search.split(' ').join('_')}%`,
+      builder.andWhere(`rune_stat.rune_name ILIKE :search`, {
+        search: `%${runeFilterDto.search.replace(/•/g, '')}%`,
       });
     }
     if (runeFilterDto.sortBy) {

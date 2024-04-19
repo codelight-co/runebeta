@@ -14,7 +14,7 @@ export class WorkersProcessor {
   ) {}
   private readonly logger = new Logger(WorkersProcessor.name);
 
-  @Process(PROCESS.STAT_QUEUE.CALCULATE_RUNE_STAT)
+  @Process({ name: PROCESS.STAT_QUEUE.CALCULATE_RUNE_STAT })
   async handlerSendFirebaseMessage(job: Job<any>) {
     // this.logger.log(`Processing job ${job.id}`);
 
