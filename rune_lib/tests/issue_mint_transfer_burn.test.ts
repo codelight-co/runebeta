@@ -14,7 +14,7 @@ import {
     toPsbt,
     Wallet,
 } from './bitcoin';
-import {getUTXOs} from './mempool';
+import {getUTXOs, UTXO} from './mempool';
 import {Edict, Etching, RuneId, RuneStone} from '../src';
 import {Terms} from '../src/terms';
 import {toXOnly} from 'bitcoinjs-lib/src/psbt/bip371';
@@ -28,11 +28,11 @@ describe('Issue/Mint/Transfer/Burn', () => {
     const network = bitcoin.networks.testnet;
 
     // replace with your own fee rate
-    const feeRate = 14;
+    const feeRate = 16;
     const signer = ECPair.fromWIF(wif, network);
     let pubkey = signer.publicKey;
 
-    let dustAmount = network === bitcoin.networks.testnet ? 1 : 546;
+    let dustAmount = network === bitcoin.networks.testnet ? 546 : 546;
 
     let addressType = AddressType.P2TR;
     let address = publicKeyToAddress(pubkey, addressType, network)!;
@@ -611,4 +611,192 @@ describe('Issue/Mint/Transfer/Burn', () => {
             }
         }
     });
+
+
+    function buildTransfer({rune, receivers, regularUTXOs, feeRate, address}: {
+        rune: RuneBalanceItemWithUTXOs, receivers: {
+            runeAmount: bigint;
+            receiver: string;
+        }[], regularUTXOs: UTXO[], feeRate: number, address: string
+    }) {
+        let spent = receivers.reduce((a, b) => a + b.runeAmount, BigInt(0));
+        let remaining = rune.runeValue - spent;
+        if (remaining < BigInt(0)) {
+            throw new Error(`Insufficient ${rune.rune} funds`);
+        }
+
+        let inputRuneValue = BigInt(0);
+        let inputValue = 0;
+        let inputs: UTXO[] = [];
+        let remainingRuneValue = BigInt(0);
+        let ok = false;
+        for (let utxo of rune.utxos) {
+            inputRuneValue += utxo.runeValue;
+            inputValue += utxo.value;
+            inputs.push({
+                txid: utxo.txid,
+                vout: utxo.vout,
+                value: utxo.value,
+            });
+            remainingRuneValue = inputRuneValue - spent;
+            if (remainingRuneValue >= BigInt(0)) {
+                ok = true;
+                break;
+            }
+        }
+
+        if (!ok) {
+            // unreachable
+            throw new Error(`Insufficient ${rune.rune} funds`);
+        }
+
+        let outputs: Output[] = [];
+        let edicts: Edict[] = [];
+        let splitRuneId = rune.runeId.split(':');
+        let runeId = new RuneId(BigInt(splitRuneId[0]), BigInt(splitRuneId[1]));
+        let outputValue = 0;
+        for (let i = 0; i < receivers.length; i++) {
+            let item = receivers[i];
+            outputs.push({
+                script: addressToOutputScript(item.receiver),
+                value: dustAmount,
+            });
+            outputValue += dustAmount;
+            edicts.push(new Edict({
+                id: runeId,
+                amount: item.runeAmount,
+                output: BigInt(i),
+            }));
+        }
+        if (remainingRuneValue > BigInt(0)) {
+            outputs.push({
+                script: addressToOutputScript(address),
+                value: dustAmount,
+            })
+            outputValue += dustAmount;
+            edicts.push(new Edict({
+                id: runeId,
+                amount: remaining,
+                output: BigInt(receivers.length),
+            }));
+        }
+        let script = new RuneStone({
+            edicts
+        }).encipher();
+        if (script.length > 83) {
+            throw new Error("Please reduce the number of receivers");
+        }
+        outputs.push({
+            script: script,
+            value: 0,
+        });
+        let amount = outputValue - inputValue;
+        let txResult = prepareTx({
+            inputs,
+            outputs,
+            regularUTXOs,
+            feeRate,
+            address,
+            amount
+        });
+        if (txResult.error) {
+            throw new Error(txResult.error);
+        }
+        logToJSON(txResult.ok);
+        return txResult.ok!;
+    }
+
+    it('test batch send tokens', async () => {
+        let allUTXOs = await getUTXOs(address, network);
+        let allUTXOsMap = new Map<string, UTXO>();
+        for (let utxo of allUTXOs) {
+            allUTXOsMap.set(utxo.txid + ':' + utxo.vout, utxo);
+        }
+        let url = `https://apis.supersats.xyz/testnet/runes/utxo/${address}`;
+        console.log(url);
+        let resp = await fetch(url).then((res) => res.json());
+        let runes = resp.data;
+        if (Array.isArray(runes)) {
+            const map = new Map<string, RuneBalanceItemWithUTXOs>();
+            for (const item of runes) {
+                const key = item.rune_id;
+                if (!map.has(key)) {
+                    map.set(key, {
+                        divisibility: item.rune.divisibility,
+                        rune: item.rune.rune,
+                        runeId: key,
+                        symbol: item.rune.symbol,
+                        utxos: [],
+                        runeValue: BigInt(0),
+                    });
+                }
+                const runeValue = BigInt(item.amount);
+                const vout = Number(item.utxo.vout);
+                map.get(key)!.utxos.push({
+                    txid: item.utxo.tx_hash,
+                    vout: vout,
+                    index: vout,
+                    value: Number(item.utxo.value),
+                    runeValue,
+                } as any);
+                map.get(key)!.runeValue += runeValue;
+                allUTXOsMap.delete(item.utxo.tx_hash + ':' + item.utxo.vout);
+            }
+
+            console.log(map);
+            // pick a rune balance
+            let rune = map.get("2584592:58")!;
+            console.log(rune)
+            let ptx = buildTransfer({
+                rune,
+                receivers: [
+                    {
+                        // transfer 1e5 rune value
+                        runeAmount: BigInt(123456789),
+                        // receiver address
+                        receiver: address
+                    },
+                    {
+                        // transfer 1e5 rune value
+                        runeAmount: BigInt(98765432100),
+                        // receiver address
+                        receiver: address
+                    }
+                ],
+                regularUTXOs: Array.from(allUTXOsMap.values()),
+                feeRate,
+                address,
+            });
+            let psbt = toPsbt({tx: ptx, pubkey, rbf: true});
+            let wallet = new Wallet(wif, network, addressType);
+            let signed = wallet.signPsbt(psbt);
+            let tx = signed.extractTransaction(true);
+            console.table({
+                txid: tx.getId(),
+                fee: psbt.getFee(),
+                feeRate: psbt.getFeeRate(),
+            });
+            const rawhex = tx.toHex();
+            console.log(rawhex);
+        }
+    });
 });
+
+export type RuneUTXO = UTXO & {
+    runeValue: bigint;
+};
+
+export type RuneItem = {
+    symbol: string;
+    divisibility: number;
+    runeId: string;
+    rune: string;
+};
+
+export type RuneBalanceItem = RuneItem & {
+    runeValue: bigint;
+};
+
+export type RuneBalanceItemWithUTXOs = RuneBalanceItem & {
+    utxos: RuneUTXO[];
+};
