@@ -156,7 +156,6 @@ export class StatsService {
   async calculateNetworkStats(): Promise<void> {
     try {
       const blockHeight = await this.indexersService.getBlockHeight();
-      console.log('blockHeight :>> ', blockHeight);
       const currentBlockHeight = await this.redis.get('currentBlockHeight');
       if (parseInt(currentBlockHeight) >= parseInt(blockHeight)) {
         return;
@@ -175,6 +174,9 @@ export class StatsService {
             rune,
           },
           {
+            jobId: `${rune.rune_id}`,
+            attempts: 0,
+            backoff: 0,
             removeOnComplete: true,
             removeOnFail: true,
           },
@@ -219,6 +221,9 @@ from (
       }
 
       const runeIndex = await this.indexersService.getRuneDetails(rune.rune_id);
+      const rune_name = runeIndex?.entry?.spaced_rune
+        ? String(runeIndex?.entry?.spaced_rune).replace(/•/g, '')
+        : '';
       const premine = runeIndex?.entry.premine
         ? BigInt(runeIndex?.entry.premine)
         : BigInt(0);
@@ -327,6 +332,7 @@ from (
         new RuneStat({
           id: runeStats?.id,
           rune_id: rune.rune_id,
+          rune_name,
           total_supply: supply,
           total_mints: mints,
           total_burns: burned,
@@ -363,6 +369,7 @@ from (
         }),
       );
     } catch (error) {
+      console.log('rune.rune_id, :>> ', rune.rune_id);
       this.logger.error('Error calculating rune stat', error);
     }
   }
