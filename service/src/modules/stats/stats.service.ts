@@ -114,9 +114,49 @@ export class StatsService {
     return getFeesRecommended();
   }
 
+  async deleteDuplicateTxRune(): Promise<any> {
+    const query = `select tx_hash, count(tx_hash) as total, jsonb_agg(id) as ids
+        from txid_runes tr
+        group by tx_hash 
+        having count(tx_hash) > 1`;
+    const result = await this.transactionRepository.query(query);
+    if (result.length) {
+      // Get id beteween 1 and n
+      const removeIDs = result
+        .map((item: any) => {
+          const ids = item.ids.filter((id: any) => id !== item.ids[0]);
+          return ids;
+        })
+        .flat();
+      this.logger.log(`Removing duplicate txid_runes ${removeIDs.length}`);
+
+      // Loop each 1000 record
+      const ids = [];
+      const removeIDsLength = removeIDs.length / 1000;
+      for (let index = 0; index < removeIDsLength; index++) {
+        const start = index * 1000;
+        const end = start + 1000;
+        const partIDs = removeIDs.slice(start, end).map((item: any) => item);
+
+        ids.push(partIDs);
+      }
+
+      // Remove duplicate txid_runes
+      for (let index = 0; index < ids.length; index++) {
+        const partIDs = ids[index];
+        await this.transactionRepository.query(
+          `delete from txid_runes where id in (${partIDs.join(',')})`,
+        );
+      }
+    }
+
+    return { total: result.length };
+  }
+
   async calculateNetworkStats(): Promise<void> {
     try {
-      const blockHeight = await this.getBlockHeight();
+      const blockHeight = await this.indexersService.getBlockHeight();
+      console.log('blockHeight :>> ', blockHeight);
       const currentBlockHeight = await this.redis.get('currentBlockHeight');
       if (parseInt(currentBlockHeight) >= parseInt(blockHeight)) {
         return;
