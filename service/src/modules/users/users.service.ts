@@ -56,11 +56,15 @@ export class UsersService implements OnModuleInit {
 
   async getMyRunes(user: User): Promise<any> {
     const data = await this.transactionOutRepository.query(`
-    select tre.spaced_rune ,orb.*
-    from outpoint_rune_balances orb
-    inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id 
-    where orb.spent = false and orb.address is not null and orb.address = '${user.walletAddress}'
-    order by orb.balance_value desc`);
+    select * 
+    from transaction_rune_entries tre 
+    inner join (
+      select rune_id, sum(balance_value) as balance_value
+      from outpoint_rune_balances orb 
+      where orb.address = '${user.walletAddress}'
+      and orb.spent = false
+      group by rune_id
+    ) as rb on rb.rune_id = tre.rune_id `);
 
     return data;
   }
