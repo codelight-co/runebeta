@@ -50,7 +50,7 @@ export class TransactionsService {
   ): Promise<any> {
     const blockHeight = await this.indexersService.getBlockHeight();
     const cachedData = await this.cacheService.get(
-      `${blockHeight}:${transactionFilterDto.limit}-${transactionFilterDto.offset}-${transactionFilterDto.sortBy}-${transactionFilterDto.sortOrder}`,
+      `${blockHeight}:${Object.values(transactionFilterDto).join('-')}`,
     );
     if (cachedData) {
       return cachedData;
@@ -150,7 +150,7 @@ export class TransactionsService {
     }
 
     await this.cacheService.set(
-      `${blockHeight}:${transactionFilterDto.limit}-${transactionFilterDto.offset}-${transactionFilterDto.sortBy}-${transactionFilterDto.sortOrder}`,
+      `${blockHeight}:${Object.values(transactionFilterDto).join('-')}`,
       {
         total,
         limit: transactionFilterDto.limit,

@@ -6,6 +6,8 @@ const NEED_TO_CONFIGURED = '';
 
 const ENV: string = process.env.ENV || 'development';
 
+const MODE = process.env.MODE || 'worker';
+
 // JWT
 const JWT_SECRET: string = process.env.JWT_SECRET || 'JWT_SECRET';
 
@@ -91,4 +93,5 @@ export {
   SELLER_SERVICE_FEE,
   PLATFORM_SERVICE_FEE,
   FIRST_RUNE_BLOCK,
+  MODE,
 };
