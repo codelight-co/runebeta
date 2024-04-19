@@ -14,6 +14,7 @@ import Redis from 'ioredis';
 import { IndexersService } from '../indexers/indexers.service';
 import { getFeesRecommended } from 'src/vendors/mempool';
 import { FeesRecommended } from '@mempool/mempool.js/lib/interfaces/bitcoin/fees';
+import { TxidRune } from '../database/entities/txid-rune.entity';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
@@ -27,6 +28,8 @@ export class StatsService {
     private runeEntryRepository: Repository<TransactionRuneEntry>,
     @Inject('RUNE_STAT_REPOSITORY')
     private runeStatRepository: Repository<RuneStat>,
+    @Inject('TX_ID_RUNE_REPOSITORY')
+    private txidRuneRepository: Repository<TxidRune>,
     @InjectQueue(PROCESSOR.STAT_QUEUE) private statQueue: Queue,
     private readonly indexersService: IndexersService,
   ) {}
@@ -81,7 +84,7 @@ export class StatsService {
       .createQueryBuilder('rune')
       .where(`mint_entry ->> 'cap' is null`)
       .getCount();
-    const totalTransaction = await this.transactionRepository.count();
+    const totalTransaction = await this.txidRuneRepository.count();
     const totalHolderData = await this.transactionRepository
       .query(`select count(*) as total
       from (
