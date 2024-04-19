@@ -198,9 +198,18 @@ export class TransactionsService {
       for (let index = 0; index < transaction.vout.length; index++) {
         const vout = transaction.vout[index];
 
-        const value = (vout.value / 100000000).toFixed(8);
+        let rune_stone = null;
+        if (vout.rune_stone) {
+          try {
+            rune_stone = JSON.parse(vout.rune_stone as any);
+          } catch (error) {
+            this.logger.error('Error parsing rune stone', error);
+          }
+        }
+        const value = (vout?.value / 100000000).toFixed(8);
         transaction.vout[index] = {
           ...vout,
+          rune_stone: rune_stone,
           address: vout?.address,
           value: vout?.value ? value.toString() : 0,
           runeInject: vout?.outpointRuneBalances?.length
@@ -237,7 +246,7 @@ export class TransactionsService {
           })
           .getOne();
 
-        const value = (vout.value / 100000000).toFixed(8);
+        const value = (vout?.value / 100000000).toFixed(8);
         transaction.vin[index] = {
           ...vin,
           address: vout?.address,
