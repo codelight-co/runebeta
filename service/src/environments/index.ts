@@ -6,6 +6,8 @@ const NEED_TO_CONFIGURED = '';
 
 const ENV: string = process.env.ENV || 'development';
 
+const MODE = process.env.MODE || 'worker';
+
 // JWT
 const JWT_SECRET: string = process.env.JWT_SECRET || 'JWT_SECRET';
 
@@ -51,7 +53,7 @@ const BITCOIN_RPC_TIMEOUT = Number(process.env.BITCOIN_RPC_TIMEOUT ?? 120000);
 const SELLER_SERVICE_FEE = +process.env.SELLER_SERVICE_FEE || 0.015; // 1.5% service fee
 const PLATFORM_SERVICE_FEE = +process.env.PLATFORM_SERVICE_FEE || 1000; // 1000 satoshi
 const PLATFORM_FEE_ADDRESS =
-  'tb1p6q553c7pr7grtshzyhpj2u3djuqazqsvpmtl3ljnyrqhc4h2a45s0g57vc';
+  process.env.PLATFORM_FEE_ADDRESS || NEED_TO_CONFIGURED;
 
 // Config first rune block
 const FIRST_RUNE_BLOCK = {
@@ -91,4 +93,5 @@ export {
   SELLER_SERVICE_FEE,
   PLATFORM_SERVICE_FEE,
   FIRST_RUNE_BLOCK,
+  MODE,
 };

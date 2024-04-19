@@ -2,6 +2,8 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { TaskService } from './modules/task-schedule/task.service';
 import { RunesService } from './modules/runes/runes.service';
 import { StatsService } from './modules/stats/stats.service';
+import { MODE } from './environments';
+import { EAppMode } from './common/enums';
 
 @Injectable()
 export class AppService implements OnModuleInit {
@@ -12,19 +14,21 @@ export class AppService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    // Continue processing etching every 5 seconds
-    this.taskService.addNewJob(
-      'processEtching',
-      async () => await this.runeService.processEtching(),
-      '*/5',
-    );
+    if (MODE === EAppMode.SCHEDULER) {
+      // Continue processing etching every 5 seconds
+      this.taskService.addNewJob(
+        'processEtching',
+        async () => await this.runeService.processEtching(),
+        '*/5',
+      );
 
-    // Calculate rune stats every 5 seconds
-    this.taskService.addNewJob(
-      'calculateRuneStats',
-      async () => await this.statsService.calculateNetworkStats(),
-      '*/3',
-    );
+      // Calculate rune stats every 5 seconds
+      this.taskService.addNewJob(
+        'calculateRuneStats',
+        async () => await this.statsService.calculateNetworkStats(),
+        '*/3',
+      );
+    }
   }
 
   getHello(): string {

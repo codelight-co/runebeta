@@ -291,10 +291,9 @@ export namespace BuyerHandler {
     for (let i = 0; i < _all_outputs_except_change.length; i++) {
       psbt.addOutput(_all_outputs_except_change[i] as any);
     }
-
     /// Adding change fee:
     const fee = await calculateTxBytesFee(
-      psbt.txInputs.length,
+      psbt.txInputs.length > 2 ? psbt.txInputs.length : 4,
       psbt.txOutputs.length, // already taken care of the exchange output bytes calculation
       buyer_state.buyer.feeRateTier || 'hourFee',
     );
