@@ -9,7 +9,6 @@ import {
 } from 'typeorm';
 import { OutpointRuneBalance } from './outpoint-rune-balance.entity';
 import { RuneStat } from './rune_stat.entity';
-import { Order } from './order.entity';
 
 @Entity({ synchronize: false })
 export class TransactionRuneEntry {
@@ -21,6 +20,8 @@ export class TransactionRuneEntry {
 
   @Column({ type: 'varchar' })
   rune_id: string;
+
+  rune_hex: string;
 
   @Column({ type: 'text' })
   burned: string;
@@ -74,5 +75,6 @@ export class TransactionRuneEntry {
     if (!this.symbol) {
       this.symbol = '¤';
     }
+    this.rune_hex = Buffer.from(this.rune_id).toString('hex');
   }
 }

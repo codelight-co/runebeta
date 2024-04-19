@@ -23,6 +23,7 @@ import {
   ISelectPaymentUtxo,
 } from 'src/common/interfaces/rune.interface';
 import { BuyerOrderDto } from './dto/buyer-order.dto';
+import { ParseRuneIdPipe } from 'src/common/pipes';
 
 @Controller('markets')
 @UseInterceptors(CoreTransformInterceptor)
@@ -38,7 +39,7 @@ export class MarketsController {
   // Get list rune order by id
   @Get('orders/rune/:id')
   async getRunesById(
-    @Param('id') id: string,
+    @Param('id', ParseRuneIdPipe) id: string,
     @Query() marketRuneOrderFilterDto: MarketRuneOrderFilterDto,
   ) {
     return this.marketsService.getRunesById(id, marketRuneOrderFilterDto);

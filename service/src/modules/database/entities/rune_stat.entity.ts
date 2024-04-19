@@ -1,16 +1,21 @@
 import {
   Column,
-  CreateDateColumn,
   Entity,
   Index,
   OneToOne,
   PrimaryGeneratedColumn,
-  UpdateDateColumn,
 } from 'typeorm';
 import { TransactionRuneEntry } from './rune-entry.entity';
+import { IEntry } from 'src/common/interfaces/rune.interface';
+import BaseTable from '../base-table';
 
 @Entity()
-export class RuneStat {
+export class RuneStat extends BaseTable {
+  constructor(partial: Partial<RuneStat>) {
+    super();
+    Object.assign(this, partial);
+  }
+
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -19,34 +24,43 @@ export class RuneStat {
   rune_id: string;
 
   @Column({ type: 'decimal', nullable: true })
-  total_transactions: number;
+  total_transactions: bigint;
 
-  @Column({ type: 'int8', nullable: true, default: 0 })
-  total_mints: number;
+  @Column({ type: 'decimal', nullable: true, default: 0 })
+  total_mints: bigint;
 
-  @Column({ type: 'int8', nullable: true, default: 0 })
-  total_burns: number;
+  @Column({ type: 'decimal', nullable: true, default: 0 })
+  total_burns: bigint;
 
   @Column({ type: 'decimal', nullable: true })
-  total_supply: number;
+  total_supply: bigint;
 
   @Column({ type: 'int8', nullable: true, default: 0 })
   total_holders: number;
 
   @Column({ type: 'decimal', nullable: true })
+  price: bigint;
+
+  @Column({ type: 'decimal', nullable: true })
+  ma_price: bigint;
+
+  @Column({ type: 'decimal', nullable: true })
   change_24h: number;
 
-  @Column({ type: 'decimal', nullable: true })
-  volume_24h: number;
+  @Column({ type: 'int8', nullable: true })
+  order_sold: number;
 
   @Column({ type: 'decimal', nullable: true })
-  prev_volume_24h: number;
+  volume_24h: bigint;
 
   @Column({ type: 'decimal', nullable: true })
-  total_volume: number;
+  prev_volume_24h: bigint;
 
   @Column({ type: 'decimal', nullable: true })
-  market_cap: number;
+  total_volume: bigint;
+
+  @Column({ type: 'decimal', nullable: true })
+  market_cap: bigint;
 
   @Column({ type: 'boolean', nullable: true, default: false })
   mintable: boolean;
@@ -55,10 +69,10 @@ export class RuneStat {
   term: bigint;
 
   @Column({ type: 'decimal', nullable: true })
-  limit: number;
+  limit: bigint;
 
   @Column({ type: 'decimal', nullable: true })
-  premine: number;
+  premine: bigint;
 
   @Column({ type: 'int8', nullable: true, default: 0 })
   start_block: number;
@@ -72,19 +86,69 @@ export class RuneStat {
   @Column({ type: 'jsonb', nullable: true })
   offset: Array<number>;
 
-  @Column({ type: 'jsonb', nullable: true })
-  entry: any;
+  @Column({ type: 'varchar', nullable: true })
+  etching: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  parent: string;
+
+  @Column({
+    type: 'jsonb',
+    nullable: true,
+    transformer: {
+      to: (value: any) => {
+        return value;
+      },
+      from: (value: IEntry) => {
+        const remaining =
+          value?.terms?.cap && value?.mints
+            ? (BigInt(value.terms.cap) - BigInt(value.mints))?.toLocaleString(
+                'fullwide',
+                {
+                  useGrouping: false,
+                },
+              )
+            : null;
+        return {
+          block: value.block?.toLocaleString('fullwide', {
+            useGrouping: false,
+          }),
+          burned: value.burned?.toLocaleString('fullwide', {
+            useGrouping: false,
+          }),
+          divisibility: value.divisibility,
+          etching: value.etching,
+          mints: value.mints?.toLocaleString('fullwide', {
+            useGrouping: false,
+          }),
+          remaining,
+          number: value.number?.toLocaleString('fullwide', {
+            useGrouping: false,
+          }),
+          premine: value.premine?.toLocaleString('fullwide', {
+            useGrouping: false,
+          }),
+          spaced_rune: value?.spaced_rune,
+          symbol: value?.symbol,
+          timestamp: value?.timestamp,
+          terms: {
+            amount: value?.terms?.amount?.toLocaleString('fullwide', {
+              useGrouping: false,
+            }),
+            cap: value?.terms?.cap?.toLocaleString('fullwide', {
+              useGrouping: false,
+            }),
+            height: value?.terms?.height,
+            offset: value?.terms?.offset,
+          },
+        };
+      },
+    },
+  })
+  entry?: IEntry;
 
   @Column({ type: 'varchar', nullable: true })
   mint_type: string;
-
-  @Column()
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @Column()
-  @UpdateDateColumn()
-  updatedAt: Date;
 
   @OneToOne(() => TransactionRuneEntry, (runeEntry) => runeEntry.stat)
   rune: TransactionRuneEntry;

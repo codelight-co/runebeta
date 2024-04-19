@@ -21,7 +21,7 @@ import {
 import { SellerHandler } from 'src/common/handlers/runes/seller';
 import { BuyerHandler } from 'src/common/handlers/runes/buyer';
 import { RPCService, network } from 'src/common/utils/rpc';
-import { BASE_URL, DUST_AMOUNT } from 'src/environments';
+import { BASE_URL } from 'src/environments';
 import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
 import { BuyerOrderDto } from './dto/buyer-order.dto';
 import { MergeSingers } from 'src/common/handlers/runes/merge';
@@ -31,6 +31,7 @@ import { TransactionsService } from '../transactions/transactions.service';
 import { BroadcastTransactionDto } from '../transactions/dto';
 import { RuneStat } from '../database/entities';
 import { EOrderStatus } from 'src/common/enums';
+import { OutpointRuneBalance } from '../database/entities/outpoint-rune-balance.entity';
 
 @Injectable()
 export class MarketsService implements OnModuleInit {
@@ -40,6 +41,8 @@ export class MarketsService implements OnModuleInit {
     private orderRepository: Repository<Order>,
     @Inject('RUNE_ENTRY_REPOSITORY')
     private runeEntryRepository: Repository<TransactionRuneEntry>,
+    @Inject('OUTPOINT_RUNE_BALANCE_REPOSITORY')
+    private outpoinBalanceRepository: Repository<OutpointRuneBalance>,
     private readonly usersService: UsersService,
     private readonly transactionsService: TransactionsService,
   ) {}
@@ -52,7 +55,8 @@ export class MarketsService implements OnModuleInit {
 
   async getRunes(marketRuneFilterDto: MarketRuneFilterDto) {
     const builder = this.runeEntryRepository
-      .createQueryBuilder()
+      .createQueryBuilder('rune')
+      .leftJoinAndSelect('rune.stat', 'rune_stat')
       .offset(marketRuneFilterDto.offset)
       .limit(marketRuneFilterDto.limit);
 
@@ -72,24 +76,23 @@ export class MarketsService implements OnModuleInit {
     }
 
     const runes = await builder.getMany();
-
     return {
       total: await builder.getCount(),
       limit: marketRuneFilterDto.limit,
       offset: marketRuneFilterDto.offset,
       runes: runes.map((rune) => ({
-        change_24h: 0,
-        floor_price: 0,
-        last_price: 0,
-        marketcap: 0,
-        order_sold: 0,
-        token_holders: 0,
+        change_24h: rune.stat.change_24h,
+        floor_price: rune.stat.price,
+        last_price: rune.stat.ma_price,
+        marketcap: rune.stat.market_cap,
+        order_sold: rune.stat.order_sold,
+        token_holders: rune.stat.total_holders,
         id: rune.id,
         rune_id: rune.rune_id,
+        rune_hex: rune.rune_hex,
         rune_name: rune.spaced_rune,
-        total_supply: rune.supply,
-        total_volume: 0,
-        unit: 1,
+        total_supply: rune.stat.total_supply,
+        total_volume: rune.stat.total_volume,
       })),
     };
   }
@@ -243,7 +246,7 @@ export class MarketsService implements OnModuleInit {
         received_address:
           order.status === 'completed' ? order.buyerRuneAddress : '',
         confirmed: order.status === 'completed',
-        rune_hex: '',
+        rune_hex: order.runeInfo.rune_hex,
         rune_id: order.runeItem.id,
         rune_name: order.runeInfo.spaced_rune,
         rune_utxo: [
@@ -287,6 +290,7 @@ export class MarketsService implements OnModuleInit {
     if (!seller) {
       throw new BadRequestException('No Seller data found');
     }
+
     const listing: IRunePostPSBTListing = {
       id: seller.runeItem.id,
       price: seller.price,
@@ -331,6 +335,26 @@ export class MarketsService implements OnModuleInit {
       throw new BadRequestException('No user found');
     }
 
+    const outputValue = await this.outpoinBalanceRepository
+      .createQueryBuilder('outpoint')
+      .innerJoinAndSelect('outpoint.txOut', 'txOut')
+      .where('outpoint.tx_hash = :tx_hash', {
+        tx_hash: body.seller.runeItem.txid,
+      })
+      .andWhere('outpoint.vout = :vout', {
+        vout: body.seller.runeItem.vout,
+      })
+      .andWhere('txOut.spent = false')
+      .getOne();
+    if (!outputValue) {
+      throw new BadRequestException('No output value found');
+    }
+
+    body.seller.runeItem = {
+      ...body.seller.runeItem,
+      outputValue: outputValue.txOut.value,
+    };
+
     const { seller } = body;
     if (!seller) {
       throw new BadRequestException('No Seller data found');
@@ -346,7 +370,6 @@ export class MarketsService implements OnModuleInit {
     if (!user) {
       throw new BadRequestException('No user found');
     }
-
     const { utxos, amount, vinsLength, voutsLength, feeRateTier } = body;
 
     return BuyerHandler.selectPaymentUTXOs(
@@ -479,13 +502,18 @@ export class MarketsService implements OnModuleInit {
     if (orders.length !== body.orderIds.length) {
       throw new BadRequestException('Invalid order ids');
     }
+    let price = 0;
+    for (let index = 0; index < orders.length; index++) {
+      const order = orders[index];
+      price += Number(order.runeItem.tokenValue) * order.price;
+    }
 
     return BuyerHandler.selectPaymentUTXOs(
       utxos as AddressTxsUtxo[],
-      Number(orders[0].runeItem.tokenValue) + 1000 + DUST_AMOUNT * 2,
+      price + 67 * 259,
       2,
-      5,
-      'minimumFee',
+      4,
+      body.feeRate || 'hourFee',
       this.rpcService,
     );
   }
@@ -507,7 +535,7 @@ export class MarketsService implements OnModuleInit {
       .set({ status: 'cancelled' })
       .where('id IN (:...ids)', { ids: body.orderIds })
       .andWhere('user_id = :userId', { userId: user.id })
-      // .andWhere('status = :status', { status: 'listing' })
+      .andWhere('status = :status', { status: 'listing' })
       .execute();
     if (!updated.affected) {
       throw new BadRequestException('Failed to cancel order');

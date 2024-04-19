@@ -12,7 +12,8 @@ import { PROCESS, PROCESSOR } from 'src/common/enums';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import { IndexersService } from '../indexers/indexers.service';
-import { min } from 'class-validator';
+import { getFeesRecommended } from 'src/vendors/mempool';
+import { FeesRecommended } from '@mempool/mempool.js/lib/interfaces/bitcoin/fees';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
@@ -84,11 +85,10 @@ export class StatsService {
     const totalHolderData = await this.transactionRepository
       .query(`select count(*) as total
       from (
-        select address
-        from transaction_outs to2
-        inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash
-        where address is not null and spent = false
-        group by address
+        select orb.address
+        from outpoint_rune_balances orb
+        where orb.address is not null and orb.spent = false
+        group by orb.address
       ) as rp`);
     let totalFee = 0;
     const totalFeeData = await this.transactionRepository.query(
@@ -110,12 +110,8 @@ export class StatsService {
     };
   }
 
-  async getRecommendedFee() {
-    const res = await this.httpService
-      .get('https://mempool.space/api/v1/fees/recommended')
-      .toPromise();
-
-    return res.data;
+  async getRecommendedFee(): Promise<FeesRecommended> {
+    return getFeesRecommended();
   }
 
   async calculateNetworkStats(): Promise<void> {
@@ -160,22 +156,20 @@ export class StatsService {
       const stats = (await this.runeStatRepository
         .query(`select 'total_transactions' as name, count(*) as total
 from (
-	select to2.tx_hash
-	from transaction_outs to2 
-	inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash and orb.vout = to2.vout 
+	select orb.tx_hash
+	from outpoint_rune_balances orb
 	inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id
 	where tre.rune_id = '${rune.rune_id}'
-	group  by to2.tx_hash
+	group  by orb.tx_hash
 ) as rp1
 union all
 select 'total_holders' as name, count(*) as total
 from (
-	select to2.address 
-	from transaction_outs to2 
-	inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash and orb.vout = to2.vout 
+	select orb.address 
+	from outpoint_rune_balances orb
 	inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id
-	where tre.rune_id = '${rune.rune_id}' and CAST(orb.balance_value  AS DECIMAL) > 0 and to2.spent = false 
-	group  by to2.address
+	where tre.rune_id = '${rune.rune_id}' and CAST(orb.balance_value  AS DECIMAL) > 0 and orb.spent = false 
+	group  by orb.address
 ) as rp2`)) as Array<{ name: string; total: number }>;
 
       const payload = {} as any;
@@ -183,14 +177,28 @@ from (
         const stat = stats[index];
         payload[stat.name] = stat.total;
       }
+
       const runeIndex = await this.indexersService.getRuneDetails(rune.rune_id);
-      const premine = runeIndex?.entry.premine || 0;
-      const mints = runeIndex?.entry.mints || 0;
-      const burned = runeIndex?.entry.burned || 0;
-      const amount = runeIndex?.entry.terms?.amount || 0;
+      const premine = runeIndex?.entry.premine
+        ? BigInt(runeIndex?.entry.premine)
+        : BigInt(0);
+      const mints = runeIndex?.entry.mints
+        ? BigInt(runeIndex?.entry.mints)
+        : BigInt(0);
+      const burned = BigInt(runeIndex?.entry.burned);
+      const amount = runeIndex?.entry.terms?.amount
+        ? BigInt(runeIndex?.entry.terms?.amount)
+        : BigInt(0);
       const supply = premine + mints * amount;
       const mint_type = runeIndex?.entry?.terms ? 'fairmint' : 'fixed-cap';
-      const limit = runeIndex?.entry?.terms?.amount || 0;
+      const limit = amount;
+      const cap = runeIndex?.entry?.terms?.cap
+        ? BigInt(runeIndex?.entry?.terms?.cap)
+        : BigInt(0);
+      let remaining = BigInt(0);
+      if (mints > 0) {
+        remaining = BigInt(cap) - BigInt(mints);
+      }
 
       let term = 0;
       if (
@@ -205,37 +213,115 @@ from (
         term = runeIndex?.entry?.offset[1];
       }
 
-      await this.runeStatRepository.save({
-        id: runeStats?.id,
-        rune_id: rune.rune_id,
-        total_supply: supply || 0,
-        total_mints: mints || 0,
-        total_burns: burned || 0,
-        change_24h: 0,
-        volume_24h: 0,
-        prev_volume_24h: 0,
-        total_volume: 0,
-        market_cap: 0,
-        mintable: runeIndex?.mintable || false,
-        term,
-        start_block:
-          runeIndex?.entry?.terms?.height &&
-          runeIndex?.entry?.terms?.height.length > 0
-            ? runeIndex?.entry?.terms?.height[0]
-            : 0,
-        end_block:
-          runeIndex?.entry?.terms?.height &&
-          runeIndex?.entry?.terms?.height.length > 1
-            ? runeIndex?.entry?.terms?.height[1]
-            : 0,
-        height: runeIndex?.entry?.terms?.height || [],
-        offset: runeIndex?.entry?.terms?.offset || [],
-        entry: runeIndex?.entry || null,
-        limit,
-        premine,
-        mint_type,
-        ...payload,
-      } as RuneStat);
+      // Calculate market stats
+      let total_volume = BigInt(0);
+      const dataVolume = await this.transactionRepository
+        .query(`select sum((rune_item ->> 'tokenValue')::int) as total
+      from orders o 
+      where rune_id = '${rune.rune_id}' and status = 'completed'
+      group by rune_id`);
+      if (dataVolume.length) {
+        total_volume = BigInt(dataVolume[0]?.total);
+      }
+      let volume_24h = BigInt(0);
+      const dataVolume24h = await this.transactionRepository
+        .query(`select sum((rune_item ->> 'tokenValue')::int) as total
+      from orders o 
+      where rune_id = '${rune.rune_id}' and status = 'completed' and created_at >= now() - interval '24 hours'
+      group by rune_id`);
+      if (dataVolume24h.length) {
+        volume_24h = BigInt(dataVolume24h[0]?.total);
+      }
+      let prev_volume_24h = BigInt(0);
+      const dataPrevVolume24h = await this.transactionRepository.query(
+        `select volume_24h as total  from rune_stats rs  where rune_id  = '${rune.rune_id}'`,
+      );
+      if (dataPrevVolume24h.length) {
+        prev_volume_24h =
+          BigInt(dataPrevVolume24h[0]?.total) === BigInt(0)
+            ? volume_24h
+            : BigInt(dataPrevVolume24h[0]?.total);
+      }
+      const diffVolume = volume_24h - prev_volume_24h;
+      const change_24h =
+        diffVolume === BigInt(0)
+          ? BigInt(0)
+          : (diffVolume * BigInt(100)) / prev_volume_24h;
+      let price = BigInt(0);
+      const dataPrice = await this.transactionRepository.query(`
+      select price 
+      from orders o 
+      where rune_id = '${rune.rune_id}' and status in ('listing','completed')
+      order by price asc
+      limit 1
+      `);
+      if (dataPrice.length) {
+        price = BigInt(dataPrice[0]?.price);
+      }
+
+      let ma_price = BigInt(0);
+      const dataMAPrice = await this.transactionRepository
+        .query(`select (sum(medium_price)/count(*))::integer as price 
+        from (
+          select DATE_TRUNC('day', created_at) AS date, AVG(price) AS medium_price
+          from orders o
+          where rune_id = '${rune.rune_id}' and status = 'completed' and created_at >= current_date - interval '6 days' 
+          group by date
+          order by date desc
+        ) as rp`);
+      let market_cap = BigInt(0);
+      if (dataMAPrice.length) {
+        ma_price = BigInt(dataMAPrice[0]?.price || 0);
+        market_cap = BigInt(dataMAPrice[0].price || 0) * supply;
+      }
+
+      let order_sold = BigInt(0);
+      const dataOrderSold = await this.transactionRepository.query(
+        `select count(*) as total from orders o where rune_id = '${rune.rune_id}' and status = 'completed'`,
+      );
+      if (dataOrderSold.length) {
+        order_sold = BigInt(dataOrderSold[0]?.total);
+      }
+
+      await this.runeStatRepository.save(
+        new RuneStat({
+          id: runeStats?.id,
+          rune_id: rune.rune_id,
+          total_supply: supply,
+          total_mints: mints,
+          total_burns: burned,
+          change_24h,
+          volume_24h,
+          prev_volume_24h,
+          price,
+          ma_price,
+          order_sold,
+          total_volume,
+          market_cap,
+          mintable: runeIndex?.mintable || false,
+          term,
+          start_block:
+            runeIndex?.entry?.terms?.height &&
+            runeIndex?.entry?.terms?.height.length > 0
+              ? runeIndex?.entry?.terms?.height[0]
+              : 0,
+          end_block:
+            runeIndex?.entry?.terms?.height &&
+            runeIndex?.entry?.terms?.height.length > 1
+              ? runeIndex?.entry?.terms?.height[1]
+              : 0,
+          height: runeIndex?.entry?.terms?.height || [],
+          offset: runeIndex?.entry?.terms?.offset || [],
+          entry: runeIndex?.entry || null,
+          limit,
+          premine,
+          remaining,
+          mint_type,
+          etching: runeIndex?.entry.etching,
+          parent: runeIndex?.parent,
+          ...payload,
+        }),
+      );
     } catch (error) {
       this.logger.error('Error calculating rune stat', error);
     }

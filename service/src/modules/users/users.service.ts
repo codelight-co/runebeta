@@ -56,24 +56,22 @@ export class UsersService implements OnModuleInit {
 
   async getMyRunes(user: User): Promise<any> {
     const data = await this.transactionOutRepository.query(`
-    select to2.address, tre.spaced_rune ,orb.*
-    from transaction_outs to2 
-    inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash and to2.vout = orb.vout
+    select tre.spaced_rune ,orb.*
+    from outpoint_rune_balances orb
     inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id 
-    where spent = false and to2.address is not null and to2.address = '${user.walletAddress}'
-    order by balance_value desc`);
+    where orb.spent = false and orb.address is not null and orb.address = '${user.walletAddress}'
+    order by orb.balance_value desc`);
 
     return data;
   }
 
   async getMyRuneById(user: User, id: string): Promise<TransactionOut> {
     const data = await this.transactionOutRepository.query(`
-    select to2.address, tre.spaced_rune ,orb.*
-    from transaction_outs to2 
-    inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash and to2.vout = orb.vout
+    select tre.spaced_rune ,orb.*
+    from outpoint_rune_balances orb
     inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id 
-    where to2.spent = false and to2.address is not null and tre.rune_id = '${id}' and to2.address = '${user.walletAddress}'
-    order by balance_value desc`);
+    where orb.spent = false and orb.address is not null and tre.rune_id = '${id}' and orb.address = '${user.walletAddress}'
+    order by orb.balance_value desc`);
 
     return data;
   }
@@ -128,7 +126,12 @@ export class UsersService implements OnModuleInit {
   ): Promise<any> {
     const builder = this.orderRepository
       .createQueryBuilder('order')
-      .innerJoinAndSelect('order.runeInfo', 'runeInfo')
+      .innerJoinAndMapOne(
+        'order.runeInfo',
+        TransactionRuneEntry,
+        'runeInfo',
+        'order.rune_id = runeInfo.rune_id',
+      )
       .where('order.user_id = :userId', { userId: user.id });
 
     if (marketRuneOrderFilterDto.status) {

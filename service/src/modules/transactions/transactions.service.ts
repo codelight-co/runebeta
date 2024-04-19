@@ -13,18 +13,23 @@ import { HttpService } from '@nestjs/axios';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Transaction } from '../database/entities/transaction.entity';
 import {
+  BITCOIN_NETWORK,
   BITCOIN_RPC_HOST,
   BITCOIN_RPC_PASS,
   BITCOIN_RPC_PORT,
   BITCOIN_RPC_USER,
+  FIRST_RUNE_BLOCK,
 } from 'src/environments';
 import { TransactionOut } from '../database/entities/transaction-out.entity';
 import { OutpointRuneBalance } from '../database/entities/outpoint-rune-balance.entity';
 import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
+import { IndexersService } from '../indexers/indexers.service';
 
 @Injectable()
 export class TransactionsService {
   constructor(
+    @Inject(CACHE_MANAGER) private cacheService: Cache,
     private readonly httpService: HttpService,
     @Inject('TRANSACTION_REPOSITORY')
     private transactionRepository: Repository<Transaction>,
@@ -34,30 +39,55 @@ export class TransactionsService {
     private runeEntryRepository: Repository<TransactionRuneEntry>,
     @Inject('OUTPOINT_RUNE_BALANCE_REPOSITORY')
     private outpointRuneBalanceRepository: Repository<OutpointRuneBalance>,
+    private readonly indexersService: IndexersService,
   ) {}
   private logger = new Logger(TransactionsService.name);
 
   async getTransactions(
     transactionFilterDto: TransactionFilterDto,
   ): Promise<any> {
-    const builder = this.transactionRepository.createQueryBuilder();
-    let total = 0;
-
-    if (!transactionFilterDto.runeId && !transactionFilterDto.address) {
-      total = await builder.getCount();
+    const blockHeight = await this.indexersService.getBlockHeight();
+    const cachedData = await this.cacheService.get(
+      `${blockHeight}:${transactionFilterDto.limit}-${transactionFilterDto.offset}-${transactionFilterDto.sortBy}-${transactionFilterDto.sortOrder}`,
+    );
+    if (cachedData) {
+      return cachedData;
     }
 
-    builder
-      .innerJoinAndSelect('Transaction.vin', 'TransactionIns')
+    const builderTotal = this.outpointRuneBalanceRepository
+      .createQueryBuilder('outpoint')
+      .groupBy('outpoint.tx_hash');
+
+    let total = 0;
+    if (transactionFilterDto.runeId) {
+      builderTotal
+        .innerJoin('outpoint.rune', 'rune')
+        .where('rune.rune_id = :runeid', {
+          runeid: transactionFilterDto.runeId,
+        });
+    }
+    if (transactionFilterDto.address) {
+      builderTotal.where('outpoint.address = :address', {
+        address: transactionFilterDto.address,
+      });
+    }
+    total = await builderTotal.getCount();
+
+    const builder = this.transactionRepository
+      .createQueryBuilder()
       .innerJoinAndSelect('Transaction.vout', 'TransactionOut')
       .innerJoinAndSelect('TransactionOut.outpointRuneBalances', 'Outpoint')
+      .innerJoinAndSelect('Transaction.vin', 'TransactionIns')
       .innerJoinAndSelect('Outpoint.rune', 'rune')
       .innerJoinAndMapOne(
         'Transaction.block',
         'Transaction.block',
         'Block',
         'Block.block_height = Transaction.block_height',
-      );
+      )
+      .where('Transaction.block_height >= :height', {
+        height: FIRST_RUNE_BLOCK[BITCOIN_NETWORK],
+      });
 
     if (transactionFilterDto.runeId) {
       builder
@@ -76,10 +106,6 @@ export class TransactionsService {
       builder.where('TransactionOut.address = :address', {
         address: transactionFilterDto.address,
       });
-    }
-
-    if (transactionFilterDto.runeId || transactionFilterDto.address) {
-      total = await builder.getCount();
     }
 
     this.addTransactionFilter(builder, transactionFilterDto);
@@ -116,6 +142,17 @@ export class TransactionsService {
       }
     }
 
+    await this.cacheService.set(
+      `${blockHeight}:${transactionFilterDto.limit}-${transactionFilterDto.offset}-${transactionFilterDto.sortBy}-${transactionFilterDto.sortOrder}`,
+      {
+        total,
+        limit: transactionFilterDto.limit,
+        offset: transactionFilterDto.offset,
+        transactions,
+      },
+      900,
+    );
+
     return {
       total,
       limit: transactionFilterDto.limit,
@@ -129,8 +166,8 @@ export class TransactionsService {
       .createQueryBuilder()
       .innerJoinAndSelect('Transaction.vin', 'TransactionIns')
       .innerJoinAndSelect('Transaction.vout', 'TransactionOut')
-      .innerJoinAndSelect('TransactionOut.outpointRuneBalances', 'Outpoint')
-      .innerJoinAndSelect('Outpoint.rune', 'rune')
+      .leftJoinAndSelect('TransactionOut.outpointRuneBalances', 'Outpoint')
+      .leftJoinAndSelect('Outpoint.rune', 'rune')
       .innerJoinAndMapOne(
         'Transaction.block',
         'Transaction.block',
@@ -142,14 +179,15 @@ export class TransactionsService {
     if (!transaction) {
       throw new BadRequestException('Transaction not found');
     }
-
     if (transaction?.vout.length > 0) {
       for (let index = 0; index < transaction.vout.length; index++) {
         const vout = transaction.vout[index];
+
+        const value = (vout.value / 100000000).toFixed(8);
         transaction.vout[index] = {
           ...vout,
           address: vout?.address,
-          value: vout?.value ? vout.value / 100000000 : 0,
+          value: vout?.value ? value.toString() : 0,
           runeInject: vout?.outpointRuneBalances?.length
             ? vout.outpointRuneBalances.map((outpoint) => ({
                 address: vout.address,
@@ -184,10 +222,11 @@ export class TransactionsService {
           })
           .getOne();
 
+        const value = (vout.value / 100000000).toFixed(8);
         transaction.vin[index] = {
           ...vin,
           address: vout?.address,
-          value: vout?.value ? vout.value / 100000000 : 0,
+          value: vout?.value ? value.toString() : 0,
           runeInject: vout?.outpointRuneBalances?.length
             ? vout.outpointRuneBalances.map((outpoint) => ({
                 rune_id: outpoint.rune_id,
