@@ -42,4 +42,9 @@ export const transactionsProviders = [
       dataSource.getRepository(OutpointRuneBalance),
     inject: ['DATA_SOURCE'],
   },
+  {
+    provide: 'TX_ID_RUNE_REPOSITORY',
+    useFactory: (dataSource: DataSource) => dataSource.getRepository(TxidRune),
+    inject: ['DATA_SOURCE'],
+  },
 ];

@@ -43,4 +43,11 @@ export class StatsController {
   async getRecommendedFee(): Promise<FeesRecommended> {
     return this.statsService.getRecommendedFee();
   }
+
+  //  Remove duplicate tx rune
+  // @Delete('duplicate-tx-rune')
+  // @UseGuards(SecretAuthGuard)
+  // async deleteDuplicateTxRune() {
+  //   return this.statsService.deleteDuplicateTxRune();
+  // }
 }
