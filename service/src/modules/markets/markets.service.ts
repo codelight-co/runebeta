@@ -532,7 +532,7 @@ export class MarketsService implements OnModuleInit {
         .update()
         .set({
           status: EOrderStatus.COMPLETED,
-          // tx_hash: broadcastTransaction.txid,
+          tx_hash: broadcastTransaction?.result || '',
           buyerId: user.id,
           buyerRuneAddress: buyer.buyerTokenReceiveAddress,
         })
