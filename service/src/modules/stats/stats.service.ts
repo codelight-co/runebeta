@@ -220,7 +220,16 @@ from (
         payload[stat.name] = stat.total;
       }
 
-      const runeIndex = await this.indexersService.getRuneDetails(rune.rune_id);
+      let runeIndex = null;
+      try {
+        runeIndex = await this.indexersService.getRuneDetails(rune.rune_id);
+      } catch (error) {
+        this.logger.error('Error getting rune details', error);
+      }
+      if (!runeIndex) {
+        return;
+      }
+
       const rune_name = runeIndex?.entry?.spaced_rune
         ? String(runeIndex?.entry?.spaced_rune).replace(/•/g, '')
         : '';

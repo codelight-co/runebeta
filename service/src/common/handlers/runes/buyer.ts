@@ -183,7 +183,7 @@ export namespace BuyerHandler {
       });
       _seller_outputs.push(sellerOutput);
 
-      _seller_total_tokens += BigInt(seller.seller.runeItem.outputValue);
+      _seller_total_tokens += seller.seller.runeItem.runeBalance;
       _seller_listing_item += BigInt(seller.seller.runeItem.tokenValue);
       _seller_listing_prices +=
         seller.seller.price * Number(seller.seller.runeItem.tokenValue);
@@ -244,12 +244,12 @@ export namespace BuyerHandler {
     if (!runeId) {
       throw new Error('Invalid Rune ID');
     }
-
     const sellerEdict = new Edict({
       id: runeId as RuneId,
       amount: _seller_total_tokens - _seller_listing_item,
       output: BigInt(_seller_outputs.length - 1),
     });
+
     const buyerEdict = new Edict({
       id: runeId as RuneId,
       amount: _seller_listing_item,

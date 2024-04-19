@@ -81,6 +81,7 @@ export interface IRuneItem {
   vout: number;
   output: string;
   tokenValue: bigint;
+  runeBalance: bigint;
   // listing
   // listed: boolean;
   // listedAt?: string;
