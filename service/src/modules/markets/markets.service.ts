@@ -437,14 +437,30 @@ export class MarketsService implements OnModuleInit {
     if (orders.length !== body.orderIds.length) {
       throw new BadRequestException('Invalid order ids');
     }
-    const seller_items = orders.map(
-      (order) =>
-        ({
+    const seller_items = await Promise.all(
+      orders.map(async (order) => {
+        const outputValue = await this.outpoinBalanceRepository
+          .createQueryBuilder('outpoint')
+          .innerJoinAndSelect('outpoint.txOut', 'txOut')
+          .where('outpoint.tx_hash = :tx_hash', {
+            tx_hash: order.runeItem.txid,
+          })
+          .andWhere('outpoint.vout = :vout', {
+            vout: order.runeItem.vout,
+          })
+          .andWhere('txOut.spent = false')
+          .getOne();
+
+        return {
           buyer: {},
           seller: {
             makerFeeBp: order.makerFeeBp,
             price: order.price,
-            runeItem: order.runeItem,
+            runeItem: {
+              ...order.runeItem,
+              outputValue: outputValue.txOut.value,
+              runeBalance: BigInt(outputValue.balance_value),
+            },
             sellerReceiveAddress: order.sellerReceiveAddress,
             signedListingPSBTBase64: order.signedListingPSBTBase64,
             unsignedListingPSBTBase64: order.unsignedListingPSBTBase64,
@@ -452,7 +468,8 @@ export class MarketsService implements OnModuleInit {
             publicKey: order.publicKey,
             tapInternalKey: order.tapInternalKey,
           },
-        }) as IRuneListingState,
+        } as IRuneListingState;
+      }),
     );
 
     return BuyerHandler.generateUnsignedBuyingPSBTBase64(
