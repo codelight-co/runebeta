@@ -111,7 +111,10 @@ export namespace BuyerHandler {
 
     for (const utxo of utxos) {
       // Never spend a utxo that contains an atoms for cardinal purposes
-      if (await doesUtxoContainRunes(utxo, service)) {
+      if (
+        (await doesUtxoContainRunes(utxo, service)) ||
+        utxo.value <= DUST_AMOUNT
+      ) {
         continue;
       }
 
@@ -256,7 +259,7 @@ export namespace BuyerHandler {
       output: BigInt(_seller_outputs.length + _buyer_outputs.length),
     });
     const rs = new RuneStone({
-      edicts: [sellerEdict, buyerEdict],
+      edicts: [buyerEdict],
       etching: null,
       mint: null,
       pointer: null,
@@ -293,20 +296,18 @@ export namespace BuyerHandler {
     const fee = await calculateTxBytesFee(
       psbt.txInputs.length,
       psbt.txOutputs.length, // already taken care of the exchange output bytes calculation
-      14,
+      buyer_state.buyer.feeRateTier || 'hourFee',
     );
     const totalOutput = psbt.txOutputs.reduce(
       (partialSum, a) => partialSum + a.value,
       0,
     );
-
     const changeValue =
       total_buyer_inputs_value -
       _seller_listing_prices -
       fee -
       _platform_fee -
-      DUST_AMOUNT * 2 -
-      100;
+      DUST_AMOUNT;
     if (changeValue < 0) {
       throw new Error(`Your wallet address doesn't have enough funds to buy this rune.
   Price:      ${satToBtc(_seller_listing_prices)} BTC
