@@ -10,7 +10,8 @@ const ENV: string = process.env.ENV || 'development';
 const JWT_SECRET: string = process.env.JWT_SECRET || 'JWT_SECRET';
 
 // ODR config
-const ODR_URL: string = process.env.ODR_URL || 'localhost:8088';
+const ODR_URL: string = process.env.ODR_URL || 'localhost';
+const ODR_PORT: number = +process.env.ODR_PORT || 18089;
 
 // Database
 const DATABASE_TYPE: string = process.env.DATABASE_TYPE || NEED_TO_CONFIGURED;
@@ -85,6 +86,7 @@ export {
   BITCOIN_RPC_PASS,
   BITCOIN_RPC_TIMEOUT,
   ODR_URL,
+  ODR_PORT,
   MAGIC_NUMBER,
   SELLER_SERVICE_FEE,
   PLATFORM_SERVICE_FEE,

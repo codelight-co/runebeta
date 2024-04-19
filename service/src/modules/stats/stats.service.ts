@@ -1,7 +1,7 @@
 import { HttpService } from '@nestjs/axios';
 import { CacheInterceptor } from '@nestjs/cache-manager';
 import { Inject, Injectable, Logger, UseInterceptors } from '@nestjs/common';
-import { ODR_URL } from 'src/environments';
+import { ODR_PORT, ODR_URL } from 'src/environments';
 import { Transaction } from '../database/entities/transaction.entity';
 import { Repository } from 'typeorm';
 import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
@@ -35,7 +35,7 @@ export class StatsService {
 
   async getBlockHeight() {
     const res = await this.httpService
-      .get(`${ODR_URL}/blockheight`)
+      .get(`${ODR_URL}:${ODR_PORT}/blockheight`)
       .toPromise();
 
     return res.data;
@@ -60,7 +60,9 @@ export class StatsService {
   }
 
   async getBlockSyncNumber() {
-    const res = await this.httpService.get(`${ODR_URL}/blockcount`).toPromise();
+    const res = await this.httpService
+      .get(`${ODR_URL}:${ODR_PORT}/blockcount`)
+      .toPromise();
 
     return res.data;
   }
