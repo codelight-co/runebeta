@@ -49,7 +49,7 @@ export class RunesService {
 
     if (runeFilterDto.search) {
       builder.andWhere(`rune_stat.rune_name ILIKE :search`, {
-        search: `%${runeFilterDto.search.replace(/•/g, '')}%`,
+        search: `%${runeFilterDto.search.replace(/•/g, '').replace(/./g, '')}%`,
       });
     }
     if (runeFilterDto.sortBy) {
@@ -91,8 +91,18 @@ export class RunesService {
           break;
 
         default:
+          builder.orderBy(
+            `rune.rune_id`,
+            runeFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
           break;
       }
+    } else {
+      builder
+        .orderBy(`rune.block_height`, 'ASC')
+        .addOrderBy('rune.tx_index', 'ASC');
     }
 
     const runes = await builder.getMany();
