@@ -55,4 +55,13 @@ export class RunesController {
   async getRuneUtxo(@Param('address') address: string) {
     return this.runesService.getRuneUtxo(address);
   }
+
+  // Select rune by amount
+  @Post('utxo/:address')
+  async selectRuneUtxo(
+    @Param('address') address: string,
+    @Body() body: { amount: bigint; rune_id: string },
+  ) {
+    return this.runesService.selectRuneUtxo(address, body);
+  }
 }

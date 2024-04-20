@@ -302,4 +302,33 @@ export class RunesService {
       },
     }));
   }
+
+  async selectRuneUtxo(
+    address: string,
+    dto: { amount: bigint; rune_id: string },
+  ): Promise<any> {
+    const runeUtxos = await this.getRuneUtxo(address);
+    const selectedUtxos = [];
+    let total = BigInt(0);
+    for (const utxo of runeUtxos) {
+      if (utxo.rune.rune_id !== dto.rune_id) {
+        continue;
+      }
+
+      const amount = BigInt(utxo.amount);
+      if (total <= amount) {
+        total += amount;
+        selectedUtxos.push(utxo);
+      }
+    }
+
+    if (total < dto.amount) {
+      throw new BadRequestException('Not enough balance');
+    }
+
+    return {
+      total: total.toString(),
+      selectedUtxos,
+    };
+  }
 }
