@@ -57,7 +57,6 @@ export class TransactionsService {
     }
 
     const builderTotal = this.txidRuneRepository.createQueryBuilder('txrune');
-
     let total = 0;
     if (transactionFilterDto.runeId || transactionFilterDto.address) {
       builderTotal.innerJoinAndMapOne(
@@ -81,11 +80,11 @@ export class TransactionsService {
         })
         .groupBy('txrune.tx_hash');
     }
-
     total = await builderTotal.getCount();
+
     const builder = this.txidRuneRepository
       .createQueryBuilder('txrune')
-      .innerJoinAndMapOne(
+      .leftJoinAndMapOne(
         'txrune.block',
         Block,
         'block',
@@ -117,6 +116,7 @@ export class TransactionsService {
     this.addTransactionFilter(builder, transactionFilterDto);
 
     const transactions = await builder.getMany();
+    console.log('transactions :>> ', transactions);
     if (transactions?.length) {
       for (let index = 0; index < transactions.length; index++) {
         const transaction = transactions[index] as any;
@@ -142,7 +142,8 @@ export class TransactionsService {
 
           transactions[index] = {
             tx_hash: transaction.tx_hash,
-            timestamp: transaction.block.block_time,
+            timestamp:
+              transaction?.block?.block_time || new Date().getTime() / 1000,
             vout,
           } as any;
         }
@@ -263,7 +264,7 @@ export class TransactionsService {
 
     return {
       ...transaction,
-      timestamp: transaction.block.block_time,
+      timestamp: transaction?.block?.block_time,
       fee: 0,
       vsize: 0,
       txid: transaction.tx_hash,
