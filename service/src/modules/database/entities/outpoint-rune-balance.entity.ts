@@ -26,6 +26,12 @@ export class OutpointRuneBalance {
   @Column({ type: 'int8' })
   tx_index: number;
 
+  @Column({ type: 'boolean' })
+  spent: boolean;
+
+  @Column({ type: 'varchar' })
+  address: string;
+
   @ManyToOne(
     () => TransactionOut,
     (transactionOut) => transactionOut.outpointRuneBalances,

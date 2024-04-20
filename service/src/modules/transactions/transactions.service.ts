@@ -181,6 +181,51 @@ export class TransactionsService {
   }
 
   async getTransactionById(tx_hash: string): Promise<any> {
+    const rawTransaction = await this.httpService
+      .post(
+        `${BITCOIN_RPC_HOST}:${BITCOIN_RPC_PORT}`,
+        {
+          jsonrpc: '1.0',
+          id: 'curltest',
+          method: 'getrawtransaction',
+          params: [tx_hash, true],
+        },
+        {
+          auth: {
+            username: BITCOIN_RPC_USER,
+            password: BITCOIN_RPC_PASS,
+          },
+        },
+      )
+      .toPromise();
+    const voutValues = rawTransaction.data.result.vout.map(
+      (vout) => vout.value,
+    );
+    const totalVoutValues = voutValues.reduce((acc, value) => acc + value, 0);
+    const vinValues = await Promise.all(
+      rawTransaction.data.result.vin.map(async (input) => {
+        const response = await this.httpService
+          .post(
+            `${BITCOIN_RPC_HOST}:${BITCOIN_RPC_PORT}`,
+            {
+              jsonrpc: '1.0',
+              id: 'curltest',
+              method: 'getrawtransaction',
+              params: [input.txid, true],
+            },
+            {
+              auth: {
+                username: BITCOIN_RPC_USER,
+                password: BITCOIN_RPC_PASS,
+              },
+            },
+          )
+          .toPromise();
+        return response.data.result.vout[input.vout].value;
+      }),
+    );
+    const totalVinValues = vinValues.reduce((acc, value) => acc + value, 0);
+    const fee = (totalVinValues - totalVoutValues).toFixed(8);
     const transaction = await this.transactionRepository
       .createQueryBuilder()
       .innerJoinAndSelect('Transaction.vin', 'TransactionIns')
@@ -239,18 +284,65 @@ export class TransactionsService {
           if (!response.data?.result) {
             return input;
           }
+          const outpoints = await this.outpointRuneBalanceRepository.find({
+            where: { tx_hash: input.txid, vout: input.vout },
+            relations: ['rune'],
+          });
 
           return {
             ...input,
+            runeInject: outpoints?.length
+              ? outpoints.map((outpoint) => ({
+                  rune_id: outpoint.rune_id,
+                  deploy_transaction: outpoint.rune.tx_hash,
+                  timestamp: outpoint.rune.timestamp,
+                  rune: outpoint.rune.spaced_rune,
+                  divisibility: outpoint.rune.divisibility,
+                  symbol: outpoint.rune.symbol,
+                  utxo_type: 'transfer',
+                  amount: outpoint.balance_value,
+                  is_etch: false,
+                  is_claim: false,
+                }))
+              : null,
             address: response.data.result.vout[input.vout].scriptPubKey.address,
             value: response.data.result.vout[input.vout].value,
           };
         }),
       );
-      const _response = { ...response.data.result, vin: vins };
+      const vouts = await Promise.all(
+        response.data.result.vout.map(async (output) => {
+          const outpoints = await this.outpointRuneBalanceRepository.find({
+            where: { tx_hash, vout: output.n },
+            relations: ['rune'],
+          });
+
+          return {
+            ...output,
+            address: output.scriptPubKey.address,
+            value: output.value,
+            runeInject: outpoints?.length
+              ? outpoints.map((outpoint) => ({
+                  rune_id: outpoint.rune_id,
+                  deploy_transaction: outpoint.rune.tx_hash,
+                  timestamp: outpoint.rune.timestamp,
+                  rune: outpoint.rune.spaced_rune,
+                  divisibility: outpoint.rune.divisibility,
+                  symbol: outpoint.rune.symbol,
+                  amount: outpoint.balance_value,
+                  is_etch: false,
+                  is_claim: false,
+                }))
+              : null,
+          };
+        }),
+      );
+
+      const _response = { ...response.data.result, vin: vins, vout: vouts };
 
       return _response;
     }
+
     if (transaction?.vout.length > 0) {
       for (let index = 0; index < transaction.vout.length; index++) {
         const vout = transaction.vout[index];
@@ -329,8 +421,9 @@ export class TransactionsService {
     return {
       ...transaction,
       timestamp: transaction?.block?.block_time,
-      fee: 0,
-      vsize: 0,
+      fee,
+      vsize: rawTransaction.data.result.vsize,
+      weight: rawTransaction.data.result.weight,
       txid: transaction.tx_hash,
     };
   }
