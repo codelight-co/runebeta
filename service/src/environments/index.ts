@@ -37,7 +37,7 @@ const ENCRYPTION_IV_LENGTH: number = +process.env.ENCRYPTION_IV_LENGTH || 16;
 
 // Bitcoin config
 const BITCOIN_NETWORK: string = process.env.BITCOIN_NETWORK || 'testnet';
-const BTC_NETWORK: 'testnet' | 'mainnet' | 'livenet' = 'testnet';
+const BTC_NETWORK: string = process.env.BITCOIN_NETWORK || 'testnet';
 const DUST_AMOUNT = 546;
 const RUNE_TAG = 'R';
 const MAGIC_NUMBER = 93;
