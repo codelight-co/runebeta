@@ -48,6 +48,18 @@ export class TransactionsService {
   async getTransactions(
     transactionFilterDto: TransactionFilterDto,
   ): Promise<any> {
+    console.log('transactionFilterDto :>> ', transactionFilterDto);
+    // Check rune_id is hex or not
+    if (transactionFilterDto.runeId) {
+      const isHex = /^[0-9A-Fa-f]{6}$/.test(transactionFilterDto.runeId);
+      if (!isHex) {
+        transactionFilterDto.runeId = Buffer.from(
+          transactionFilterDto.runeId,
+          'hex',
+        ).toString('utf-8');
+      }
+    }
+
     const blockHeight = await this.indexersService.getBlockHeight();
     const cachedData = await this.cacheService.get(
       `${blockHeight}:${Object.values(transactionFilterDto).join('-')}`,
