@@ -326,9 +326,6 @@ export class RunesService {
       throw new BadRequestException('Not enough balance');
     }
 
-    return {
-      total: total.toString(),
-      selectedUtxos,
-    };
+    return selectedUtxos;
   }
 }
