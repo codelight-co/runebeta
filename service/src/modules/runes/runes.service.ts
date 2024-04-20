@@ -316,7 +316,7 @@ export class RunesService {
       }
 
       const amount = BigInt(utxo.amount);
-      if (total <= amount) {
+      if (total < BigInt(dto.amount)) {
         total += amount;
         selectedUtxos.push(utxo);
       }
