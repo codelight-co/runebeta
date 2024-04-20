@@ -48,7 +48,6 @@ export class TransactionsService {
   async getTransactions(
     transactionFilterDto: TransactionFilterDto,
   ): Promise<any> {
-    console.log('transactionFilterDto :>> ', transactionFilterDto);
     // Check rune_id is hex or not
     if (transactionFilterDto.runeId) {
       const isHex = /^[0-9A-Fa-f]{6}$/.test(transactionFilterDto.runeId);

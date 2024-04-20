@@ -14,6 +14,7 @@ import { EEtchRuneStatus } from 'src/common/enums';
 import { StatsService } from '../stats/stats.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { BroadcastTransactionDto } from '../transactions/dto';
+import { start } from 'repl';
 
 @Injectable()
 export class RunesService {
@@ -255,12 +256,14 @@ export class RunesService {
 
   async getRuneUtxo(address: string): Promise<any> {
     const data = await this.runeEntryRepository.query(`
-    select to2.tx_hash as utxo_tx_hash, to2.vout as utxo_vout, to2.value as utxo_value, tre.* ,orb.*
+    select to2.tx_hash as utxo_tx_hash, to2.vout as utxo_vout, to2.value as utxo_value, tre.* ,orb.*, rs.*
     from transaction_outs to2 
     inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash and orb.vout = to2.vout
-    inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id 
+    inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id
+    left join rune_stats rs on rs.rune_id = tre.rune_id
     where orb.spent = false and orb.address is not null and to2.address = '${address}'
     order by orb.balance_value desc`);
+
     return data.map((d: any) => ({
       address: d.address,
       amount: d.balance_value,
@@ -276,7 +279,13 @@ export class RunesService {
         rune_id: d.rune_id,
         deploy_transaction: d.tx_hash,
         divisibility: d.divisibility,
-        end_block: d.number,
+        end_block: d?.end_block,
+        start_block: d?.start_block,
+        mints: d?.entry?.mints,
+        terms: d?.entry?.terms,
+        turbo: d?.entry?.turbo,
+        burned: d?.entry?.burned,
+        premine: d?.entry?.premine,
         rune: d.spaced_rune,
         symbol: d.symbol ? d.symbol : '¤',
         timestamp: d.timestamp,
