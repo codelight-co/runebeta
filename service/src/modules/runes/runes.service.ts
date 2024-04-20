@@ -277,7 +277,7 @@ export class RunesService {
       rune: {
         id: d.id,
         rune_id: d.rune_id,
-        deploy_transaction: d.tx_hash,
+        deploy_transaction: d.etching,
         divisibility: d.divisibility,
         end_block: d?.end_block,
         start_block: d?.start_block,
