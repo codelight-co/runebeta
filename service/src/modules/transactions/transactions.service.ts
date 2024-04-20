@@ -81,7 +81,6 @@ export class TransactionsService {
         .groupBy('txrune.tx_hash');
     }
     total = await builderTotal.getCount();
-
     const builder = this.txidRuneRepository
       .createQueryBuilder('txrune')
       .leftJoinAndMapOne(
@@ -116,7 +115,6 @@ export class TransactionsService {
     this.addTransactionFilter(builder, transactionFilterDto);
 
     const transactions = await builder.getMany();
-    console.log('transactions :>> ', transactions);
     if (transactions?.length) {
       for (let index = 0; index < transactions.length; index++) {
         const transaction = transactions[index] as any;
@@ -185,7 +183,60 @@ export class TransactionsService {
       .where('Transaction.tx_hash = :tx_hash', { tx_hash })
       .getOne();
     if (!transaction) {
-      throw new BadRequestException('Transaction not found');
+      const response = await this.httpService
+        .post(
+          `${BITCOIN_RPC_HOST}:${BITCOIN_RPC_PORT}`,
+          {
+            jsonrpc: '1.0',
+            id: 'curltest',
+            method: 'getrawtransaction',
+            params: [tx_hash, true],
+          },
+          {
+            auth: {
+              username: BITCOIN_RPC_USER,
+              password: BITCOIN_RPC_PASS,
+            },
+          },
+        )
+        .toPromise();
+
+      if (!response.data?.result) {
+        throw new BadRequestException('Transaction not found');
+      }
+      const vins = await Promise.all(
+        response.data.result.vin.map(async (input) => {
+          const response = await this.httpService
+            .post(
+              `${BITCOIN_RPC_HOST}:${BITCOIN_RPC_PORT}`,
+              {
+                jsonrpc: '1.0',
+                id: 'curltest',
+                method: 'getrawtransaction',
+                params: [input.txid, true],
+              },
+              {
+                auth: {
+                  username: BITCOIN_RPC_USER,
+                  password: BITCOIN_RPC_PASS,
+                },
+              },
+            )
+            .toPromise();
+          if (!response.data?.result) {
+            return input;
+          }
+
+          return {
+            ...input,
+            address: response.data.result.vout[input.vout].scriptPubKey.address,
+            value: response.data.result.vout[input.vout].value,
+          };
+        }),
+      );
+      const _response = { ...response.data.result, vin: vins };
+
+      return _response;
     }
     if (transaction?.vout.length > 0) {
       for (let index = 0; index < transaction.vout.length; index++) {
