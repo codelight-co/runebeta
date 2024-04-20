@@ -493,7 +493,7 @@ export class TransactionsService {
         try {
           return this.outpointRuneBalanceRepository.find({
             where: { tx_hash: arrLocation[0], vout: parseInt(arrLocation[1]) },
-            relations: ['rune'],
+            relations: ['rune', 'rune.stat'],
           });
         } catch (error) {
           this.logger.error('Error retrieving rune by tx id', error);
@@ -502,6 +502,24 @@ export class TransactionsService {
       }),
     );
 
-    return runeData.map((rune) => (rune?.length ? rune : null));
+    return runeData.map((rune) => {
+      if (rune?.length) {
+        return rune.map((r) => ({
+          ...r,
+          rune: {
+            ...r.rune,
+            mints: r.rune?.stat?.entry?.mints,
+            premine: r.rune?.stat?.premine,
+            burned: r.rune?.stat?.entry?.burned,
+            supply: r.rune?.stat?.total_supply || r.rune?.supply,
+            minable: r.rune?.stat?.mintable,
+            terms: r.rune?.stat?.entry?.terms,
+            stat: null,
+          },
+        }));
+      }
+
+      return null;
+    });
   }
 }
