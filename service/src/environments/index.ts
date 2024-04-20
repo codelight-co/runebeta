@@ -50,10 +50,11 @@ const BITCOIN_RPC_PASS = process.env.BITCOIN_RPC_PASS || 'apd3g41pkl';
 const BITCOIN_RPC_TIMEOUT = Number(process.env.BITCOIN_RPC_TIMEOUT ?? 120000);
 
 // Config service fee
-const SELLER_SERVICE_FEE = +process.env.SELLER_SERVICE_FEE || 0.015; // 1.5% service fee
+const SELLER_SERVICE_FEE = +process.env.SELLER_SERVICE_FEE || 0.005; // 1.5% service fee
 const PLATFORM_SERVICE_FEE = +process.env.PLATFORM_SERVICE_FEE || 1000; // 1000 satoshi
 const PLATFORM_FEE_ADDRESS =
-  process.env.PLATFORM_FEE_ADDRESS || NEED_TO_CONFIGURED;
+  process.env.PLATFORM_FEE_ADDRESS ||
+  'bc1pjm63zgy5l5y0wsmzqrsq3nrtt0hh8ud36766m3cmevg8ktvnqk7qunshc4';
 
 // Config first rune block
 const FIRST_RUNE_BLOCK = {
