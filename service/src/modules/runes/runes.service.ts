@@ -149,7 +149,7 @@ export class RunesService {
         rune_id: rune.rune_id,
         rune_hex: rune.rune_hex,
         supply: rune?.stat?.total_supply || rune.supply || 0,
-        deploy_transaction: rune.tx_hash,
+        deploy_transaction: rune.etching,
         divisibility: rune.divisibility,
         end_block: rune?.stat?.end_block || null,
         start_block: rune.stat?.start_block || null,
