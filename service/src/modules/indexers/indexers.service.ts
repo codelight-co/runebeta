@@ -24,9 +24,25 @@ export class IndexersService {
 
   async getRuneDetails(runeName: string) {
     const res = await this.httpService
-      .get(`${ODR_URL}:${ODR_PORT}/rune/${runeName}`)
-      .toPromise();
+      .get(`${ODR_URL}:${ODR_PORT}/rune/${runeName}`, {
+        transformResponse: [(data) => data],
+      })
+      .toPromise()
+      .then((res) => {
+        const parsedData = JSON.parse(res.data, (key, value) => {
+          if (typeof value === 'number' && !Number.isSafeInteger(value)) {
+            const strBig = res.data.match(
+              new RegExp(`(?:"${key}":)(.*?)(?:,)`),
+            )[1]; // get the original value using regex expression
 
-    return res.data;
+            return strBig; //should be BigInt(strBig) - BigInt function is not working in this snippet
+          }
+          return value;
+        });
+
+        return parsedData;
+      });
+
+    return res;
   }
 }

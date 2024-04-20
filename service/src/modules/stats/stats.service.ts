@@ -232,7 +232,6 @@ from (
       if (!runeIndex) {
         return;
       }
-
       const rune_name = runeIndex?.entry?.spaced_rune
         ? String(runeIndex?.entry?.spaced_rune).replace(/•/g, '')
         : '';
@@ -256,7 +255,6 @@ from (
       if (mints > 0) {
         remaining = BigInt(cap) - BigInt(mints);
       }
-
       let term = 0;
       if (
         runeIndex?.entry?.terms?.height &&
