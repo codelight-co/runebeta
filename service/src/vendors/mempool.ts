@@ -9,7 +9,6 @@ const { bitcoin } = mempoolJS({
 export const mempoolBitcoin = bitcoin;
 
 export async function getFeesRecommended() {
-  console.log('BTC_NETWORK :>> ', BTC_NETWORK);
   return await mempoolBitcoin.fees.getFeesRecommended();
 }
 

@@ -174,18 +174,18 @@ export class RunesService {
 
   async getTopHolders(id: string): Promise<any> {
     const data = await this.runeEntryRepository.query(`
-    select tre.spaced_rune ,orb.*
+    select orb.address, sum(orb.balance_value) as amount, min(tre.spaced_rune) as spaced_rune, min(tre.rune_id) as rune_id 
     from outpoint_rune_balances orb
     inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id 
     where orb.spent = false and orb.address is not null and tre.rune_id = '${id}'
-    order by orb.balance_value desc
+    group by orb.address 
+    order by amount desc
     limit 10`);
 
     return {
       topAddress: data.map((d: any) => ({
         address: d.address,
-        amount: d.balance_value,
-        id: d.id,
+        amount: d.amount,
         rune_id: d.rune_id,
       })),
     };
