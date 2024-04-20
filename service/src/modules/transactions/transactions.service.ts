@@ -81,6 +81,7 @@ export class TransactionsService {
         .groupBy('txrune.tx_hash');
     }
     total = await builderTotal.getCount();
+
     const builder = this.txidRuneRepository
       .createQueryBuilder('txrune')
       .leftJoinAndMapOne(
@@ -122,24 +123,25 @@ export class TransactionsService {
           const vout = [
             {
               runeInject: transaction?.outpointRuneBalances?.length
-                ? transaction.outpointRuneBalances.map((outpoint) => ({
-                    rune_id: outpoint.rune_id,
-                    deploy_transaction: outpoint.rune.tx_hash,
-                    timestamp: outpoint.rune.timestamp,
-                    rune: outpoint.rune.spaced_rune,
-                    divisibility: outpoint.rune.divisibility,
-                    symbol: outpoint.rune.symbol,
-                    utxo_type: 'transfer',
-                    amount: outpoint.balance_value,
-                    is_etch: false,
-                    is_claim: false,
-                  }))
+                ? transaction.outpointRuneBalances.map((outpoint) => {
+                    return {
+                      rune_id: outpoint.rune_id,
+                      deploy_transaction: outpoint?.rune?.tx_hash,
+                      timestamp: outpoint?.rune?.timestamp,
+                      rune: outpoint?.rune?.spaced_rune,
+                      divisibility: outpoint?.rune?.divisibility,
+                      symbol: outpoint?.rune?.symbol,
+                      utxo_type: 'transfer',
+                      amount: outpoint?.balance_value,
+                      is_etch: false,
+                      is_claim: false,
+                    };
+                  })
                 : null,
             },
           ];
-
           transactions[index] = {
-            tx_hash: transaction.tx_hash,
+            tx_hash: transaction?.tx_hash,
             timestamp:
               transaction?.block?.block_time || new Date().getTime() / 1000,
             vout,
