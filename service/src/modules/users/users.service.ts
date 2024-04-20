@@ -81,6 +81,7 @@ export class UsersService implements OnModuleInit {
   }
 
   async search(query: string): Promise<any> {
+    console.log('query :>> ', query);
     // Is transaction hash
     if (query.length === 64) {
       const transaction =
@@ -96,14 +97,29 @@ export class UsersService implements OnModuleInit {
 
     // Is address
     if (query.length >= 34 && query.length <= 62) {
-      const address = await this.getMyUtxo({
-        walletAddress: query.trim(),
-      } as User);
-      if (address) {
+      try {
+        const addressRunes = await this.getMyUtxo({
+          walletAddress: query.trim(),
+        } as User);
+        if (addressRunes) {
+          return {
+            type: 'address',
+            query,
+            data: [addressRunes],
+          };
+        } else {
+          return {
+            type: 'address',
+            query,
+            data: [{ address: query }],
+          };
+        }
+      } catch (error) {
+        // Check is taproot address
         return {
           type: 'address',
           query,
-          data: [address],
+          data: [{ address: query }],
         };
       }
     }
