@@ -490,11 +490,28 @@ export class TransactionsService {
           return null;
         }
 
+        const cachedData = await this.cacheService.get(
+          `retrive-transaction:${location}`,
+        );
+        if (cachedData) {
+          return cachedData as OutpointRuneBalance[];
+        }
+
         try {
-          return this.outpointRuneBalanceRepository.find({
+          const transaction = await this.outpointRuneBalanceRepository.find({
             where: { tx_hash: arrLocation[0], vout: parseInt(arrLocation[1]) },
             relations: ['rune', 'rune.stat'],
           });
+
+          if (transaction?.length) {
+            await this.cacheService.set(
+              `retrive-transaction:${location}`,
+              transaction,
+              900,
+            );
+          }
+
+          return transaction;
         } catch (error) {
           this.logger.error('Error retrieving rune by tx id', error);
           return null;
