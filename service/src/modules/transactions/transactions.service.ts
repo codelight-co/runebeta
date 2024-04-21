@@ -483,6 +483,8 @@ export class TransactionsService {
   }
 
   async retrieveRuneByTxIDs(txDto: RetrieveRuneDto): Promise<any> {
+    const blockHeight = await this.indexersService.getBlockHeight();
+
     const runeData = await Promise.all(
       txDto.tx_locations.map(async (location) => {
         const arrLocation = location.split(':');
@@ -491,7 +493,7 @@ export class TransactionsService {
         }
 
         const cachedData = await this.cacheService.get(
-          `retrive-transaction:${location}`,
+          `${blockHeight}:retrive-transaction:${location}`,
         );
         if (cachedData) {
           return cachedData as OutpointRuneBalance[];
@@ -505,7 +507,7 @@ export class TransactionsService {
 
           if (transaction?.length) {
             await this.cacheService.set(
-              `retrive-transaction:${location}`,
+              `${blockHeight}:retrive-transaction:${location}`,
               transaction,
               900,
             );

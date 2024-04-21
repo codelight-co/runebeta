@@ -1,12 +1,24 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { ODR_PORT, ODR_URL } from 'src/environments';
+import { InjectRedis } from '@nestjs-modules/ioredis';
+import Redis from 'ioredis';
 
 @Injectable()
 export class IndexersService {
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    @InjectRedis() private readonly redis: Redis,
+  ) {}
 
-  async getBlockHeight() {
+  async getBlockHeight(isCacheable = true) {
+    if (isCacheable) {
+      const currentBlockHeight = await this.redis.get('currentBlockHeight');
+      if (currentBlockHeight) {
+        return parseInt(currentBlockHeight);
+      }
+    }
+
     const res = await this.httpService
       .get(`${ODR_URL}:${ODR_PORT}/blockheight`)
       .toPromise();

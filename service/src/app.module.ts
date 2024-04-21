@@ -28,6 +28,7 @@ import { IndexersModule } from './modules/indexers/indexers.module';
       store: redisStore,
       host: REDIS_HOST,
       port: REDIS_PORT,
+      ttl: 900,
     }),
     RedisModule.forRoot({
       type: 'single',

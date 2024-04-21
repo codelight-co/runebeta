@@ -158,7 +158,7 @@ export class StatsService {
 
   async calculateNetworkStats(): Promise<void> {
     try {
-      const blockHeight = await this.indexersService.getBlockHeight();
+      const blockHeight = await this.indexersService.getBlockHeight(false);
       const currentBlockHeight = await this.redis.get('currentBlockHeight');
       if (parseInt(currentBlockHeight) >= parseInt(blockHeight)) {
         return;

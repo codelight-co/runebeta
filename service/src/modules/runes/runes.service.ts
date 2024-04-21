@@ -14,22 +14,33 @@ import { EEtchRuneStatus } from 'src/common/enums';
 import { StatsService } from '../stats/stats.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { BroadcastTransactionDto } from '../transactions/dto';
-import { start } from 'repl';
+import { IndexersService } from '../indexers/indexers.service';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 
 @Injectable()
 export class RunesService {
   constructor(
+    @Inject(CACHE_MANAGER) private cacheService: Cache,
     private readonly statsService: StatsService,
     private readonly transactionsService: TransactionsService,
     @Inject('RUNE_ENTRY_REPOSITORY')
     private runeEntryRepository: Repository<TransactionRuneEntry>,
     @Inject('ETCH_RUNE_REPOSITORY')
     private etchRuneEntryRepository: Repository<EtchRune>,
+    private readonly indexersService: IndexersService,
   ) {}
 
   private logger = new Logger(RunesService.name);
 
   async getRunes(runeFilterDto: RuneFilterDto): Promise<any> {
+    const blockHeight = await this.indexersService.getBlockHeight();
+    const cachedData = await this.cacheService.get(
+      `${blockHeight}:list-rune:${Object.values(runeFilterDto).join('-')}`,
+    );
+    if (cachedData) {
+      return cachedData;
+    }
+
     const builder = this.runeEntryRepository
       .createQueryBuilder('rune')
       .innerJoinAndMapOne(
@@ -106,7 +117,7 @@ export class RunesService {
     }
 
     const runes = await builder.getMany();
-    return {
+    const result = {
       total: await builder.getCount(),
       limit: runeFilterDto.limit,
       offset: runeFilterDto.offset,
@@ -137,6 +148,14 @@ export class RunesService {
         mintable: rune?.stat?.mintable || false,
       })),
     };
+
+    await this.cacheService.set(
+      `${blockHeight}:list-rune:${Object.values(runeFilterDto).join('-')}`,
+      result,
+      900,
+    );
+
+    return result;
   }
 
   async getRuneById(id: string): Promise<any> {
@@ -266,6 +285,14 @@ export class RunesService {
   }
 
   async getRuneUtxo(address: string): Promise<any> {
+    const blockHeight = await this.indexersService.getBlockHeight();
+    const cachedData = await this.cacheService.get(
+      `${blockHeight}:rune-utxo:${address}`,
+    );
+    if (cachedData) {
+      return cachedData;
+    }
+
     const data = await this.runeEntryRepository.query(`
     select to2.tx_hash as utxo_tx_hash, to2.vout as utxo_vout, to2.value as utxo_value, tre.* ,orb.*, rs.*
     from transaction_outs to2 
@@ -275,7 +302,7 @@ export class RunesService {
     where orb.spent = false and orb.address is not null and to2.address = '${address}'
     order by orb.balance_value desc`);
 
-    return data.map((d: any) => ({
+    const result = data.map((d: any) => ({
       address: d.address,
       amount: d.balance_value,
       id: d.id,
@@ -302,6 +329,14 @@ export class RunesService {
         timestamp: d.timestamp,
       },
     }));
+
+    await this.cacheService.set(
+      `${blockHeight}:rune-utxo:${address}`,
+      result,
+      900,
+    );
+
+    return result;
   }
 
   async selectRuneUtxo(
