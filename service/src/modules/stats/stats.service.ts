@@ -64,7 +64,7 @@ export class StatsService {
 
   async getBlockSyncNumber() {
     const res = await this.httpService
-      .get(`${ODR_URL}:${ODR_PORT}/blockcount`)
+      .get(`${ODR_URL}:${ODR_PORT}/blockheight`)
       .toPromise();
 
     return res.data;
