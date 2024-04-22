@@ -1,10 +1,10 @@
 import { DataSource } from 'typeorm';
-import { Transaction } from '../database/entities/transaction.entity';
-import { TransactionIns } from '../database/entities/transaction-ins.entity';
-import { TransactionOut } from '../database/entities/transaction-out.entity';
-import { TxidRune } from '../database/entities/txid-rune.entity';
-import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
-import { OutpointRuneBalance } from '../database/entities/outpoint-rune-balance.entity';
+import { Transaction } from '../database/entities/indexer/transaction.entity';
+import { TransactionIns } from '../database/entities/indexer/transaction-ins.entity';
+import { TransactionOut } from '../database/entities/indexer/transaction-out.entity';
+import { TxidRune } from '../database/entities/indexer/txid-rune.entity';
+import { TransactionRuneEntry } from '../database/entities/indexer/rune-entry.entity';
+import { OutpointRuneBalance } from '../database/entities/indexer/outpoint-rune-balance.entity';
 
 export const transactionsProviders = [
   {

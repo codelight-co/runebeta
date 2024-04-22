@@ -11,20 +11,20 @@ import {
 } from './dto';
 import { HttpService } from '@nestjs/axios';
 import { Repository, SelectQueryBuilder } from 'typeorm';
-import { Transaction } from '../database/entities/transaction.entity';
+import { Transaction } from '../database/entities/indexer/transaction.entity';
 import {
   BITCOIN_RPC_HOST,
   BITCOIN_RPC_PASS,
   BITCOIN_RPC_PORT,
   BITCOIN_RPC_USER,
 } from 'src/environments';
-import { TransactionOut } from '../database/entities/transaction-out.entity';
-import { OutpointRuneBalance } from '../database/entities/outpoint-rune-balance.entity';
-import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
+import { TransactionOut } from '../database/entities/indexer/transaction-out.entity';
+import { OutpointRuneBalance } from '../database/entities/indexer/outpoint-rune-balance.entity';
+import { TransactionRuneEntry } from '../database/entities/indexer/rune-entry.entity';
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import { IndexersService } from '../indexers/indexers.service';
-import { TxidRune } from '../database/entities/txid-rune.entity';
-import { Block } from '../database/entities/block.entity';
+import { TxidRune } from '../database/entities/indexer/txid-rune.entity';
+import { Block } from '../database/entities/indexer/block.entity';
 
 @Injectable()
 export class TransactionsService {

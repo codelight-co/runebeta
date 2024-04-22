@@ -8,7 +8,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { OutpointRuneBalance } from './outpoint-rune-balance.entity';
-import { RuneStat } from './rune_stat.entity';
+import { RuneStat } from '../marketplace/rune_stat.entity';
 
 @Entity({ synchronize: false })
 export class TransactionRuneEntry {

@@ -10,9 +10,9 @@ import {
   MarketRuneFilterDto,
   MarketRuneOrderFilterDto,
 } from './dto';
-import { User } from '../database/entities/user.entity';
+import { User } from '../database/entities/marketplace/user.entity';
 import { Repository } from 'typeorm';
-import { Order } from '../database/entities/order.entity';
+import { Order } from '../database/entities/marketplace/order.entity';
 import {
   IRuneListingState,
   IRunePostPSBTListing,
@@ -25,13 +25,13 @@ import { BASE_URL } from 'src/environments';
 import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
 import { BuyerOrderDto } from './dto/buyer-order.dto';
 import { MergeSingers } from 'src/common/handlers/runes/merge';
-import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
+import { TransactionRuneEntry } from '../database/entities/indexer/rune-entry.entity';
 import { UsersService } from '../users/users.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { BroadcastTransactionDto } from '../transactions/dto';
-import { RuneStat } from '../database/entities';
+import { RuneStat } from '../database/entities/indexer';
 import { EOrderStatus } from 'src/common/enums';
-import { OutpointRuneBalance } from '../database/entities/outpoint-rune-balance.entity';
+import { OutpointRuneBalance } from '../database/entities/indexer/outpoint-rune-balance.entity';
 
 @Injectable()
 export class MarketsService implements OnModuleInit {

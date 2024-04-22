@@ -6,10 +6,10 @@ import {
 } from '@nestjs/common';
 import { RuneFilterDto } from './dto';
 import { Repository } from 'typeorm';
-import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
+import { TransactionRuneEntry } from '../database/entities/indexer/rune-entry.entity';
 import { EtchRuneDto } from './dto/etch-rune-filter.dto';
-import { EtchRune, RuneStat } from '../database/entities';
-import { User } from '../database/entities/user.entity';
+import { EtchRune, RuneStat } from '../database/entities/indexer';
+import { User } from '../database/entities/marketplace/user.entity';
 import { EEtchRuneStatus } from 'src/common/enums';
 import { StatsService } from '../stats/stats.service';
 import { TransactionsService } from '../transactions/transactions.service';

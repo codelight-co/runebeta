@@ -2,10 +2,10 @@ import { HttpService } from '@nestjs/axios';
 import { CacheInterceptor } from '@nestjs/cache-manager';
 import { Inject, Injectable, Logger, UseInterceptors } from '@nestjs/common';
 import { ODR_PORT, ODR_URL } from 'src/environments';
-import { Transaction } from '../database/entities/transaction.entity';
+import { Transaction } from '../database/entities/indexer/transaction.entity';
 import { Repository } from 'typeorm';
-import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
-import { RuneStat } from '../database/entities';
+import { TransactionRuneEntry } from '../database/entities/indexer/rune-entry.entity';
+import { RuneStat } from '../database/entities/indexer';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { PROCESS, PROCESSOR } from 'src/common/enums';
@@ -14,7 +14,7 @@ import Redis from 'ioredis';
 import { IndexersService } from '../indexers/indexers.service';
 import { getFeesRecommended } from 'src/vendors/mempool';
 import { FeesRecommended } from '@mempool/mempool.js/lib/interfaces/bitcoin/fees';
-import { TxidRune } from '../database/entities/txid-rune.entity';
+import { TxidRune } from '../database/entities/indexer/txid-rune.entity';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
