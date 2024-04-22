@@ -27,6 +27,8 @@ export class RunesService {
     private runeEntryRepository: Repository<TransactionRuneEntry>,
     @Inject('ETCH_RUNE_REPOSITORY')
     private etchRuneEntryRepository: Repository<EtchRune>,
+    @Inject('RUNE_STAT_REPOSITORY')
+    private runeStatRepository: Repository<RuneStat>,
     private readonly indexersService: IndexersService,
   ) {}
 
@@ -41,14 +43,8 @@ export class RunesService {
       return cachedData;
     }
 
-    const builder = this.runeEntryRepository
-      .createQueryBuilder('rune')
-      .innerJoinAndMapOne(
-        'rune.stat',
-        RuneStat,
-        'rune_stat',
-        'rune_stat.rune_id = rune.rune_id',
-      )
+    const builder = this.runeStatRepository
+      .createQueryBuilder('rune_stat')
       .offset(runeFilterDto.offset)
       .limit(runeFilterDto.limit);
 
@@ -92,28 +88,26 @@ export class RunesService {
           );
           break;
 
-        case 'created_at':
-          builder.orderBy(
-            `rune.timestamp`,
-            runeFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
-              ? 'DESC'
-              : 'ASC',
-          );
-          break;
+        // case 'created_at':
+        //   builder.orderBy(
+        //     `rune.timestamp`,
+        //     runeFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+        //       ? 'DESC'
+        //       : 'ASC',
+        //   );
+        //   break;
 
-        default:
-          builder.orderBy(
-            `rune.rune_id`,
-            runeFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
-              ? 'DESC'
-              : 'ASC',
-          );
-          break;
+        // default:
+        //   builder.orderBy(
+        //     `rune.rune_id`,
+        //     runeFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+        //       ? 'DESC'
+        //       : 'ASC',
+        //   );
+        // break;
       }
     } else {
-      builder
-        .orderBy(`rune.block_height`, 'ASC')
-        .addOrderBy('rune.tx_index', 'ASC');
+      builder.orderBy(`rune_stat.rune_id`, 'ASC');
     }
 
     const runes = await builder.getMany();
@@ -121,31 +115,31 @@ export class RunesService {
       total: await builder.getCount(),
       limit: runeFilterDto.limit,
       offset: runeFilterDto.offset,
-      runes: runes.map((rune) => ({
-        id: rune.id,
-        rune_id: rune.rune_id,
-        rune_hex: rune.rune_hex,
-        supply: rune?.stat?.total_supply || rune.supply || 0,
-        deploy_transaction: rune.tx_hash,
-        divisibility: rune.divisibility,
-        end_block: rune?.stat?.end_block || null,
-        start_block: rune.stat?.start_block || null,
-        holder_count: rune?.stat?.total_holders || '0',
-        rune: rune.spaced_rune,
-        symbol: rune.symbol,
-        premine: rune?.stat?.premine || '0',
-        term: rune?.stat?.term || 0,
-        timestamp: rune.timestamp,
-        transaction_count: rune?.stat?.total_transactions || '0',
-        mint_type: rune?.stat?.mint_type || '',
-        terms: rune?.stat?.entry?.terms || null,
-        etching: rune?.stat?.etching || null,
-        parent: rune?.stat?.parent || null,
-        mints: rune?.stat?.total_mints || '0',
-        remaining: rune?.stat?.entry.remaining || null,
-        burned: rune?.stat?.total_burns || '0',
-        limit: rune?.stat?.limit || '0',
-        mintable: rune?.stat?.mintable || false,
+      runes: runes.map((runeStat) => ({
+        id: runeStat.id,
+        rune_id: runeStat.rune_id,
+        // rune_hex: runeStat.rune_hex,
+        supply: runeStat?.total_supply || 0,
+        // deploy_transaction: runeStat.tx_hash,
+        // divisibility: runeStat.divisibility,
+        end_block: runeStat?.end_block || null,
+        start_block: runeStat?.start_block || null,
+        holder_count: runeStat?.total_holders || '0',
+        // rune: runeStat.spaced_rune,
+        // symbol: runeStat.symbol,
+        // premine: rune?.stat?.premine || '0',
+        // term: rune?.stat?.term || 0,
+        // timestamp: runeStat.timestamp,
+        transaction_count: runeStat?.total_transactions || '0',
+        mint_type: runeStat?.mint_type || '',
+        terms: runeStat?.entry?.terms || null,
+        etching: runeStat?.etching || null,
+        parent: runeStat?.parent || null,
+        mints: runeStat?.total_mints || '0',
+        remaining: runeStat?.entry.remaining || null,
+        burned: runeStat?.total_burns || '0',
+        limit: runeStat?.limit || '0',
+        mintable: runeStat?.mintable || false,
       })),
     };
 
@@ -161,12 +155,6 @@ export class RunesService {
   async getRuneById(id: string): Promise<any> {
     const rune = await this.runeEntryRepository
       .createQueryBuilder('rune')
-      .leftJoinAndMapOne(
-        'rune.stat',
-        RuneStat,
-        'rune_stat',
-        'rune_stat.rune_id = rune.rune_id',
-      )
       .where('rune.rune_id = :id', { id })
       .getOne();
     if (!rune) {
@@ -178,27 +166,27 @@ export class RunesService {
         id: rune.id,
         rune_id: rune.rune_id,
         rune_hex: rune.rune_hex,
-        supply: rune?.stat?.total_supply || rune.supply || 0,
+        // supply: rune?.stat?.total_supply || rune.supply || 0,
         deploy_transaction: rune.etching,
         divisibility: rune.divisibility,
-        end_block: rune?.stat?.end_block || null,
-        start_block: rune.stat?.start_block || null,
-        holder_count: rune?.stat?.total_holders || '0',
+        // end_block: rune?.stat?.end_block || null,
+        // start_block: rune.stat?.start_block || null,
+        // holder_count: rune?.stat?.total_holders || '0',
         rune: rune.spaced_rune,
         symbol: rune.symbol,
-        premine: rune?.stat?.premine || '0',
-        term: rune?.stat?.term || 0,
+        // premine: rune?.stat?.premine || '0',
+        // term: rune?.stat?.term || 0,
         timestamp: rune.timestamp,
-        transaction_count: rune?.stat?.total_transactions || '0',
-        mint_type: rune?.stat?.mint_type || '',
-        terms: rune?.stat?.entry?.terms || null,
-        etching: rune?.stat?.etching || null,
-        parent: rune?.stat?.parent || null,
-        mints: rune?.stat?.total_mints || '0',
-        remaining: rune?.stat?.entry.remaining || null,
-        burned: rune?.stat?.total_burns || '0',
-        limit: rune?.stat?.limit || '0',
-        mintable: rune?.stat?.mintable || false,
+        // transaction_count: rune?.stat?.total_transactions || '0',
+        // mint_type: rune?.stat?.mint_type || '',
+        // terms: rune?.stat?.entry?.terms || null,
+        // etching: rune?.stat?.etching || null,
+        // parent: rune?.stat?.parent || null,
+        // mints: rune?.stat?.total_mints || '0',
+        // remaining: rune?.stat?.entry.remaining || null,
+        // burned: rune?.stat?.total_burns || '0',
+        // limit: rune?.stat?.limit || '0',
+        // mintable: rune?.stat?.mintable || false,
       },
     };
   }

@@ -181,23 +181,31 @@ export class TransactionsService {
   }
 
   async getTransactionById(tx_hash: string): Promise<any> {
-    const rawTransaction = await this.httpService
-      .post(
-        `${BITCOIN_RPC_HOST}:${BITCOIN_RPC_PORT}`,
-        {
-          jsonrpc: '1.0',
-          id: 'curltest',
-          method: 'getrawtransaction',
-          params: [tx_hash, true],
-        },
-        {
-          auth: {
-            username: BITCOIN_RPC_USER,
-            password: BITCOIN_RPC_PASS,
+    let rawTransaction = null;
+    try {
+      rawTransaction = await this.httpService
+        .post(
+          `${BITCOIN_RPC_HOST}:${BITCOIN_RPC_PORT}`,
+          {
+            jsonrpc: '1.0',
+            id: 'curltest',
+            method: 'getrawtransaction',
+            params: [tx_hash, true],
           },
-        },
-      )
-      .toPromise();
+          {
+            auth: {
+              username: BITCOIN_RPC_USER,
+              password: BITCOIN_RPC_PASS,
+            },
+          },
+        )
+        .toPromise();
+    } catch (error) {
+      this.logger.error('Error getting raw transaction', error);
+
+      throw new BadRequestException('Error getting transaction');
+    }
+
     const voutValues = rawTransaction.data.result.vout.map(
       (vout) => vout.value,
     );
@@ -502,7 +510,7 @@ export class TransactionsService {
         try {
           const transaction = await this.outpointRuneBalanceRepository.find({
             where: { tx_hash: arrLocation[0], vout: parseInt(arrLocation[1]) },
-            relations: ['rune', 'rune.stat'],
+            relations: ['rune'],
           });
 
           if (transaction?.length) {
@@ -527,13 +535,12 @@ export class TransactionsService {
           ...r,
           rune: {
             ...r.rune,
-            mints: r.rune?.stat?.entry?.mints,
-            premine: r.rune?.stat?.premine,
-            burned: r.rune?.stat?.entry?.burned,
-            supply: r.rune?.stat?.total_supply || r.rune?.supply,
-            minable: r.rune?.stat?.mintable,
-            terms: r.rune?.stat?.entry?.terms,
-            stat: null,
+            // mints: r.rune?.stat?.entry?.mints,
+            // premine: r.rune?.stat?.premine,
+            // burned: r.rune?.stat?.entry?.burned,
+            // supply: r.rune?.stat?.total_supply || r.rune?.supply,
+            // minable: r.rune?.stat?.mintable,
+            // terms: r.rune?.stat?.entry?.terms,
           },
         }));
       }

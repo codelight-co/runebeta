@@ -9,7 +9,7 @@ export const authProviders = [
   {
     provide: 'USER_REPOSITORY',
     useFactory: (dataSource: DataSource) => dataSource.getRepository(User),
-    inject: ['DATA_SOURCE'],
+    inject: ['MARKETPLACE_DATA_SOURCE'],
   },
   {
     provide: 'TRANSACTION_OUT_REPOSITORY',

@@ -66,8 +66,6 @@ export class TransactionRuneEntry {
   @JoinColumn({ name: 'rune_id', referencedColumnName: 'rune_id' })
   outpointRuneBalances: OutpointRuneBalance[];
 
-  @OneToOne(() => RuneStat, (runeStat) => runeStat.rune)
-  @JoinColumn({ name: 'rune_id', referencedColumnName: 'rune_id' })
   stat: RuneStat;
 
   @AfterLoad()

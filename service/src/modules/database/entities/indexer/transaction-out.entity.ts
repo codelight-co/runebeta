@@ -37,9 +37,6 @@ export class TransactionOut {
   @Column({ type: 'varchar' })
   address: string;
 
-  @Column({ type: 'bool' })
-  spent: boolean;
-
   @Column({ type: 'varchar', name: 'runestone' })
   rune_stone: RuneStone;
 

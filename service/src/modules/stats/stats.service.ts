@@ -90,11 +90,11 @@ export class StatsService {
       from (
         select orb.address
         from outpoint_rune_balances orb
-        where orb.address is not null and orb.spent = false
+        where orb.address is not null
         group by orb.address
       ) as rp`);
     let totalFee = 0;
-    const totalFeeData = await this.transactionRepository.query(
+    const totalFeeData = await this.runeStatRepository.query(
       `select sum(price) from orders o`,
     );
     if (totalFeeData.length) {
@@ -167,7 +167,7 @@ export class StatsService {
       await this.redis.set('currentBlockHeight', blockHeight);
       this.logger.log(`Calculating network stats on block ${blockHeight} ...`);
 
-      const runes = await this.runeEntryRepository.find({});
+      const runes = await this.runeEntryRepository.find();
       for (let index = 0; index < runes.length; index++) {
         const rune = runes[index];
         await this.statQueue.add(
@@ -198,8 +198,7 @@ export class StatsService {
       const runeStats = await this.runeStatRepository.findOne({
         where: { rune_id: rune.rune_id },
       });
-      const stats = (await this.runeStatRepository
-        .query(`select 'total_transactions' as name, count(*) as total
+      const query = `select 'total_transactions' as name, count(*) as total
 from (
 	select orb.tx_hash
 	from outpoint_rune_balances orb
@@ -213,9 +212,13 @@ from (
 	select orb.address 
 	from outpoint_rune_balances orb
 	inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id
-	where tre.rune_id = '${rune.rune_id}' and CAST(orb.balance_value  AS DECIMAL) > 0 and orb.spent = false 
+	where tre.rune_id = '${rune.rune_id}' and CAST(orb.balance_value  AS DECIMAL) > 0
 	group  by orb.address
-) as rp2`)) as Array<{ name: string; total: number }>;
+) as rp2`;
+      const stats = (await this.transactionRepository.query(query)) as Array<{
+        name: string;
+        total: number;
+      }>;
 
       const payload = {} as any;
       for (let index = 0; index < stats.length; index++) {
@@ -270,7 +273,7 @@ from (
 
       // Calculate market stats
       let total_volume = BigInt(0);
-      const dataVolume = await this.transactionRepository
+      const dataVolume = await this.runeStatRepository
         .query(`select sum((rune_item ->> 'tokenValue')::int) as total
       from orders o 
       where rune_id = '${rune.rune_id}' and status = 'completed'
@@ -279,7 +282,7 @@ from (
         total_volume = BigInt(dataVolume[0]?.total);
       }
       let volume_24h = BigInt(0);
-      const dataVolume24h = await this.transactionRepository
+      const dataVolume24h = await this.runeStatRepository
         .query(`select sum((rune_item ->> 'tokenValue')::int) as total
       from orders o 
       where rune_id = '${rune.rune_id}' and status = 'completed' and created_at >= now() - interval '24 hours'
@@ -288,7 +291,7 @@ from (
         volume_24h = BigInt(dataVolume24h[0]?.total);
       }
       let prev_volume_24h = BigInt(0);
-      const dataPrevVolume24h = await this.transactionRepository.query(
+      const dataPrevVolume24h = await this.runeStatRepository.query(
         `select volume_24h as total  from rune_stats rs  where rune_id  = '${rune.rune_id}'`,
       );
       if (dataPrevVolume24h.length) {
@@ -303,7 +306,7 @@ from (
           ? BigInt(0)
           : (diffVolume * BigInt(100)) / prev_volume_24h;
       let price = BigInt(0);
-      const dataPrice = await this.transactionRepository.query(`
+      const dataPrice = await this.runeStatRepository.query(`
       select price 
       from orders o 
       where rune_id = '${rune.rune_id}' and status in ('listing','completed')
@@ -315,7 +318,7 @@ from (
       }
 
       let ma_price = BigInt(0);
-      const dataMAPrice = await this.transactionRepository
+      const dataMAPrice = await this.runeStatRepository
         .query(`select (sum(medium_price)/count(*))::integer as price 
         from (
           select DATE_TRUNC('day', created_at) AS date, AVG(price) AS medium_price
@@ -331,7 +334,7 @@ from (
       }
 
       let order_sold = BigInt(0);
-      const dataOrderSold = await this.transactionRepository.query(
+      const dataOrderSold = await this.runeStatRepository.query(
         `select count(*) as total from orders o where rune_id = '${rune.rune_id}' and status = 'completed'`,
       );
       if (dataOrderSold.length) {
