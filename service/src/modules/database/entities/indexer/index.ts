@@ -1,2 +1,2 @@
 export * from '../marketplace/etch_rune.entity';
-export * from '../marketplace/rune_stat.entity';
+export * from '../indexer/rune_stat.entity';

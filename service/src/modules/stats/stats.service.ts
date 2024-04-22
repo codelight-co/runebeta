@@ -5,7 +5,6 @@ import { ODR_PORT, ODR_URL } from 'src/environments';
 import { Transaction } from '../database/entities/indexer/transaction.entity';
 import { Repository } from 'typeorm';
 import { TransactionRuneEntry } from '../database/entities/indexer/rune-entry.entity';
-import { RuneStat } from '../database/entities/indexer';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { PROCESS, PROCESSOR } from 'src/common/enums';
@@ -15,6 +14,8 @@ import { IndexersService } from '../indexers/indexers.service';
 import { getFeesRecommended } from 'src/vendors/mempool';
 import { FeesRecommended } from '@mempool/mempool.js/lib/interfaces/bitcoin/fees';
 import { TxidRune } from '../database/entities/indexer/txid-rune.entity';
+import { Order } from '../database/entities/marketplace/order.entity';
+import { RuneStat } from '../database/entities/indexer/rune_stat.entity';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
@@ -28,6 +29,8 @@ export class StatsService {
     private runeEntryRepository: Repository<TransactionRuneEntry>,
     @Inject('RUNE_STAT_REPOSITORY')
     private runeStatRepository: Repository<RuneStat>,
+    @Inject('ORDER_REPOSITORY')
+    private orderRepository: Repository<Order>,
     @Inject('TX_ID_RUNE_REPOSITORY')
     private txidRuneRepository: Repository<TxidRune>,
     @InjectQueue(PROCESSOR.STAT_QUEUE) private statQueue: Queue,
@@ -94,7 +97,7 @@ export class StatsService {
         group by orb.address
       ) as rp`);
     let totalFee = 0;
-    const totalFeeData = await this.runeStatRepository.query(
+    const totalFeeData = await this.orderRepository.query(
       `select sum(price) from orders o`,
     );
     if (totalFeeData.length) {
@@ -157,16 +160,31 @@ export class StatsService {
   }
 
   async calculateNetworkStats(): Promise<void> {
+    let blockHeight = null;
+
     try {
-      const blockHeight = await this.indexersService.getBlockHeight(false);
-      const currentBlockHeight = await this.redis.get('currentBlockHeight');
-      if (parseInt(currentBlockHeight) >= parseInt(blockHeight)) {
+      blockHeight = await this.indexersService.getBlockIndex();
+    } catch (error) {
+      this.logger.error('Error getting block index', error);
+    }
+    if (!blockHeight) {
+      try {
+        blockHeight = await this.indexersService.getBlockHeight(false);
+      } catch (error) {
+        this.logger.error('Error getting block height', error);
         return;
       }
+    }
 
-      await this.redis.set('currentBlockHeight', blockHeight);
-      this.logger.log(`Calculating network stats on block ${blockHeight} ...`);
+    const currentBlockHeight = await this.redis.get('currentBlockHeight');
+    if (parseInt(currentBlockHeight) >= parseInt(blockHeight)) {
+      return;
+    }
 
+    await this.redis.set('currentBlockHeight', blockHeight);
+    this.logger.log(`Calculating network stats on block ${blockHeight} ...`);
+
+    try {
       const runes = await this.runeEntryRepository.find();
       for (let index = 0; index < runes.length; index++) {
         const rune = runes[index];
@@ -273,7 +291,7 @@ from (
 
       // Calculate market stats
       let total_volume = BigInt(0);
-      const dataVolume = await this.runeStatRepository
+      const dataVolume = await this.orderRepository
         .query(`select sum((rune_item ->> 'tokenValue')::int) as total
       from orders o 
       where rune_id = '${rune.rune_id}' and status = 'completed'
@@ -282,7 +300,7 @@ from (
         total_volume = BigInt(dataVolume[0]?.total);
       }
       let volume_24h = BigInt(0);
-      const dataVolume24h = await this.runeStatRepository
+      const dataVolume24h = await this.orderRepository
         .query(`select sum((rune_item ->> 'tokenValue')::int) as total
       from orders o 
       where rune_id = '${rune.rune_id}' and status = 'completed' and created_at >= now() - interval '24 hours'
@@ -306,7 +324,7 @@ from (
           ? BigInt(0)
           : (diffVolume * BigInt(100)) / prev_volume_24h;
       let price = BigInt(0);
-      const dataPrice = await this.runeStatRepository.query(`
+      const dataPrice = await this.orderRepository.query(`
       select price 
       from orders o 
       where rune_id = '${rune.rune_id}' and status in ('listing','completed')
@@ -318,7 +336,7 @@ from (
       }
 
       let ma_price = BigInt(0);
-      const dataMAPrice = await this.runeStatRepository
+      const dataMAPrice = await this.orderRepository
         .query(`select (sum(medium_price)/count(*))::integer as price 
         from (
           select DATE_TRUNC('day', created_at) AS date, AVG(price) AS medium_price
@@ -334,7 +352,7 @@ from (
       }
 
       let order_sold = BigInt(0);
-      const dataOrderSold = await this.runeStatRepository.query(
+      const dataOrderSold = await this.orderRepository.query(
         `select count(*) as total from orders o where rune_id = '${rune.rune_id}' and status = 'completed'`,
       );
       if (dataOrderSold.length) {

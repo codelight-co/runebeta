@@ -1,4 +1,11 @@
-import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { TransactionRuneEntry } from '../indexer/rune-entry.entity';
 import { IEntry } from 'src/common/interfaces/rune.interface';
 import BaseTable from '../../base-table';
 
@@ -71,17 +78,11 @@ export class RuneStat extends BaseTable {
   @Column({ type: 'decimal', nullable: true })
   premine: bigint;
 
-  @Column({ type: 'int8', nullable: true, default: 0 })
+  @Column({ type: 'int8', nullable: true, default: 0, name: 'block_start' })
   start_block: number;
 
-  @Column({ type: 'int8', nullable: true, default: 0 })
+  @Column({ type: 'int8', nullable: true, default: 0, name: 'block_end' })
   end_block: number;
-
-  @Column({ type: 'jsonb', nullable: true })
-  height: Array<number>;
-
-  @Column({ type: 'jsonb', nullable: true })
-  offset: Array<number>;
 
   @Column({ type: 'varchar', nullable: true })
   etching: string;
@@ -146,4 +147,7 @@ export class RuneStat extends BaseTable {
 
   @Column({ type: 'varchar', nullable: true })
   mint_type: string;
+
+  @OneToOne(() => TransactionRuneEntry, (runeEntry) => runeEntry.stat)
+  rune: TransactionRuneEntry;
 }

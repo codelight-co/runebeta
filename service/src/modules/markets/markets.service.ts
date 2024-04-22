@@ -115,18 +115,18 @@ export class MarketsService implements OnModuleInit {
       limit: marketRuneFilterDto.limit,
       offset: marketRuneFilterDto.offset,
       runes: runes.map((rune) => ({
-        // change_24h: rune?.stat?.change_24h,
-        // floor_price: rune?.stat?.price,
-        // last_price: rune?.stat?.ma_price,
-        // marketcap: rune?.stat?.market_cap,
-        // order_sold: rune?.stat?.order_sold,
-        // token_holders: rune?.stat?.total_holders,
+        change_24h: rune?.stat?.change_24h,
+        floor_price: rune?.stat?.price,
+        last_price: rune?.stat?.ma_price,
+        marketcap: rune?.stat?.market_cap,
+        order_sold: rune?.stat?.order_sold,
+        token_holders: rune?.stat?.total_holders,
         id: rune.id,
         rune_id: rune.rune_id,
         rune_hex: rune.rune_hex,
         rune_name: rune.spaced_rune,
-        // total_supply: rune?.stat?.total_supply,
-        // total_volume: rune?.stat?.total_volume,
+        total_supply: rune?.stat?.total_supply,
+        total_volume: rune?.stat?.total_volume,
       })),
     };
   }
@@ -137,18 +137,6 @@ export class MarketsService implements OnModuleInit {
   ): Promise<any> {
     const builder = this.orderRepository
       .createQueryBuilder('order')
-      .innerJoinAndMapOne(
-        'order.runeInfo',
-        TransactionRuneEntry,
-        'runeInfo',
-        `runeInfo.rune_id = order.rune_id`,
-      )
-      .leftJoinAndMapOne(
-        'order.runeStat',
-        RuneStat,
-        'rune_stat',
-        'rune_stat.rune_id = order.rune_id',
-      )
       .where(`order.rune_id = :id`, { id });
 
     if (marketRuneOrderFilterDto.status) {
@@ -256,6 +244,15 @@ export class MarketsService implements OnModuleInit {
       builder.orderBy('order.createdAt', 'DESC');
     }
 
+    const rune = await this.runeEntryRepository.findOne({
+      where: {
+        rune_id: id,
+      },
+    });
+    if (!rune) {
+      throw new BadRequestException('Rune not found');
+    }
+
     const orders = await builder.getMany();
     return {
       total,
@@ -280,9 +277,9 @@ export class MarketsService implements OnModuleInit {
         received_address:
           order.status === 'completed' ? order.buyerRuneAddress : '',
         confirmed: order.status === 'completed',
-        rune_hex: order.runeInfo.rune_hex,
         rune_id: order.runeItem.id,
-        rune_name: order.runeInfo.spaced_rune,
+        rune_name: rune.spaced_rune,
+        rune_hex: rune.rune_hex,
         rune_utxo: [
           {
             id: order.runeItem.id,
