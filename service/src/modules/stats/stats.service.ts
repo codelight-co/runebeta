@@ -185,23 +185,48 @@ export class StatsService {
     this.logger.log(`Calculating network stats on block ${blockHeight} ...`);
 
     try {
-      const runes = await this.runeEntryRepository.find();
-      for (let index = 0; index < runes.length; index++) {
-        const rune = runes[index];
-        await this.statQueue.add(
-          PROCESS.STAT_QUEUE.CALCULATE_RUNE_STAT,
-          {
-            blockHeight,
-            rune,
-          },
-          {
-            jobId: `${rune.rune_id}`,
-            attempts: 0,
-            backoff: 0,
-            removeOnComplete: true,
-            removeOnFail: true,
-          },
-        );
+      let runeIds = [];
+
+      if (!currentBlockHeight) {
+        console.log('here ==============');
+        const runes = await this.runeEntryRepository.find();
+        if (runes?.length) {
+          runeIds = runes.map((rune) => rune.rune_id);
+        }
+      } else {
+        // Get changes in rune stats
+        const runeChanges = await this.transactionRepository.query(`
+      select jsonb_agg(rune_id) as ids
+      from (
+        select rune_id
+          from outpoint_rune_balances orb 
+          where rune_id is not null and block_height = ${blockHeight}
+          group by rune_id
+      ) as rb
+    `);
+        if (runeChanges?.length && runeChanges[0]?.ids?.length) {
+          runeIds = runeChanges[0]?.ids;
+        }
+      }
+
+      if (runeIds?.length) {
+        for (let index = 0; index < runeIds.length; index++) {
+          const id = runeIds[index];
+          await this.statQueue.add(
+            PROCESS.STAT_QUEUE.CALCULATE_RUNE_STAT,
+            {
+              blockHeight,
+              rune: { rune_id: id },
+            },
+            {
+              jobId: `${id}`,
+              attempts: 0,
+              backoff: 0,
+              removeOnComplete: true,
+              removeOnFail: true,
+            },
+          );
+        }
       }
     } catch (error) {
       this.logger.error('Error calculating network stats', error);
@@ -213,9 +238,6 @@ export class StatsService {
     rune: TransactionRuneEntry,
   ): Promise<void> {
     try {
-      const runeStats = await this.runeStatRepository.findOne({
-        where: { rune_id: rune.rune_id },
-      });
       const query = `select 'total_transactions' as name, count(*) as total
 from (
 	select orb.tx_hash
@@ -233,10 +255,14 @@ from (
 	where tre.rune_id = '${rune.rune_id}' and CAST(orb.balance_value  AS DECIMAL) > 0
 	group  by orb.address
 ) as rp2`;
-      const stats = (await this.transactionRepository.query(query)) as Array<{
-        name: string;
-        total: number;
-      }>;
+      this.logger.log(`Calculating rune stat ${rune.rune_id} ...`);
+      const [runeStats, stats, runeIndex] = await Promise.all([
+        this.runeStatRepository.findOne({
+          where: { rune_id: rune.rune_id },
+        }),
+        this.transactionRepository.query(query),
+        this.indexersService.getRuneDetails(rune.rune_id),
+      ]);
 
       const payload = {} as any;
       for (let index = 0; index < stats.length; index++) {
@@ -244,15 +270,6 @@ from (
         payload[stat.name] = stat.total;
       }
 
-      let runeIndex = null;
-      try {
-        runeIndex = await this.indexersService.getRuneDetails(rune.rune_id);
-      } catch (error) {
-        this.logger.error('Error getting rune details', error);
-      }
-      if (!runeIndex) {
-        return;
-      }
       const rune_name = runeIndex?.entry?.spaced_rune
         ? String(runeIndex?.entry?.spaced_rune).replace(/•/g, '')
         : '';

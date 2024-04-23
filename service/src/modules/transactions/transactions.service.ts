@@ -531,18 +531,7 @@ export class TransactionsService {
 
     return runeData.map((rune) => {
       if (rune?.length) {
-        return rune.map((r) => ({
-          ...r,
-          rune: {
-            ...r.rune,
-            mints: r.rune?.mints,
-            premine: r.rune?.premine,
-            burned: r.rune?.burned,
-            supply: r.rune?.supply,
-            minable: r.rune?.mintable,
-            terms: r.rune?.terms,
-          },
-        }));
+        return rune;
       }
 
       return null;
