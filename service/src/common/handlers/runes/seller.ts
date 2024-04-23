@@ -74,11 +74,11 @@ export namespace SellerHandler {
         serviceFee,
         Number(listing.seller.runeItem.outputValue),
       );
+
       psbt.addOutput({
         address: listing.seller.sellerReceiveAddress,
         value: sellerOutput,
       });
-
       listing.seller.unsignedListingPSBTBase64 = psbt.toBase64();
 
       return listing;

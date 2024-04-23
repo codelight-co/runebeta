@@ -55,6 +55,7 @@ export class MarketsService implements OnModuleInit {
   }
 
   async getRunes(marketRuneFilterDto: MarketRuneFilterDto) {
+    console.log('marketRuneFilterDto :>> ', marketRuneFilterDto);
     const builder = this.runeStatRepository
       .createQueryBuilder('rune_stat')
       .offset(marketRuneFilterDto.offset)
@@ -107,7 +108,7 @@ export class MarketsService implements OnModuleInit {
 
     if (marketRuneFilterDto.search) {
       builder.andWhere(
-        `rune_stat.rune_name ILIKE ${marketRuneFilterDto.search.replace(/•/g, '')}`,
+        `rune_stat.rune_name ILIKE '%${marketRuneFilterDto.search.replace(/•/g, '')}%'`,
       );
     }
 
@@ -390,7 +391,6 @@ export class MarketsService implements OnModuleInit {
       .andWhere('outpoint.vout = :vout', {
         vout: body.seller.runeItem.vout,
       })
-      .andWhere('txOut.spent = false')
       .getOne();
     if (!outputValue) {
       throw new BadRequestException('No output value found');
@@ -460,7 +460,6 @@ export class MarketsService implements OnModuleInit {
           .andWhere('outpoint.vout = :vout', {
             vout: order.runeItem.vout,
           })
-          .andWhere('txOut.spent = false')
           .getOne();
 
         return {
