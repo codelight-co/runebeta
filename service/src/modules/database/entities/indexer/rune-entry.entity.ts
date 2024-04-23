@@ -76,6 +76,9 @@ export class TransactionRuneEntry {
   @Column({ type: 'int4' })
   timestamp: number;
 
+  @Column({ type: 'varchar' })
+  mint_type: string;
+
   rune_hex: string;
 
   @OneToMany(
