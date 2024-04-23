@@ -113,16 +113,16 @@ export class MarketsService implements OnModuleInit {
 
     const runes = await builder.getMany();
     const runeIds = runes.map((rune) => rune.rune_id);
-    let runeEntrys = {};
+    const runeEntrys = {};
     if (runeIds.length) {
       const arrRuneEntrys = await this.runeEntryRepository
         .createQueryBuilder('rune')
         .where('rune.rune_id IN (:...ids)', { ids: runeIds })
         .getMany();
-      runeEntrys = arrRuneEntrys.reduce((acc, cur) => {
-        acc[cur.rune_id] = cur;
-        return acc;
-      });
+      for (let index = 0; index < arrRuneEntrys.length; index++) {
+        const entry = arrRuneEntrys[index];
+        runeEntrys[entry.rune_id] = entry;
+      }
     }
 
     return {

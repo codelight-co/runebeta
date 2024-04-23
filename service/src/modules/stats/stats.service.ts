@@ -85,7 +85,7 @@ export class StatsService {
     const totalRune = await this.runeEntryRepository.count();
     const totalFreeMintRune = await this.runeEntryRepository
       .createQueryBuilder('rune')
-      .where(`mint_entry ->> 'cap' is null`)
+      .where(`terms ->> 'cap' is null`)
       .getCount();
     const totalTransaction = await this.txidRuneRepository.count();
     const totalHolderData = await this.transactionRepository

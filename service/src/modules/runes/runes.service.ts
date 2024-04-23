@@ -110,16 +110,16 @@ export class RunesService {
 
     const runes = await builder.getMany();
     const runeIds = runes.map((rune) => rune.rune_id);
-    let runeEntries = {};
+    const runeEntries = {};
     if (runeIds.length) {
       const arrRuneEntries = await this.runeEntryRepository
         .createQueryBuilder('rune')
         .where('rune.rune_id IN (:...runeIds)', { runeIds })
         .getMany();
-      runeEntries = arrRuneEntries.reduce((acc, rune) => {
-        acc[rune.rune_id] = rune;
-        return acc;
-      });
+      for (let index = 0; index < arrRuneEntries.length; index++) {
+        const entry = arrRuneEntries[index];
+        runeEntries[entry.rune_id] = entry;
+      }
     }
 
     const result = {
@@ -129,10 +129,10 @@ export class RunesService {
       runes: runes.map((rune) => ({
         id: rune.id,
         rune_id: rune.rune_id,
-        rune_hex: runeEntries[rune.rune_id].rune_hex,
-        supply: runeEntries[rune.rune_id].supply || 0,
-        deploy_transaction: runeEntries[rune.rune_id].etching,
-        divisibility: runeEntries[rune.rune_id].divisibility,
+        rune_hex: runeEntries[rune.rune_id]?.rune_hex,
+        supply: runeEntries[rune.rune_id]?.supply || 0,
+        deploy_transaction: runeEntries[rune.rune_id]?.etching,
+        divisibility: runeEntries[rune.rune_id]?.divisibility,
         start_block:
           runeEntries[rune.rune_id]?.terms?.height?.length === 2
             ? runeEntries[rune.rune_id]?.terms?.height[0]
@@ -142,19 +142,19 @@ export class RunesService {
             ? runeEntries[rune.rune_id]?.terms?.height[1]
             : null,
         holder_count: rune?.total_holders || '0',
-        rune: runeEntries[rune.rune_id].spaced_rune,
-        symbol: runeEntries[rune.rune_id].symbol,
-        premine: runeEntries[rune.rune_id].premine || '0',
-        timestamp: runeEntries[rune.rune_id].timestamp,
+        rune: runeEntries[rune.rune_id]?.spaced_rune,
+        symbol: runeEntries[rune.rune_id]?.symbol,
+        premine: runeEntries[rune.rune_id]?.premine || '0',
+        timestamp: runeEntries[rune.rune_id]?.timestamp || 1000,
         transaction_count: rune?.total_transactions || '0',
-        mint_type: runeEntries[rune.rune_id].mint_type || '',
+        mint_type: runeEntries[rune.rune_id]?.mint_type || '',
         terms: runeEntries[rune.rune_id]?.terms || null,
         etching: runeEntries[rune.rune_id]?.etching || null,
         parent: rune?.parent || null,
-        mints: runeEntries[rune.rune_id]?.total_mints || '0',
+        mints: runeEntries[rune.rune_id]?.mints || '0',
         remaining: runeEntries[rune.rune_id]?.remaining || null,
-        burned: runeEntries[rune.rune_id].burned || '0',
-        limit: runeEntries[rune.rune_id]?.term?.amount || '0',
+        burned: runeEntries[rune.rune_id]?.burned || '0',
+        limit: runeEntries[rune.rune_id]?.terms?.amount || '0',
         mintable: runeEntries[rune.rune_id]?.mintable || false,
       })),
     };
@@ -187,7 +187,7 @@ export class RunesService {
       rows: {
         id: rune.id,
         rune_id: rune.rune_id,
-        rune_hex: rune.rune_hex,
+        rune_hex: rune?.rune_hex,
         supply: runeStat?.total_supply || rune.supply || 0,
         deploy_transaction: rune.etching,
         divisibility: rune.divisibility,
@@ -241,6 +241,7 @@ export class RunesService {
   }
 
   async etchRune(user: User, etchRuneDto: EtchRuneDto): Promise<any> {
+    console.log('etchRuneDto :>> ', etchRuneDto);
     const rune = await this.etchRuneEntryRepository.save({
       name: etchRuneDto.runeName || '',
       commit_block_height: etchRuneDto.commitBlockHeight,
@@ -276,7 +277,7 @@ export class RunesService {
 
               console.log('tx :>> ', tx);
               await this.etchRuneEntryRepository.update(etchRune.id, {
-                mint_tx_hex: tx?.result || '',
+                mint_tx_id: tx?.result || '',
                 status: EEtchRuneStatus.MINTED,
               });
             } catch (error) {
