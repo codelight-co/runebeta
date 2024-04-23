@@ -26,7 +26,7 @@ export class AppService implements OnModuleInit {
       this.taskService.addNewJob(
         'calculateRuneStats',
         async () => await this.statsService.calculateNetworkStats(),
-        '*/3',
+        '*/1',
       );
     }
   }

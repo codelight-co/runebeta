@@ -28,7 +28,7 @@ export class IndexersService {
 
   async getBlockIndex() {
     const res = await this.httpService
-      .get(`${ODR_URL}:${ODR_PORT}/blockindex`)
+      .get(`${ODR_URL}:${ODR_PORT}/extend/blockindexed`)
       .toPromise();
 
     return res.data;
