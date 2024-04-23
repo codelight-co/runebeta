@@ -56,9 +56,8 @@ export class RunesService {
     }
 
     if (runeFilterDto.search) {
-      builder.andWhere(
-        `rune_stat.rune_name ILIKE '%${runeFilterDto.search.replace(/•/, '')}%'`,
-      );
+      const search = runeFilterDto.search.replace(/•/g, '');
+      builder.andWhere(`rune_stat.rune_name ILIKE '%${search}%'`);
     }
     if (runeFilterDto.sortBy) {
       switch (runeFilterDto.sortBy) {
