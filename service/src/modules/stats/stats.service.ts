@@ -15,7 +15,7 @@ import { getFeesRecommended } from 'src/vendors/mempool';
 import { FeesRecommended } from '@mempool/mempool.js/lib/interfaces/bitcoin/fees';
 import { TxidRune } from '../database/entities/indexer/txid-rune.entity';
 import { Order } from '../database/entities/marketplace/order.entity';
-import { RuneStat } from '../database/entities/indexer/rune_stat.entity';
+import { RuneStat } from '../database/entities/marketplace/rune_stat.entity';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)

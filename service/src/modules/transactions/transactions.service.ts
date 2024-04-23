@@ -535,12 +535,12 @@ export class TransactionsService {
           ...r,
           rune: {
             ...r.rune,
-            mints: r.rune?.stat?.entry?.mints,
-            premine: r.rune?.stat?.premine,
-            burned: r.rune?.stat?.entry?.burned,
-            supply: r.rune?.stat?.total_supply || r.rune?.supply,
-            minable: r.rune?.stat?.mintable,
-            terms: r.rune?.stat?.entry?.terms,
+            mints: r.rune?.mints,
+            premine: r.rune?.premine,
+            burned: r.rune?.burned,
+            supply: r.rune?.supply,
+            minable: r.rune?.mintable,
+            terms: r.rune?.terms,
           },
         }));
       }

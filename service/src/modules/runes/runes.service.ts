@@ -156,11 +156,16 @@ export class RunesService {
   }
 
   async getRuneById(id: string): Promise<any> {
-    const rune = await this.runeEntryRepository
-      .createQueryBuilder('rune')
-      .innerJoinAndSelect('rune.stat', 'stat')
-      .where('rune.rune_id = :id', { id })
-      .getOne();
+    const [rune, runeStat] = await Promise.all([
+      this.runeEntryRepository
+        .createQueryBuilder('rune')
+        .where('rune.rune_id = :id', { id })
+        .getOne(),
+      this.runeStatRepository
+        .createQueryBuilder('rune_stat')
+        .where('rune_stat.rune_id = :id', { id })
+        .getOne(),
+    ]);
     if (!rune) {
       throw new BadRequestException('Rune not found');
     }
