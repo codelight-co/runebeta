@@ -20,23 +20,22 @@ jobs:
 
     - name: Login to Amazon ECR
       run: |
-        aws ecr get-login-password | docker login --username AWS --password-stdin 533267050904.dkr.ecr.ap-southeast-1.amazonaws.com
-
+        aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin 533267050904.dkr.ecr.ap-southeast-1.amazonaws.com
     - name: Build Docker Image
       run: |
-        docker build -t 533267050904.dkr.ecr.ap-southeast-1.amazonaws.com/bitcoin-backend:latest .
+        docker build -t runebeta-testnet .
+    
+    - name: Tag Docker Image
+      run: |
+        docker tag runebeta-testnet:latest 533267050904.dkr.ecr.ap-southeast-1.amazonaws.com/runebeta-testnet:latest
 
     - name: Push Image to Amazon ECR
       run: |
-        docker push 533267050904.dkr.ecr.ap-southeast-1.amazonaws.com/bitcoin-backend:latest
+        docker push 533267050904.dkr.ecr.ap-southeast-1.amazonaws.com/runebeta-testnet:latest
 
     - name: Deploy to Kubernetes
       run: |
         mkdir -p $HOME/.kube
         echo ${{ secrets.KUBE_CONFIG_DATA }} | base64 -d > $HOME/.kube/config
         kubectl rollout restart deployment/runebeta-testnet
-        kubectl rollout restart deployment/runebeta-mainnet
         kubectl rollout restart deployment/runebeta-testnet-scheduler
-        kubectl rollout restart deployment/runebeta-mainnet-scheduler
-
-
