@@ -3,10 +3,16 @@ import { getFees } from './mempool';
 export async function calculateTxBytesFee(
   vinsLength: number,
   voutsLength: number,
-  feeRateTier: string,
+  feeRateTier: string | number,
   includeChangeOutput: 0 | 1 = 1,
 ) {
-  const recommendedFeeRate = await getFees(feeRateTier);
+  let recommendedFeeRate = await getFees('hourFee');
+  if (isNaN(feeRateTier as number)) {
+    recommendedFeeRate = await getFees(feeRateTier as string);
+  } else {
+    recommendedFeeRate = feeRateTier as number;
+  }
+
   return calculateTxBytesFeeWithRate(
     vinsLength,
     voutsLength,

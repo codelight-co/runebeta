@@ -5,10 +5,14 @@ import {
   Injectable,
   OnModuleInit,
 } from '@nestjs/common';
-import { MarketRuneFilterDto, MarketRuneOrderFilterDto } from './dto';
-import { User } from '../database/entities/user.entity';
+import {
+  CancelOrderDto,
+  MarketRuneFilterDto,
+  MarketRuneOrderFilterDto,
+} from './dto';
+import { User } from '../database/entities/marketplace/user.entity';
 import { Repository } from 'typeorm';
-import { Order } from '../database/entities/order.entity';
+import { Order } from '../database/entities/marketplace/order.entity';
 import {
   IRuneListingState,
   IRunePostPSBTListing,
@@ -21,6 +25,13 @@ import { BASE_URL } from 'src/environments';
 import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
 import { BuyerOrderDto } from './dto/buyer-order.dto';
 import { MergeSingers } from 'src/common/handlers/runes/merge';
+import { TransactionRuneEntry } from '../database/entities/indexer/rune-entry.entity';
+import { UsersService } from '../users/users.service';
+import { TransactionsService } from '../transactions/transactions.service';
+import { BroadcastTransactionDto } from '../transactions/dto';
+import { RuneStat } from '../database/entities/indexer';
+import { EOrderStatus } from 'src/common/enums';
+import { OutpointRuneBalance } from '../database/entities/indexer/outpoint-rune-balance.entity';
 
 @Injectable()
 export class MarketsService implements OnModuleInit {
@@ -28,6 +39,12 @@ export class MarketsService implements OnModuleInit {
     private readonly httpService: HttpService,
     @Inject('ORDER_REPOSITORY')
     private orderRepository: Repository<Order>,
+    @Inject('RUNE_ENTRY_REPOSITORY')
+    private runeEntryRepository: Repository<TransactionRuneEntry>,
+    @Inject('OUTPOINT_RUNE_BALANCE_REPOSITORY')
+    private outpoinBalanceRepository: Repository<OutpointRuneBalance>,
+    private readonly usersService: UsersService,
+    private readonly transactionsService: TransactionsService,
   ) {}
 
   private rpcService: RPCService;
@@ -37,34 +54,266 @@ export class MarketsService implements OnModuleInit {
   }
 
   async getRunes(marketRuneFilterDto: MarketRuneFilterDto) {
-    const res = await this.httpService
-      .get('https://api.runealpha.xyz/market/runes', {
-        params: marketRuneFilterDto,
-      })
-      .toPromise();
+    const builder = this.runeEntryRepository
+      .createQueryBuilder('rune')
+      .leftJoinAndSelect('rune.stat', 'rune_stat')
+      .offset(marketRuneFilterDto.offset)
+      .limit(marketRuneFilterDto.limit);
 
-    return res.data;
+    if (marketRuneFilterDto.sortBy) {
+      switch (marketRuneFilterDto.sortBy) {
+        case 'supply':
+          builder.orderBy(
+            `rune_stat.total_supply`,
+            marketRuneFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'holders':
+          builder.orderBy(
+            `rune_stat.total_holders`,
+            marketRuneFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'transactions':
+          builder.orderBy(
+            `rune_stat.total_transactions`,
+            marketRuneFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'created_at':
+          builder.orderBy(
+            `rune.timestamp`,
+            marketRuneFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        default:
+          break;
+      }
+    }
+
+    if (marketRuneFilterDto.search) {
+      builder.andWhere('spaced_rune ILIKE :search', {
+        search: `%${marketRuneFilterDto.search.split(' ').join('_')}%`,
+      });
+    }
+
+    const runes = await builder.getMany();
+    return {
+      total: await builder.getCount(),
+      limit: marketRuneFilterDto.limit,
+      offset: marketRuneFilterDto.offset,
+      runes: runes.map((rune) => ({
+        change_24h: rune?.stat?.change_24h,
+        floor_price: rune?.stat?.price,
+        last_price: rune?.stat?.ma_price,
+        marketcap: rune?.stat?.market_cap,
+        order_sold: rune?.stat?.order_sold,
+        token_holders: rune?.stat?.total_holders,
+        id: rune.id,
+        rune_id: rune.rune_id,
+        rune_hex: rune.rune_hex,
+        rune_name: rune.spaced_rune,
+        total_supply: rune?.stat?.total_supply,
+        total_volume: rune?.stat?.total_volume,
+      })),
+    };
   }
 
   async getRunesById(
     id: string,
     marketRuneOrderFilterDto: MarketRuneOrderFilterDto,
-  ) {
-    const res = await this.httpService
-      .get(`https://api.runealpha.xyz/market/orders/rune/${id}`, {
-        params: marketRuneOrderFilterDto,
-      })
-      .toPromise();
+  ): Promise<any> {
+    const builder = this.orderRepository
+      .createQueryBuilder('order')
+      .where(`order.rune_id = :id`, { id });
 
-    return res.data;
+    if (marketRuneOrderFilterDto.status) {
+      builder.andWhere('order.status = :status', {
+        status: marketRuneOrderFilterDto.status,
+      });
+    }
+    if (marketRuneOrderFilterDto.owner_id) {
+      builder.andWhere('order.user_id = :owner_id', {
+        owner_id: marketRuneOrderFilterDto.owner_id,
+      });
+    }
+
+    const total = await builder.getCount();
+
+    if (marketRuneOrderFilterDto.offset) {
+      builder
+        .skip(marketRuneOrderFilterDto.offset)
+        .take(marketRuneOrderFilterDto.limit || 10);
+    }
+    if (marketRuneOrderFilterDto.sortBy) {
+      builder.orderBy(
+        `order.${marketRuneOrderFilterDto.sortBy}`,
+        marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+          ? 'DESC'
+          : 'ASC',
+      );
+      switch (marketRuneOrderFilterDto.sortBy) {
+        case 'created_at':
+          builder.orderBy(
+            `order.createdAt`,
+            marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'price':
+          builder.orderBy(
+            `order.price`,
+            marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'change_24h':
+          builder.orderBy(
+            `rune_stat.change_24h`,
+            marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'volume_24h':
+          builder.orderBy(
+            `rune_stat.volume_24h`,
+            marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'total_volume':
+          builder.orderBy(
+            `rune_stat.total_volume`,
+            marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'market_cap':
+          builder.orderBy(
+            `rune_stat.market_cap`,
+            marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'total_supply':
+          builder.orderBy(
+            `rune_stat.total_supply`,
+            marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        case 'holders':
+          builder.orderBy(
+            `rune_stat.total_holders`,
+            marketRuneOrderFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC',
+          );
+          break;
+
+        default:
+          break;
+      }
+    } else {
+      builder.orderBy('order.createdAt', 'DESC');
+    }
+
+    const rune = await this.runeEntryRepository.findOne({
+      where: {
+        rune_id: id,
+      },
+    });
+    if (!rune) {
+      throw new BadRequestException('Rune not found');
+    }
+
+    const orders = await builder.getMany();
+    return {
+      total,
+      limit: marketRuneOrderFilterDto.limit,
+      offset: marketRuneOrderFilterDto.offset,
+      runes: orders.map((order) => ({
+        id: order.id,
+        amount_rune: order.runeItem.tokenValue,
+        amount_rune_remain_seller: order.runeItem.outputValue,
+        amount_satoshi: Number(order.runeItem.tokenValue) * order.price,
+        buyer: {
+          wallet_address: order.buyerRuneAddress || '',
+        },
+        txs: order.tx_hash || '',
+        buyer_id: null,
+        confirmed_at_block: 0,
+        owner: {
+          wallet_address: order.sellerRuneAddress,
+        },
+        owner_id: order.userId,
+        price_per_unit: order.price,
+        received_address:
+          order.status === 'completed' ? order.buyerRuneAddress : '',
+        confirmed: order.status === 'completed',
+        rune_id: order.runeItem.id,
+        rune_name: rune.spaced_rune,
+        rune_hex: rune.rune_hex,
+        rune_utxo: [
+          {
+            id: order.runeItem.id,
+            address: order.sellerRuneAddress,
+            amount: order.runeItem.tokenValue,
+            status: 'available',
+            txid: order.runeItem.txid,
+            type: 'payment',
+            vout: order.runeItem.vout,
+            value: order.runeItem.tokenValue,
+          },
+        ],
+        seller_ordinal_address: null,
+        service_fee: 0,
+        status: order.status,
+        total_value_input_seller: order.runeItem.outputValue,
+        type: 'listing',
+        unit: '1',
+        utxo_address: order.sellerRuneAddress,
+        utxo_address_type: 'payment',
+        created_at: order.createdAt,
+        updated_at: order.updatedAt,
+      })),
+    };
   }
 
   async getStats() {
-    const res = await this.httpService
-      .get('https://api.runealpha.xyz/market/stats')
-      .toPromise();
+    const order_sold = await this.orderRepository.count({
+      where: { status: 'completed' },
+    });
 
-    return res.data;
+    return {
+      order_sold,
+    };
   }
 
   async createSellOrder(body: IRuneListingState, user: User): Promise<Order> {
@@ -72,6 +321,7 @@ export class MarketsService implements OnModuleInit {
     if (!seller) {
       throw new BadRequestException('No Seller data found');
     }
+
     const listing: IRunePostPSBTListing = {
       id: seller.runeItem.id,
       price: seller.price,
@@ -85,7 +335,7 @@ export class MarketsService implements OnModuleInit {
     const isPass = await SellerHandler.verifySignedListingPSBTBase64(
       listing,
       makerFeeBp,
-      runeItem,
+      { ...runeItem, owner: user.walletAddress },
     );
     if (!isPass) {
       throw new BadRequestException('Invalid signature');
@@ -102,7 +352,9 @@ export class MarketsService implements OnModuleInit {
 
     return this.orderRepository.save({
       userId: user.id,
+      rune_id: String(seller.runeItem.id),
       ...body.seller,
+      status: 'listing',
     } as Order);
   }
 
@@ -113,6 +365,26 @@ export class MarketsService implements OnModuleInit {
     if (!user) {
       throw new BadRequestException('No user found');
     }
+
+    const outputValue = await this.outpoinBalanceRepository
+      .createQueryBuilder('outpoint')
+      .innerJoinAndSelect('outpoint.txOut', 'txOut')
+      .where('outpoint.tx_hash = :tx_hash', {
+        tx_hash: body.seller.runeItem.txid,
+      })
+      .andWhere('outpoint.vout = :vout', {
+        vout: body.seller.runeItem.vout,
+      })
+      .andWhere('txOut.spent = false')
+      .getOne();
+    if (!outputValue) {
+      throw new BadRequestException('No output value found');
+    }
+
+    body.seller.runeItem = {
+      ...body.seller.runeItem,
+      outputValue: outputValue.txOut.value,
+    };
 
     const { seller } = body;
     if (!seller) {
@@ -129,7 +401,6 @@ export class MarketsService implements OnModuleInit {
     if (!user) {
       throw new BadRequestException('No user found');
     }
-
     const { utxos, amount, vinsLength, voutsLength, feeRateTier } = body;
 
     return BuyerHandler.selectPaymentUTXOs(
@@ -163,15 +434,30 @@ export class MarketsService implements OnModuleInit {
     if (orders.length !== body.orderIds.length) {
       throw new BadRequestException('Invalid order ids');
     }
+    const seller_items = await Promise.all(
+      orders.map(async (order) => {
+        const outputValue = await this.outpoinBalanceRepository
+          .createQueryBuilder('outpoint')
+          .innerJoinAndSelect('outpoint.txOut', 'txOut')
+          .where('outpoint.tx_hash = :tx_hash', {
+            tx_hash: order.runeItem.txid,
+          })
+          .andWhere('outpoint.vout = :vout', {
+            vout: order.runeItem.vout,
+          })
+          .andWhere('txOut.spent = false')
+          .getOne();
 
-    const seller_items = orders.map(
-      (order) =>
-        ({
+        return {
           buyer: {},
           seller: {
             makerFeeBp: order.makerFeeBp,
             price: order.price,
-            runeItem: order.runeItem,
+            runeItem: {
+              ...order.runeItem,
+              outputValue: outputValue.txOut.value,
+              runeBalance: BigInt(outputValue.balance_value),
+            },
             sellerReceiveAddress: order.sellerReceiveAddress,
             signedListingPSBTBase64: order.signedListingPSBTBase64,
             unsignedListingPSBTBase64: order.unsignedListingPSBTBase64,
@@ -179,7 +465,8 @@ export class MarketsService implements OnModuleInit {
             publicKey: order.publicKey,
             tapInternalKey: order.tapInternalKey,
           },
-        }) as IRuneListingState,
+        } as IRuneListingState;
+      }),
     );
 
     return BuyerHandler.generateUnsignedBuyingPSBTBase64(
@@ -224,10 +511,84 @@ export class MarketsService implements OnModuleInit {
           },
         }) as IRuneListingState,
     );
-
-    return MergeSingers.mergeSignedBuyingPSBTBase64(
+    const txHash = MergeSingers.mergeSignedBuyingPSBTBase64(
       body.buyerState,
       seller_items,
     );
+
+    const broadcastTransaction =
+      await this.transactionsService.broadcastTransaction({
+        rawTransaction: txHash,
+      } as BroadcastTransactionDto);
+
+    if (broadcastTransaction) {
+      console.log('broadcastTransaction :>> ', broadcastTransaction);
+
+      await this.orderRepository
+        .createQueryBuilder()
+        .update()
+        .set({
+          status: EOrderStatus.COMPLETED,
+          tx_hash: broadcastTransaction?.result || '',
+          buyerId: user.id,
+          buyerRuneAddress: buyer.buyerTokenReceiveAddress,
+        })
+        .where('id IN (:...ids)', { ids: body.orderIds })
+        .execute();
+    }
+
+    return broadcastTransaction;
+  }
+
+  async selectUTXOsForBuying(body: BuyerOrderDto, user: User): Promise<any> {
+    const utxos = await this.usersService.getMyUtxo(user);
+    // Get order by ids
+    const orders = await this.orderRepository
+      .createQueryBuilder('order')
+      .where('order.id IN (:...ids)', { ids: body.orderIds })
+      .getMany();
+    if (orders.length !== body.orderIds.length) {
+      throw new BadRequestException('Invalid order ids');
+    }
+    let price = 0;
+    for (let index = 0; index < orders.length; index++) {
+      const order = orders[index];
+      price += Number(order.runeItem.tokenValue) * order.price;
+    }
+
+    return BuyerHandler.selectPaymentUTXOs(
+      utxos as AddressTxsUtxo[],
+      price + 67 * 259,
+      2,
+      4,
+      body.feeRate || 'hourFee',
+      this.rpcService,
+    );
+  }
+
+  async cancelSellOrder(body: CancelOrderDto, user: User): Promise<any> {
+    // Get order by ids
+    const orders = await this.orderRepository
+      .createQueryBuilder('order')
+      .where('order.id IN (:...ids)', { ids: body.orderIds })
+      .andWhere('order.user_id = :userId', { userId: user.id })
+      .andWhere('order.status = :status', { status: 'listing' })
+      .getMany();
+    if (orders.length !== body.orderIds.length) {
+      throw new BadRequestException('Invalid order ids');
+    }
+    const updated = await this.orderRepository
+      .createQueryBuilder()
+      .update()
+      .set({ status: 'cancelled' })
+      .where('id IN (:...ids)', { ids: body.orderIds })
+      .andWhere('user_id = :userId', { userId: user.id })
+      .andWhere('status = :status', { status: 'listing' })
+      .execute();
+    if (!updated.affected) {
+      throw new BadRequestException('Failed to cancel order');
+    }
+
+    return { message: 'Order cancelled' };
   }
 }

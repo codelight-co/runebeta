@@ -6,7 +6,7 @@ export class MarketRuneOrderFilterDto {
     return +value;
   })
   @IsNumber()
-  offset?: number = 1;
+  offset?: number = 0;
 
   @Transform(({ value }) => {
     return +value;
@@ -19,4 +19,6 @@ export class MarketRuneOrderFilterDto {
   sortOrder?: string;
 
   status?: string;
+
+  owner_id?: string;
 }

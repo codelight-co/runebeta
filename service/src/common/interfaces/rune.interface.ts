@@ -1,6 +1,6 @@
 import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
 import * as bitcoin from 'bitcoinjs-lib';
-import { IEdict } from 'rune_lib';
+import { IEdict } from 'runes-js';
 
 export interface ListRunesResponse {
   entries: Map<RuneId, RuneItem>[];
@@ -81,6 +81,7 @@ export interface IRuneItem {
   vout: number;
   output: string;
   tokenValue: bigint;
+  runeBalance: bigint;
   // listing
   // listed: boolean;
   // listedAt?: string;
@@ -145,4 +146,26 @@ export class InvalidArgumentError extends Error {
     super(message);
     this.name = 'InvalidArgumentError';
   }
+}
+
+export interface ITerms {
+  amount: bigint | null;
+  cap: bigint | null;
+  height: Array<number | null>;
+  offset: Array<number | null>;
+}
+
+export interface IEntry {
+  block: bigint;
+  burned: bigint;
+  divisibility: bigint;
+  etching: string;
+  mints: bigint;
+  remaining: bigint | null;
+  number: bigint;
+  premine: bigint;
+  spaced_rune: string;
+  symbol: null;
+  timestamp: number;
+  terms: ITerms;
 }

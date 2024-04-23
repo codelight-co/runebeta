@@ -1,5 +1,6 @@
 import * as bitcoin from 'bitcoinjs-lib';
 import * as ecc from 'tiny-secp256k1';
+import { network } from 'src/common/utils/rpc';
 import { IRuneListingState } from './types';
 bitcoin.initEccLib(ecc);
 
@@ -10,7 +11,9 @@ export namespace MergeSingers {
     seller_items: IRuneListingState[],
   ): string {
     const { signedBuyingPSBTBase64, itemMapping } = buyer_state.buyer!;
-    const buyerSignedPsbt = bitcoin.Psbt.fromBase64(signedBuyingPSBTBase64!);
+    const buyerSignedPsbt = bitcoin.Psbt.fromBase64(signedBuyingPSBTBase64!, {
+      network,
+    });
     itemMapping!.forEach((item) => {
       const { id, index } = item;
 
@@ -21,6 +24,9 @@ export namespace MergeSingers {
       if (signedListingPSBTBase64AndId) {
         const sellerSignedPsbt = bitcoin.Psbt.fromBase64(
           signedListingPSBTBase64AndId.seller.signedListingPSBTBase64!,
+          {
+            network,
+          },
         );
         (buyerSignedPsbt.data.globalMap.unsignedTx as any).tx.ins[index] = (
           sellerSignedPsbt.data.globalMap.unsignedTx as any
@@ -30,6 +36,9 @@ export namespace MergeSingers {
         throw new Error('Not found signed listing psbt for id: ' + id);
       }
     });
-    return buyerSignedPsbt.toBase64();
+
+    const commitTx = buyerSignedPsbt.extractTransaction();
+
+    return commitTx.toHex();
   }
 }

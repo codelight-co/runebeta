@@ -4,7 +4,7 @@ import { APP_FILTER } from '@nestjs/core';
 import * as redisStore from 'cache-manager-redis-store';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { CACHE_TTL, JWT_SECRET, REDIS_HOST, REDIS_PORT } from './environments';
+import { JWT_SECRET, REDIS_HOST, REDIS_PORT } from './environments';
 import { DatabaseModule } from './modules/database/database.module';
 import { MarketsModule } from './modules/markets/markets.module';
 import { RunesModule } from './modules/runes/runes.module';
@@ -15,33 +15,46 @@ import { AllExceptionsFilter } from './common/filters/exception.filter';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtModule } from '@nestjs/jwt';
+import { TaskModule } from './modules/task-schedule/task.module';
+import { BullModule } from '@nestjs/bull';
+import { WorkersModule } from './modules/workers/workers.module';
+import { IndexersModule } from './modules/indexers/indexers.module';
 
 @Module({
   imports: [
     DatabaseModule,
     CacheModule.register({
-      ttl: CACHE_TTL,
       isGlobal: true,
       store: redisStore,
       host: REDIS_HOST,
       port: REDIS_PORT,
+      ttl: 900,
     }),
     RedisModule.forRoot({
       type: 'single',
       url: `redis://${REDIS_HOST}:${REDIS_PORT}`,
       options: {},
     }),
+    BullModule.forRoot({
+      redis: {
+        host: REDIS_HOST,
+        port: REDIS_PORT,
+      },
+    }),
     JwtModule.register({
       global: true,
       secret: JWT_SECRET,
       signOptions: { expiresIn: '7D' },
     }),
+    TaskModule,
     StatsModule,
     TransactionsModule,
     RunesModule,
     TransfersModule,
     MarketsModule,
     AuthModule,
+    WorkersModule,
+    IndexersModule,
   ],
   controllers: [AppController],
   providers: [

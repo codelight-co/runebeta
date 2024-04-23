@@ -1,16 +1,29 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as bitcoin from 'bitcoinjs-lib';
 import * as ecc from 'tiny-secp256k1';
 import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
 import { IRuneListingState, InvalidArgumentError, WitnessUtxo } from './types';
 import { RPCService, network } from 'src/common/utils/rpc';
-import { satToBtc, isP2SHAddress, toXOnly } from 'src/common/utils/util';
-import { RUNE_TAG, DUST_AMOUNT, PLATFORM_FEE_ADDRESS } from 'src/environments';
+import {
+  satToBtc,
+  isP2SHAddress,
+  toXOnly,
+  getAddressType,
+  AddressType,
+  addressToOutputScript,
+} from 'src/common/utils/util';
+import {
+  DUST_AMOUNT,
+  PLATFORM_FEE_ADDRESS,
+  PLATFORM_SERVICE_FEE,
+  SELLER_SERVICE_FEE,
+} from 'src/environments';
 import {
   calculateTxBytesFee,
   getSellerRuneOutputValue,
 } from 'src/vendors/feeprovider';
 import { FullnodeRPC } from 'src/vendors/fullnoderpc';
-import { Edict, RuneStone } from 'rune_lib';
+import { Edict, RuneId, RuneStone } from 'runes-js';
 
 bitcoin.initEccLib(ecc);
 
@@ -47,7 +60,7 @@ export namespace BuyerHandler {
           (await service.getRuneByTxIdAndIndex(utxo.txid, utxo.vout)) !== null
         );
       } catch (err) {
-        return true; // if error, we pretend that the utxo contains an inscription for safety
+        return false; // if error, we pretend that the utxo contains an inscription for safety
       }
     }
 
@@ -81,7 +94,7 @@ export namespace BuyerHandler {
     amount: number, // amount is expected total output (except tx fee)
     vinsLength: number,
     voutsLength: number,
-    feeRateTier: string,
+    feeRateTier: string | number,
     service: RPCService,
   ): Promise<AddressTxsUtxo[]> {
     const selectedUtxos: AddressTxsUtxo[] = [];
@@ -90,26 +103,25 @@ export namespace BuyerHandler {
     // Sort descending by value,
     utxos = utxos.sort((a, b) => b.value - a.value);
 
+    const buyerFee = await calculateTxBytesFee(
+      vinsLength + selectedUtxos.length,
+      voutsLength,
+      feeRateTier,
+    );
+
     for (const utxo of utxos) {
       // Never spend a utxo that contains an atoms for cardinal purposes
-      if (await doesUtxoContainRunes(utxo, service)) {
+      if (
+        (await doesUtxoContainRunes(utxo, service)) ||
+        utxo.value <= DUST_AMOUNT
+      ) {
         continue;
       }
 
       // TODO - check if the utxo contains runes
-
       selectedUtxos.push(utxo);
       selectedAmount += utxo.value;
-
-      if (
-        selectedAmount >=
-        amount +
-          (await calculateTxBytesFee(
-            vinsLength + selectedUtxos.length,
-            voutsLength,
-            feeRateTier,
-          ))
-      ) {
+      if (selectedAmount >= amount + buyerFee) {
         break;
       }
     }
@@ -137,7 +149,6 @@ export namespace BuyerHandler {
     ) {
       throw new InvalidArgumentError('Buyer address is not set');
     }
-
     /// List all Seller's items
     if (seller_items.length === 0) {
       throw new InvalidArgumentError('Sellers not found');
@@ -145,9 +156,11 @@ export namespace BuyerHandler {
 
     const _seller_inputs: SellerInput[] = [];
     const _seller_outputs: SellerOutput[] = [];
-    let _platform_fee = 0;
+    const _buyer_outputs: TokenOutput[] = [];
+    let _platform_fee = PLATFORM_SERVICE_FEE;
     let _seller_listing_prices = 0;
     let _seller_total_tokens = BigInt(0);
+    let _seller_listing_item = BigInt(0);
 
     for (let i = 0; i < seller_items.length; i++) {
       const seller = seller_items[i];
@@ -156,44 +169,53 @@ export namespace BuyerHandler {
         !seller.seller.sellerReceiveAddress ||
         !seller.seller.runeItem ||
         !seller.seller.runeItem.txid ||
-        !seller.seller.runeItem.vout
+        seller.seller.runeItem.vout === undefined ||
+        seller.seller.runeItem.vout === null
       ) {
         throw new InvalidArgumentError('Seller address is not set');
       }
-
       const { sellerInput, sellerOutput } =
         await getSellerInputAndOutput(seller);
       _seller_inputs.push(sellerInput);
       /// push all seller item as inputs to psbt
 
-      //   const _token_output: TokenOutput = {
-      //     id: seller.seller.runeItem.id, // runes ID
-      //     value: seller.seller.runeItem.outputValue, // runes value
-      //     address: buyer_state.buyer.buyerTokenReceiveAddress, // buyer receiveAddress
-      //   };
+      _buyer_outputs.push({
+        id: seller.seller.runeItem.id, // runes ID
+        value: DUST_AMOUNT, // runes value
+        address: buyer_state.buyer.buyerTokenReceiveAddress, // buyer receiveAddress
+      });
       _seller_outputs.push(sellerOutput);
-      _platform_fee += Math.floor(
-        (seller.seller.price *
-          (buyer_state.buyer.takerFeeBp + seller.seller.makerFeeBp)) /
-          10000,
-      );
-      _seller_listing_prices += seller.seller.price;
-      _seller_total_tokens += seller.seller.runeItem.tokenValue;
-      /// push _token_output to _token_outputs,and sort them later, and join FT value together
+
+      _seller_total_tokens += seller.seller.runeItem.runeBalance;
+      _seller_listing_item += BigInt(seller.seller.runeItem.tokenValue);
+      _seller_listing_prices +=
+        seller.seller.price * Number(seller.seller.runeItem.tokenValue);
     }
 
     /// Step 5, add buyer BTC input
-
     let total_buyer_inputs_value = 0;
     const _buyers_inputs: SellerInput[] = [];
-
     for (const utxo of buyer_state.buyer.buyerPaymentUTXOs!) {
+      const hex = await FullnodeRPC.getrawtransaction(utxo.txid);
+      const [addrType, network] = getAddressType(
+        buyer_state.buyer.buyerAddress,
+      );
+
       const input: any = {
         hash: utxo.txid,
         index: utxo.vout,
-        nonWitnessUtxo: utxo.tx.toBuffer(),
+        nonWitnessUtxo: bitcoin.Transaction.fromHex(hex).toBuffer(),
       };
 
+      if (addrType === AddressType.P2TR) {
+        input.witnessUtxo = {
+          value: parseInt(utxo.value.toString()),
+          script: addressToOutputScript(buyer_state.buyer.buyerAddress),
+        };
+        input.tapInternalKey = toXOnly(
+          Buffer.from(buyer_state.buyer.buyerPublicKey!, 'hex'),
+        );
+      }
       const p2shInputWitnessUTXOUn: any = {};
       const p2shInputRedeemScriptUn: any = {};
 
@@ -206,7 +228,7 @@ export namespace BuyerHandler {
         });
         p2shInputWitnessUTXOUn.witnessUtxo = {
           script: p2sh.output,
-          value: utxo.value,
+          value: parseInt(utxo.value.toString()),
         } as WitnessUtxo;
         p2shInputRedeemScriptUn.redeemScript = p2sh.redeem?.output;
       }
@@ -216,26 +238,38 @@ export namespace BuyerHandler {
         ...p2shInputWitnessUTXOUn,
         ...p2shInputRedeemScriptUn,
       });
-
       total_buyer_inputs_value += utxo.value;
     }
 
     /// TODO adding OP_RETURN here
-    const edict = new Edict(
-      BigInt(seller_items[0].seller.runeItem.id),
-      BigInt(_seller_outputs.length + 2),
-      _seller_total_tokens,
-    );
-    const rs = new RuneStone([edict], null, false, null, null);
-    rs.setTag(RUNE_TAG);
+    const runeItemId = seller_items[0]?.seller?.runeItem?.id?.toString();
+    const runeId = RuneId.fromString(runeItemId);
+    if (!runeId) {
+      throw new Error('Invalid Rune ID');
+    }
+    const sellerEdict = new Edict({
+      id: runeId as RuneId,
+      amount: _seller_total_tokens - _seller_listing_item,
+      output: BigInt(_seller_outputs.length - 1),
+    });
 
+    const buyerEdict = new Edict({
+      id: runeId as RuneId,
+      amount: _seller_listing_item,
+      output: BigInt(_seller_outputs.length + _buyer_outputs.length),
+    });
+    const rs = new RuneStone({
+      edicts: [buyerEdict],
+      etching: null,
+      mint: null,
+      pointer: null,
+    });
     const op_return_output = {
       value: 0,
       script: rs.encipher(),
     };
-
     /// Step 6, add platform BTC input
-    _platform_fee = _platform_fee > DUST_AMOUNT ? _platform_fee : 0;
+    _platform_fee = _platform_fee > DUST_AMOUNT ? _platform_fee : 1000;
 
     const platform_output = {
       address: PLATFORM_FEE_ADDRESS,
@@ -244,43 +278,41 @@ export namespace BuyerHandler {
 
     /// Adding all Inputs:
     const _all_inputs = [..._seller_inputs, ..._buyers_inputs];
-
     for (let i = 0; i < _all_inputs.length; i++) {
       psbt.addInput(_all_inputs[i] as any);
     }
-
     /// Adding all Outputs except change fee:
-
     const _all_outputs_except_change = [
       ..._seller_outputs,
       op_return_output,
+      ..._buyer_outputs,
       platform_output,
     ];
-
     for (let i = 0; i < _all_outputs_except_change.length; i++) {
       psbt.addOutput(_all_outputs_except_change[i] as any);
     }
-
     /// Adding change fee:
     const fee = await calculateTxBytesFee(
-      psbt.txInputs.length,
+      psbt.txInputs.length > 2 ? psbt.txInputs.length : 4,
       psbt.txOutputs.length, // already taken care of the exchange output bytes calculation
-      buyer_state.buyer.feeRateTier,
+      buyer_state.buyer.feeRateTier || 'hourFee',
     );
-
     const totalOutput = psbt.txOutputs.reduce(
       (partialSum, a) => partialSum + a.value,
       0,
     );
-    const changeValue = total_buyer_inputs_value - totalOutput - fee;
-
+    const changeValue =
+      total_buyer_inputs_value -
+      _seller_listing_prices -
+      fee -
+      _platform_fee -
+      DUST_AMOUNT;
     if (changeValue < 0) {
-      throw `Your wallet address doesn't have enough funds to buy this inscription.
+      throw new Error(`Your wallet address doesn't have enough funds to buy this rune.
   Price:      ${satToBtc(_seller_listing_prices)} BTC
   Required:   ${satToBtc(totalOutput + fee)} BTC
-  Missing:    ${satToBtc(-changeValue)} BTC`;
+  Missing:    ${satToBtc(-changeValue)} BTC`);
     }
-
     // Change utxo
     if (changeValue > DUST_AMOUNT) {
       psbt.addOutput({
@@ -297,13 +329,14 @@ export namespace BuyerHandler {
         id: e.id!,
       };
     });
+
     return buyer_state;
   }
 
   async function getSellerInputAndOutput(listing: IRuneListingState) {
     const [runesUtxoTxId, runesUtxoVout] = [
-      listing.seller.runeItem.txid,
-      listing.seller.runeItem.vout,
+      listing?.seller?.runeItem?.txid,
+      parseInt(listing?.seller?.runeItem?.vout.toString()),
     ];
     const tx = bitcoin.Transaction.fromHex(
       await FullnodeRPC.getrawtransaction(runesUtxoTxId),
@@ -343,16 +376,22 @@ export namespace BuyerHandler {
       );
     }
 
+    const serviceFee =
+      listing.seller.price *
+      Number(listing.seller.runeItem.tokenValue) *
+      SELLER_SERVICE_FEE;
+    const sellerOutputValue = getSellerRuneOutputValue(
+      listing.seller.price * Number(listing.seller.runeItem.tokenValue),
+      serviceFee,
+      Number(listing.seller.runeItem.outputValue),
+    );
+
     const ret = {
       sellerInput,
       sellerOutput: {
         id: listing.seller.runeItem.id,
         address: listing.seller.sellerReceiveAddress,
-        value: getSellerRuneOutputValue(
-          listing.seller.price,
-          listing.seller.makerFeeBp,
-          listing.seller.runeItem.outputValue,
-        ),
+        value: sellerOutputValue,
       },
     };
 

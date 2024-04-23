@@ -9,74 +9,83 @@ import {
   IRuneListingState,
 } from './types';
 import * as bitcoin from 'bitcoinjs-lib';
+import { SELLER_SERVICE_FEE } from 'src/environments';
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace SellerHandler {
   export async function generateUnsignedPsbt(
     listing: IRuneListingState,
   ): Promise<IRuneListingState> {
-    // NOTE:
-    // Before calling this method,
-    // We should verify that the seller rune utxo is still unspent and valid
+    try {
+      // NOTE:
+      // Before calling this method,
+      // We should verify that the seller rune utxo is still unspent and valid
+      const psbt = new bitcoin.Psbt({ network });
+      const runeUtxoTxId = listing.seller.runeItem.txid;
+      const runeUtxoVout = parseInt(`${listing.seller.runeItem.vout}`);
 
-    const psbt = new bitcoin.Psbt({ network });
-    const runeUtxoTxId = listing.seller.runeItem.txid;
-    const runeUtxoVout = listing.seller.runeItem.vout;
+      const tx = bitcoin.Transaction.fromHex(
+        await FullnodeRPC.getrawtransaction(runeUtxoTxId),
+      );
 
-    const tx = bitcoin.Transaction.fromHex(
-      await FullnodeRPC.getrawtransaction(runeUtxoTxId),
-    );
-
-    // No need to add this witness if the seller is using taproot
-    if (!listing.seller.tapInternalKey && !listing.seller.publicKey) {
-      for (const output in tx.outs) {
-        try {
-          tx.setWitness(parseInt(output), []);
-        } catch {}
+      // No need to add this witness if the seller is using taproot
+      if (!listing.seller.tapInternalKey && !listing.seller.publicKey) {
+        for (const output in tx.outs) {
+          try {
+            tx.setWitness(parseInt(output), []);
+          } catch {}
+        }
       }
-    }
 
-    const input: any = {
-      hash: runeUtxoTxId,
-      index: runeUtxoVout,
-      nonWitnessUtxo: tx.toBuffer(),
-      // No problem in always adding a witnessUtxo here
-      witnessUtxo: tx.outs[runeUtxoVout],
-      sighashType:
-        bitcoin.Transaction.SIGHASH_SINGLE |
-        bitcoin.Transaction.SIGHASH_ANYONECANPAY,
-    };
-    // If taproot is used, we need to add the internal key
-    if (listing.seller.tapInternalKey && !listing.seller.publicKey) {
-      input.tapInternalKey = toXOnly(
-        tx.toBuffer().constructor(listing.seller.tapInternalKey, 'hex'),
+      const input: any = {
+        hash: runeUtxoTxId,
+        index: runeUtxoVout,
+        nonWitnessUtxo: tx.toBuffer(),
+        // No problem in always adding a witnessUtxo here
+        witnessUtxo: tx.outs[runeUtxoVout],
+        sighashType:
+          bitcoin.Transaction.SIGHASH_SINGLE |
+          bitcoin.Transaction.SIGHASH_ANYONECANPAY,
+      };
+      // If taproot is used, we need to add the internal key
+      if (listing.seller.tapInternalKey && !listing.seller.publicKey) {
+        input.tapInternalKey = toXOnly(
+          tx.toBuffer().constructor(listing.seller.tapInternalKey, 'hex'),
+        );
+      } else if (!listing.seller.tapInternalKey && listing.seller.publicKey) {
+        input.tapInternalKey = toXOnly(
+          tx
+            .toBuffer()
+            .constructor(
+              toXOnly(Buffer.from(listing.seller.publicKey, 'hex')),
+              'hex',
+            ),
+        );
+      }
+
+      psbt.addInput(input);
+
+      const serviceFee =
+        listing.seller.price *
+        Number(listing.seller.runeItem.tokenValue) *
+        SELLER_SERVICE_FEE;
+      const sellerOutput = getSellerRuneOutputValue(
+        listing.seller.price * Number(listing.seller.runeItem.tokenValue),
+        serviceFee,
+        Number(listing.seller.runeItem.outputValue),
       );
-    } else if (!listing.seller.tapInternalKey && listing.seller.publicKey) {
-      input.tapInternalKey = toXOnly(
-        tx
-          .toBuffer()
-          .constructor(
-            toXOnly(Buffer.from(listing.seller.publicKey, 'hex')),
-            'hex',
-          ),
-      );
+      psbt.addOutput({
+        address: listing.seller.sellerReceiveAddress,
+        value: sellerOutput,
+      });
+
+      listing.seller.unsignedListingPSBTBase64 = psbt.toBase64();
+
+      return listing;
+    } catch (error) {
+      console.log('error :>> ', error);
+      throw error;
     }
-
-    psbt.addInput(input);
-
-    const sellerOutput = getSellerRuneOutputValue(
-      listing.seller.price,
-      listing.seller.makerFeeBp,
-      listing.seller.runeItem.outputValue,
-    );
-
-    psbt.addOutput({
-      address: listing.seller.sellerReceiveAddress,
-      value: sellerOutput,
-    });
-
-    listing.seller.unsignedListingPSBTBase64 = psbt.toBase64();
-    return listing;
   }
 
   export async function verifySignedListingPSBTBase64(
@@ -89,7 +98,6 @@ export namespace SellerHandler {
     const psbt = bitcoin.Psbt.fromBase64(req.signedListingPSBTBase64, {
       network,
     });
-
     // Verify that the seller has signed the PSBT if runeicals is held on a taproot and tapInternalKey is present
     psbt.data.inputs.forEach((input) => {
       if (input.tapInternalKey) {
@@ -136,12 +144,15 @@ export namespace SellerHandler {
       throw new InvalidArgumentError(`Invalid tokenId`);
     }
 
+    const serviceFee =
+      req.price * Number(runeItem.tokenValue) * SELLER_SERVICE_FEE;
+    console.log('serviceFee :>> ', serviceFee);
     // verify that the ordItem's selling price matches the output value with makerFeeBp
     const output = psbt.txOutputs[0];
     const expectedOutput = getSellerRuneOutputValue(
-      req.price,
-      makerFeeBp, // await feeProvider.getMakerFeeBp(runeItem.owner),
-      runeItem.outputValue,
+      req.price * Number(runeItem.tokenValue),
+      serviceFee, // await feeProvider.getMakerFeeBp(runeItem.owner),
+      Number(runeItem.outputValue),
     );
     if (output.value !== expectedOutput) {
       throw new InvalidArgumentError(`Invalid price`);

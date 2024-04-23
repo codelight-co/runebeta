@@ -1,6 +1,7 @@
 import { Controller, Get, UseInterceptors } from '@nestjs/common';
 import { StatsService } from './stats.service';
 import { CoreTransformInterceptor } from 'src/common/interceptors/coreTransform.interceptor';
+import { FeesRecommended } from '@mempool/mempool.js/lib/interfaces/bitcoin/fees';
 
 @Controller('stats')
 @UseInterceptors(CoreTransformInterceptor)
@@ -21,7 +22,7 @@ export class StatsController {
 
   // Get daily transaction count
   @Get('daily-tx-count')
-  async getDailyTransactionCount() {
+  async getDailyTransactionCount(): Promise<string> {
     return this.statsService.getDailyTransactionCount();
   }
 
@@ -39,7 +40,14 @@ export class StatsController {
 
   // Get recommended fee
   @Get('recommended-fee')
-  async getRecommendedFee() {
+  async getRecommendedFee(): Promise<FeesRecommended> {
     return this.statsService.getRecommendedFee();
   }
+
+  //  Remove duplicate tx rune
+  // @Delete('duplicate-tx-rune')
+  // @UseGuards(SecretAuthGuard)
+  // async deleteDuplicateTxRune() {
+  //   return this.statsService.deleteDuplicateTxRune();
+  // }
 }

@@ -1,6 +1,18 @@
-import { Controller, Get, Param, Query, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseInterceptors,
+} from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
-import { TransactionFilterDto } from './dto';
+import {
+  BroadcastTransactionDto,
+  RetrieveRuneDto,
+  TransactionFilterDto,
+} from './dto';
 import { CoreTransformInterceptor } from 'src/common/interceptors/coreTransform.interceptor';
 
 @Controller('transactions')
@@ -21,8 +33,14 @@ export class TransactionsController {
   }
 
   // Broadcast transaction
-  @Get('broadcast')
-  async broadcastTransaction(@Query('rawTx') rawTx: string) {
-    return this.transactionsService.broadcastTransaction(rawTx);
+  @Post('broadcast')
+  async broadcastTransaction(@Body() txDto: BroadcastTransactionDto) {
+    return this.transactionsService.broadcastTransaction(txDto);
+  }
+
+  // Retrieve rune by tx id
+  @Post('retrieve/rune')
+  async retrieveRuneByTxIDs(@Body() txDto: RetrieveRuneDto): Promise<any> {
+    return this.transactionsService.retrieveRuneByTxIDs(txDto);
   }
 }

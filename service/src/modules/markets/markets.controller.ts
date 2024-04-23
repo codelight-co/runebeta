@@ -10,19 +10,20 @@ import {
 } from '@nestjs/common';
 import { MarketsService } from './markets.service';
 import {
-  CreateOrderDto,
+  CancelOrderDto,
   MarketRuneFilterDto,
   MarketRuneOrderFilterDto,
 } from './dto';
 import { CoreTransformInterceptor } from 'src/common/interceptors/coreTransform.interceptor';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { UserDecorator } from 'src/common/decorators/user.decorator';
-import { User } from '../database/entities/user.entity';
+import { User } from '../database/entities/marketplace/user.entity';
 import {
   IRuneListingState,
   ISelectPaymentUtxo,
 } from 'src/common/interfaces/rune.interface';
 import { BuyerOrderDto } from './dto/buyer-order.dto';
+import { ParseRuneIdPipe } from 'src/common/pipes';
 
 @Controller('markets')
 @UseInterceptors(CoreTransformInterceptor)
@@ -38,7 +39,7 @@ export class MarketsController {
   // Get list rune order by id
   @Get('orders/rune/:id')
   async getRunesById(
-    @Param('id') id: string,
+    @Param('id', ParseRuneIdPipe) id: string,
     @Query() marketRuneOrderFilterDto: MarketRuneOrderFilterDto,
   ) {
     return this.marketsService.getRunesById(id, marketRuneOrderFilterDto);
@@ -50,16 +51,6 @@ export class MarketsController {
     return this.marketsService.getStats();
   }
 
-  // Create sell order
-  @Post('orders/sell')
-  @UseGuards(AuthGuard)
-  async createSellOrder(
-    @Body() body: IRuneListingState,
-    @UserDecorator() user: User,
-  ) {
-    return this.marketsService.createSellOrder(body, user);
-  }
-
   // Generate unsigned listing PSBT
   @Post('orders/sell/unsigned-psbt')
   @UseGuards(AuthGuard)
@@ -68,6 +59,16 @@ export class MarketsController {
     @UserDecorator() user: User,
   ): Promise<IRuneListingState> {
     return this.marketsService.generateUnsignedListingPSBT(body, user);
+  }
+
+  // Create sell order
+  @Post('orders/sell')
+  @UseGuards(AuthGuard)
+  async createSellOrder(
+    @Body() body: IRuneListingState,
+    @UserDecorator() user: User,
+  ) {
+    return this.marketsService.createSellOrder(body, user);
   }
 
   // Select payment UTXOs for buying
@@ -98,5 +99,25 @@ export class MarketsController {
     @UserDecorator() user: User,
   ): Promise<any> {
     return this.marketsService.mergeSignedBuyingPSBT(body, user);
+  }
+
+  // Select utxos for buying
+  @Post('orders/buy/select-utxos')
+  @UseGuards(AuthGuard)
+  async selectUTXOsForBuying(
+    @Body() body: any,
+    @UserDecorator() user: User,
+  ): Promise<any> {
+    return this.marketsService.selectUTXOsForBuying(body, user);
+  }
+
+  // Seller cancel order
+  @Post('orders/sell/cancel')
+  @UseGuards(AuthGuard)
+  async cancelSellOrder(
+    @Body() body: CancelOrderDto,
+    @UserDecorator() user: User,
+  ) {
+    return this.marketsService.cancelSellOrder(body, user);
   }
 }

@@ -1,0 +1,39 @@
+name: Build and Deploy to Kubernetes
+
+on:
+  push:
+    branches:
+      - deploy
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check Out Code
+      uses: actions/checkout@v2
+
+    - name: Set up AWS Credentials
+      run: |
+        echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+        echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+        echo "AWS_DEFAULT_REGION=ap-southeast-1" >> $GITHUB_ENV
+
+    - name: Login to Amazon ECR
+      run: |
+        aws ecr get-login-password | docker login --username AWS --password-stdin 533267050904.dkr.ecr.ap-southeast-1.amazonaws.com
+
+    - name: Build Docker Image
+      run: |
+        docker build -t 533267050904.dkr.ecr.ap-southeast-1.amazonaws.com/bitcoin-backend:latest .
+
+    - name: Push Image to Amazon ECR
+      run: |
+        docker push 533267050904.dkr.ecr.ap-southeast-1.amazonaws.com/bitcoin-backend:latest
+
+    - name: Deploy to Kubernetes
+      run: |
+        mkdir -p $HOME/.kube
+        echo ${{ secrets.KUBE_CONFIG_DATA }} | base64 -d > $HOME/.kube/config
+        kubectl rollout restart deployment/runebeta-mainnet
+        kubectl rollout restart deployment/runebeta-mainnet-scheduler
+
