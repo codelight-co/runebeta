@@ -182,12 +182,11 @@ export class UsersService implements OnModuleInit {
           .where('rune.rune_id IN (:...runeIds)', { runeIds })
           .getMany()
       : [];
-    const runeEntriesMap = runeEntries.length
-      ? runeEntries.reduce((acc, rune) => {
-          acc[rune.rune_id] = rune;
-          return acc;
-        })
-      : {};
+    const runeEntriesMap = {};
+    for (let index = 0; index < runeEntries.length; index++) {
+      const entry = runeEntries[index];
+      runeEntriesMap[entry.rune_id] = entry;
+    }
 
     return {
       total,

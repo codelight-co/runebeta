@@ -43,9 +43,8 @@ export class RunesService {
       return cachedData;
     }
 
-    const builder = this.runeEntryRepository
-      .createQueryBuilder('rune')
-      .innerJoinAndSelect('rune.stat', 'rune_stat')
+    const builder = this.runeStatRepository
+      .createQueryBuilder('rune_stat')
       .offset(runeFilterDto.offset)
       .limit(runeFilterDto.limit);
 
@@ -54,7 +53,6 @@ export class RunesService {
         type: runeFilterDto.type,
       });
     }
-
     if (runeFilterDto.search) {
       const search = runeFilterDto.search.replace(/•/g, '');
       builder.andWhere(`rune_stat.rune_name ILIKE '%${search}%'`);
@@ -90,7 +88,7 @@ export class RunesService {
 
         case 'created_at':
           builder.orderBy(
-            `rune.timestamp`,
+            `rune_stat.rune_id`,
             runeFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
               ? 'DESC'
               : 'ASC',
@@ -99,7 +97,7 @@ export class RunesService {
 
         default:
           builder.orderBy(
-            `rune.rune_id`,
+            `rune_stat.rune_id`,
             runeFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
               ? 'DESC'
               : 'ASC',
@@ -107,12 +105,23 @@ export class RunesService {
           break;
       }
     } else {
-      builder
-        .orderBy(`rune.block_height`, 'ASC')
-        .addOrderBy('rune.tx_index', 'ASC');
+      builder.orderBy(`rune_stat.rune_id`, 'ASC');
     }
 
     const runes = await builder.getMany();
+    const runeIds = runes.map((rune) => rune.rune_id);
+    const runeEntries = {};
+    if (runeIds.length) {
+      const arrRuneEntries = await this.runeEntryRepository
+        .createQueryBuilder('rune')
+        .where('rune.rune_id IN (:...runeIds)', { runeIds })
+        .getMany();
+      for (let index = 0; index < arrRuneEntries.length; index++) {
+        const entry = arrRuneEntries[index];
+        runeEntries[entry.rune_id] = entry;
+      }
+    }
+
     const result = {
       total: await builder.getCount(),
       limit: runeFilterDto.limit,
@@ -120,28 +129,33 @@ export class RunesService {
       runes: runes.map((rune) => ({
         id: rune.id,
         rune_id: rune.rune_id,
-        rune_hex: rune.rune_hex,
-        supply: rune?.stat?.total_supply || 0,
-        deploy_transaction: rune.etching,
-        divisibility: rune.divisibility,
-        end_block: rune?.stat?.end_block || null,
-        start_block: rune?.stat?.start_block || null,
-        holder_count: rune?.stat?.total_holders || '0',
-        rune: rune.spaced_rune,
-        symbol: rune.symbol,
-        premine: rune?.stat?.premine || '0',
-        term: rune?.stat?.term || 0,
-        timestamp: rune.timestamp,
-        transaction_count: rune?.stat?.total_transactions || '0',
-        mint_type: rune?.stat?.mint_type || '',
-        terms: rune?.stat?.entry?.terms || null,
-        etching: rune?.stat?.etching || null,
-        parent: rune?.stat?.parent || null,
-        mints: rune?.stat?.total_mints || '0',
-        remaining: rune?.stat?.entry.remaining || null,
-        burned: rune?.stat?.total_burns || '0',
-        limit: rune?.stat?.limit || '0',
-        mintable: rune?.stat?.mintable || false,
+        rune_hex: runeEntries[rune.rune_id]?.rune_hex,
+        supply: runeEntries[rune.rune_id]?.supply || 0,
+        deploy_transaction: runeEntries[rune.rune_id]?.etching,
+        divisibility: runeEntries[rune.rune_id]?.divisibility,
+        start_block:
+          runeEntries[rune.rune_id]?.terms?.height?.length === 2
+            ? runeEntries[rune.rune_id]?.terms?.height[0]
+            : null,
+        end_block:
+          runeEntries[rune.rune_id]?.terms?.height?.length === 2
+            ? runeEntries[rune.rune_id]?.terms?.height[1]
+            : null,
+        holder_count: rune?.total_holders || '0',
+        rune: runeEntries[rune.rune_id]?.spaced_rune,
+        symbol: runeEntries[rune.rune_id]?.symbol,
+        premine: runeEntries[rune.rune_id]?.premine || '0',
+        timestamp: runeEntries[rune.rune_id]?.timestamp || 1000,
+        transaction_count: rune?.total_transactions || '0',
+        mint_type: runeEntries[rune.rune_id]?.mint_type || '',
+        terms: runeEntries[rune.rune_id]?.terms || null,
+        etching: runeEntries[rune.rune_id]?.etching || null,
+        parent: rune?.parent || null,
+        mints: runeEntries[rune.rune_id]?.mints || '0',
+        remaining: runeEntries[rune.rune_id]?.remaining || null,
+        burned: runeEntries[rune.rune_id]?.burned || '0',
+        limit: runeEntries[rune.rune_id]?.terms?.amount || '0',
+        mintable: runeEntries[rune.rune_id]?.mintable || false,
       })),
     };
 
@@ -155,11 +169,16 @@ export class RunesService {
   }
 
   async getRuneById(id: string): Promise<any> {
-    const rune = await this.runeEntryRepository
-      .createQueryBuilder('rune')
-      .innerJoinAndSelect('rune.stat', 'stat')
-      .where('rune.rune_id = :id', { id })
-      .getOne();
+    const [rune, runeStat] = await Promise.all([
+      this.runeEntryRepository
+        .createQueryBuilder('rune')
+        .where('rune.rune_id = :id', { id })
+        .getOne(),
+      this.runeStatRepository
+        .createQueryBuilder('rune_stat')
+        .where('rune_stat.rune_id = :id', { id })
+        .getOne(),
+    ]);
     if (!rune) {
       throw new BadRequestException('Rune not found');
     }
@@ -168,28 +187,29 @@ export class RunesService {
       rows: {
         id: rune.id,
         rune_id: rune.rune_id,
-        rune_hex: rune.rune_hex,
-        supply: rune?.stat?.total_supply || rune.supply || 0,
+        rune_hex: rune?.rune_hex,
+        supply: runeStat?.total_supply || rune.supply || 0,
         deploy_transaction: rune.etching,
         divisibility: rune.divisibility,
-        end_block: rune?.stat?.end_block || null,
-        start_block: rune.stat?.start_block || null,
-        holder_count: rune?.stat?.total_holders || '0',
+        start_block:
+          rune?.terms?.height?.length === 2 ? rune?.terms?.height[0] : null,
+        end_block:
+          rune?.terms?.height?.length === 2 ? rune?.terms?.height[1] : null,
+        holder_count: runeStat?.total_holders || '0',
         rune: rune.spaced_rune,
         symbol: rune.symbol,
-        premine: rune?.stat?.premine || '0',
-        term: rune?.stat?.term || 0,
+        premine: rune?.premine || '0',
         timestamp: rune.timestamp,
-        transaction_count: rune?.stat?.total_transactions || '0',
-        mint_type: rune?.stat?.mint_type || '',
-        terms: rune?.stat?.entry?.terms || null,
-        etching: rune?.stat?.etching || null,
-        parent: rune?.stat?.parent || null,
-        mints: rune?.stat?.total_mints || '0',
-        remaining: rune?.stat?.entry.remaining || null,
-        burned: rune?.stat?.total_burns || '0',
-        limit: rune?.stat?.limit || '0',
-        mintable: rune?.stat?.mintable || false,
+        transaction_count: runeStat?.total_transactions || '0',
+        mint_type: rune?.mint_type || '',
+        terms: rune?.terms || null,
+        etching: rune?.etching || null,
+        parent: runeStat?.parent || null,
+        mints: rune?.mints || '0',
+        remaining: rune?.remaining || null,
+        burned: rune?.burned || '0',
+        limit: rune?.terms?.amount || '0',
+        mintable: rune?.mintable || false,
       },
     };
   }
@@ -256,7 +276,7 @@ export class RunesService {
 
               console.log('tx :>> ', tx);
               await this.etchRuneEntryRepository.update(etchRune.id, {
-                mint_tx_hex: tx?.result || '',
+                mint_tx_id: tx?.result || '',
                 status: EEtchRuneStatus.MINTED,
               });
             } catch (error) {

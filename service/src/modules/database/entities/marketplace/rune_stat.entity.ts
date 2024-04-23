@@ -148,6 +148,6 @@ export class RuneStat extends BaseTable {
   @Column({ type: 'varchar', nullable: true })
   mint_type: string;
 
-  @OneToOne(() => TransactionRuneEntry, (runeEntry) => runeEntry.stat)
-  rune: TransactionRuneEntry;
+  // @OneToOne(() => TransactionRuneEntry, (runeEntry) => runeEntry.stat)
+  // rune: TransactionRuneEntry;
 }
