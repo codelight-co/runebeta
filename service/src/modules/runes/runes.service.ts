@@ -36,12 +36,12 @@ export class RunesService {
 
   async getRunes(runeFilterDto: RuneFilterDto): Promise<any> {
     const blockHeight = await this.indexersService.getBlockHeight();
-    const cachedData = await this.cacheService.get(
-      `${blockHeight}:list-rune:${Object.values(runeFilterDto).join('-')}`,
-    );
-    if (cachedData) {
-      return cachedData;
-    }
+    // const cachedData = await this.cacheService.get(
+    //   `${blockHeight}:list-rune:${Object.values(runeFilterDto).join('-')}`,
+    // );
+    // if (cachedData) {
+    //   return cachedData;
+    // }
 
     const builder = this.runeStatRepository
       .createQueryBuilder('rune_stat')
@@ -86,18 +86,15 @@ export class RunesService {
           );
           break;
 
-        case 'created_at':
+        default:
           builder.orderBy(
-            `rune_stat.rune_id`,
+            `rune_stat.block`,
             runeFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
               ? 'DESC'
               : 'ASC',
           );
-          break;
-
-        default:
-          builder.orderBy(
-            `rune_stat.rune_id`,
+          builder.addOrderBy(
+            `rune_stat.number`,
             runeFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
               ? 'DESC'
               : 'ASC',
@@ -105,7 +102,8 @@ export class RunesService {
           break;
       }
     } else {
-      builder.orderBy(`rune_stat.rune_id`, 'ASC');
+      builder.orderBy(`rune_stat.block`, 'ASC');
+      builder.addOrderBy(`rune_stat.number`, 'ASC');
     }
 
     const runes = await builder.getMany();
@@ -118,45 +116,60 @@ export class RunesService {
         .getMany();
       for (let index = 0; index < arrRuneEntries.length; index++) {
         const entry = arrRuneEntries[index];
+
         runeEntries[entry.rune_id] = entry;
       }
     }
 
+    const runeData = await Promise.all(
+      runes.map(async (rune) => {
+        let entry = runeEntries[rune.rune_id];
+        if (!entry) {
+          const runeInfo = (await this.cacheService.get(
+            `rune:${rune.rune_id}`,
+          )) as any;
+          if (runeInfo) {
+            entry = {
+              ...runeInfo?.entry,
+              mint_type: runeInfo?.entry?.terms ? 'fairmint' : 'fixed-cap',
+            };
+          }
+        }
+
+        return {
+          id: rune.id,
+          rune_id: rune.rune_id,
+          rune_hex: entry?.rune_hex,
+          supply: entry?.supply || 0,
+          deploy_transaction: entry?.etching,
+          divisibility: entry?.divisibility,
+          start_block:
+            entry?.terms?.height?.length === 2 ? entry?.terms?.height[0] : null,
+          end_block:
+            entry?.terms?.height?.length === 2 ? entry?.terms?.height[1] : null,
+          holder_count: rune?.total_holders || '0',
+          rune: entry?.spaced_rune,
+          symbol: entry?.symbol,
+          premine: entry?.premine || '0',
+          timestamp: entry?.timestamp || 1000,
+          transaction_count: rune?.total_transactions || '0',
+          mint_type: entry?.mint_type || '',
+          terms: entry?.terms || null,
+          etching: entry?.etching || null,
+          parent: rune?.parent || null,
+          mints: entry?.mints || '0',
+          remaining: entry?.remaining || null,
+          burned: entry?.burned || '0',
+          limit: entry?.terms?.amount || '0',
+          mintable: entry?.mintable || false,
+        };
+      }),
+    );
     const result = {
       total: await builder.getCount(),
       limit: runeFilterDto.limit,
       offset: runeFilterDto.offset,
-      runes: runes.map((rune) => ({
-        id: rune.id,
-        rune_id: rune.rune_id,
-        rune_hex: runeEntries[rune.rune_id]?.rune_hex,
-        supply: runeEntries[rune.rune_id]?.supply || 0,
-        deploy_transaction: runeEntries[rune.rune_id]?.etching,
-        divisibility: runeEntries[rune.rune_id]?.divisibility,
-        start_block:
-          runeEntries[rune.rune_id]?.terms?.height?.length === 2
-            ? runeEntries[rune.rune_id]?.terms?.height[0]
-            : null,
-        end_block:
-          runeEntries[rune.rune_id]?.terms?.height?.length === 2
-            ? runeEntries[rune.rune_id]?.terms?.height[1]
-            : null,
-        holder_count: rune?.total_holders || '0',
-        rune: runeEntries[rune.rune_id]?.spaced_rune,
-        symbol: runeEntries[rune.rune_id]?.symbol,
-        premine: runeEntries[rune.rune_id]?.premine || '0',
-        timestamp: runeEntries[rune.rune_id]?.timestamp || 1000,
-        transaction_count: rune?.total_transactions || '0',
-        mint_type: runeEntries[rune.rune_id]?.mint_type || '',
-        terms: runeEntries[rune.rune_id]?.terms || null,
-        etching: runeEntries[rune.rune_id]?.etching || null,
-        parent: rune?.parent || null,
-        mints: runeEntries[rune.rune_id]?.mints || '0',
-        remaining: runeEntries[rune.rune_id]?.remaining || null,
-        burned: runeEntries[rune.rune_id]?.burned || '0',
-        limit: runeEntries[rune.rune_id]?.terms?.amount || '0',
-        mintable: runeEntries[rune.rune_id]?.mintable || false,
-      })),
+      runes: runeData,
     };
 
     await this.cacheService.set(

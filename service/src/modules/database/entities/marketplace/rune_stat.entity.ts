@@ -21,10 +21,16 @@ export class RuneStat extends BaseTable {
   rune_name: string;
 
   @Column({ type: 'decimal', nullable: true })
+  block: bigint;
+
+  @Column({ type: 'decimal', nullable: true })
   total_transactions: bigint;
 
   @Column({ type: 'decimal', nullable: true, default: 0 })
   total_mints: bigint;
+
+  @Column({ type: 'decimal', nullable: true, default: 0 })
+  number: bigint;
 
   @Column({ type: 'decimal', nullable: true, default: 0 })
   total_burns: bigint;

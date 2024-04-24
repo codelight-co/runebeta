@@ -296,9 +296,11 @@ from (
         payload[stat.name] = stat.total;
       }
 
+      const block = runeIndex?.entry?.block || BigInt(0);
       const rune_name = runeIndex?.entry?.spaced_rune
         ? String(runeIndex?.entry?.spaced_rune).replace(/•/g, '')
         : '';
+      const number = runeIndex?.entry?.number || BigInt(0);
       const premine = runeIndex?.entry.premine
         ? BigInt(runeIndex?.entry.premine)
         : BigInt(0);
@@ -413,6 +415,7 @@ from (
           change_24h,
           volume_24h,
           prev_volume_24h,
+          block,
           price,
           ma_price,
           order_sold,
@@ -420,6 +423,7 @@ from (
           market_cap,
           mintable: runeIndex?.mintable || false,
           term,
+          number,
           start_block:
             runeIndex?.entry?.terms?.height &&
             runeIndex?.entry?.terms?.height.length > 0
@@ -443,8 +447,7 @@ from (
         }),
       );
     } catch (error) {
-      console.log('rune.rune_id, :>> ', rune.rune_id);
-      this.logger.error('Error calculating rune stat', error);
+      this.logger.error(rune.rune_id, 'Error calculating rune stat', error);
     }
   }
 }
