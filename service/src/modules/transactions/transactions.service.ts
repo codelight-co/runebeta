@@ -458,7 +458,10 @@ export class TransactionsService {
     }
   }
 
-  async broadcastTransaction(txDto: BroadcastTransactionDto) {
+  async broadcastTransaction(
+    txDto: BroadcastTransactionDto,
+    config: Array<any> = [],
+  ) {
     try {
       const response = await this.httpService
         .post(
@@ -467,7 +470,7 @@ export class TransactionsService {
             jsonrpc: '1.0',
             id: 'codelight',
             method: 'sendrawtransaction',
-            params: [txDto.rawTransaction],
+            params: [txDto.rawTransaction, ...config],
           },
           {
             auth: {

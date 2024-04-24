@@ -229,9 +229,6 @@ export class StatsService {
       if (runeIds?.length) {
         for (let index = 0; index < runeIds.length; index++) {
           const id = runeIds[index];
-          if (id !== '2628115:32') {
-            continue;
-          }
           await this.statQueue.add(
             PROCESS.STAT_QUEUE.CALCULATE_RUNE_STAT,
             {
