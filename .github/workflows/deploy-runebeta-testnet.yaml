@@ -39,4 +39,3 @@ jobs:
         echo ${{ secrets.KUBE_CONFIG_DATA }} | base64 -d > $HOME/.kube/config
         kubectl rollout restart deployment/runebeta-testnet
         kubectl rollout restart deployment/runebeta-testnet-scheduler
-
