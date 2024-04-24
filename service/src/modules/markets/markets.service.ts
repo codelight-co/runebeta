@@ -449,6 +449,7 @@ export class MarketsService implements OnModuleInit {
     if (orders.length !== body.orderIds.length) {
       throw new BadRequestException('Invalid order ids');
     }
+
     const seller_items = await Promise.all(
       orders.map(async (order) => {
         const outputValue = await this.outpoinBalanceRepository
@@ -555,7 +556,9 @@ export class MarketsService implements OnModuleInit {
   }
 
   async selectUTXOsForBuying(body: BuyerOrderDto, user: User): Promise<any> {
+    console.log('selectUTXOsForBuying ----');
     const utxos = await this.usersService.getMyUtxo(user);
+    console.log('utxos :>> ', utxos);
     // Get order by ids
     const orders = await this.orderRepository
       .createQueryBuilder('order')

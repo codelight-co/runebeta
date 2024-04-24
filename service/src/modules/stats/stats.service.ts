@@ -16,6 +16,7 @@ import { FeesRecommended } from '@mempool/mempool.js/lib/interfaces/bitcoin/fees
 import { TxidRune } from '../database/entities/indexer/txid-rune.entity';
 import { Order } from '../database/entities/marketplace/order.entity';
 import { RuneStat } from '../database/entities/marketplace/rune_stat.entity';
+import * as dayjs from 'dayjs';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
@@ -47,22 +48,24 @@ export class StatsService {
     return res.data;
   }
 
-  async getDailyTransactionCount(): Promise<string> {
-    const res = await this.transactionRepository
-      .createQueryBuilder('transaction')
-      .innerJoinAndMapOne(
-        'transaction.block',
-        'transaction.block',
-        'block',
-        'block.block_height = transaction.block_height',
-      )
-      .select('COUNT(*)')
-      .where(
-        `date_trunc('day', to_timestamp(block.block_time)) = date_trunc('day', now())`,
-      )
-      .getRawOne();
+  async getDailyTransactionCount(): Promise<any> {
+    const res = await this.transactionRepository.query(`
+    select DATE_TRUNC('day', to_timestamp(b.block_time)) as date, count(t.id) as total 
+    from transactions t
+    inner join blocks b on b.block_height = t.block_height
+    where  to_timestamp(b.block_time) >= current_date - interval '6 days' 
+    group by date
+    order by date asc`);
 
-    return res.count;
+    const data = [];
+    const labels = [];
+    for (let index = 0; index < res.length; index++) {
+      const item = res[index];
+      data.push(parseInt(item.total));
+      labels.push(dayjs(item.date).format('MM/DD'));
+    }
+
+    return { data, labels };
   }
 
   async getBlockSyncNumber() {
@@ -159,7 +162,7 @@ export class StatsService {
     return { total: result.length };
   }
 
-  async calculateNetworkStats(): Promise<void> {
+  async getBlockIndex(): Promise<number> {
     let blockHeight = null;
 
     try {
@@ -167,6 +170,7 @@ export class StatsService {
     } catch (error) {
       this.logger.error('Error getting block index', error);
     }
+
     if (!blockHeight) {
       try {
         blockHeight = await this.indexersService.getBlockHeight(false);
@@ -176,8 +180,22 @@ export class StatsService {
       }
     }
 
+    return parseInt(blockHeight);
+  }
+
+  async getCurrentBlockIndex(): Promise<number> {
     const currentBlockHeight = await this.redis.get('currentBlockHeight');
-    if (parseInt(currentBlockHeight) >= parseInt(blockHeight)) {
+    if (currentBlockHeight) {
+      return parseInt(currentBlockHeight);
+    }
+
+    return null;
+  }
+
+  async calculateNetworkStats(): Promise<void> {
+    const blockHeight = await this.getBlockIndex();
+    const currentBlockHeight = await this.getCurrentBlockIndex();
+    if (currentBlockHeight >= blockHeight) {
       return;
     }
 
@@ -188,7 +206,6 @@ export class StatsService {
       let runeIds = [];
 
       if (!currentBlockHeight) {
-        console.log('here ==============');
         const runes = await this.runeEntryRepository.find();
         if (runes?.length) {
           runeIds = runes.map((rune) => rune.rune_id);
