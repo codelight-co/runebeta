@@ -293,6 +293,7 @@ export class MarketsService implements OnModuleInit {
         received_address:
           order.status === 'completed' ? order.buyerRuneAddress : '',
         confirmed: order.status === 'completed',
+        divisibility: rune.divisibility,
         rune_id: order.runeItem.id,
         rune_name: rune.spaced_rune,
         rune_hex: rune.rune_hex,
