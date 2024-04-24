@@ -283,15 +283,22 @@ export class RunesService {
           for (const etchRune of etchRunes) {
             try {
               this.logger.log('Processing etching', etchRune.id);
-              const tx = await this.transactionsService.broadcastTransaction({
-                rawTransaction: etchRune.mint_tx_hex,
-              } as BroadcastTransactionDto);
 
-              console.log('tx :>> ', tx);
-              await this.etchRuneEntryRepository.update(etchRune.id, {
-                mint_tx_id: tx?.result || '',
-                status: EEtchRuneStatus.MINTED,
-              });
+              const tx = await this.transactionsService.broadcastTransaction(
+                {
+                  rawTransaction: etchRune.mint_tx_hex,
+                } as BroadcastTransactionDto,
+                [0.1, 1],
+              );
+
+              if (tx.result) {
+                await this.etchRuneEntryRepository.update(etchRune.id, {
+                  mint_tx_id: tx?.result || '',
+                  status: EEtchRuneStatus.MINTED,
+                });
+              } else {
+                this.logger.error('Error processing etching', tx.error);
+              }
             } catch (error) {
               this.logger.error('Error processing etching', error);
 
