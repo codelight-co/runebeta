@@ -508,20 +508,40 @@ export class TransactionsService {
         }
 
         try {
-          const transaction = await this.outpointRuneBalanceRepository.find({
-            where: { tx_hash: arrLocation[0], vout: parseInt(arrLocation[1]) },
-            relations: ['rune', 'rune.stat'],
-          });
+          const outpointRuneBalances =
+            await this.outpointRuneBalanceRepository.find({
+              where: {
+                tx_hash: arrLocation[0],
+                vout: parseInt(arrLocation[1]),
+              },
+              relations: ['rune'],
+            });
 
-          if (transaction?.length) {
+          if (outpointRuneBalances?.length) {
+            await Promise.all(
+              outpointRuneBalances.map(async (outpoint, index) => {
+                const runeInfo: any = await this.cacheService.get(
+                  `rune-info:${outpoint.rune_id}`,
+                );
+                if (runeInfo) {
+                  outpointRuneBalances[index].rune.parent =
+                    runeInfo?.parent || null;
+                  outpointRuneBalances[index].rune.mintable =
+                    runeInfo?.mintable || false;
+                }
+
+                return;
+              }),
+            );
+            // Get stat data
             await this.cacheService.set(
               `${blockHeight}:retrive-transaction:${location}`,
-              transaction,
+              outpointRuneBalances,
               900,
             );
           }
 
-          return transaction;
+          return outpointRuneBalances;
         } catch (error) {
           this.logger.error('Error retrieving rune by tx id', error);
           return null;

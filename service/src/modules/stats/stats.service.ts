@@ -272,7 +272,9 @@ from (
 	where tre.rune_id = '${rune.rune_id}' and CAST(orb.balance_value  AS DECIMAL) > 0
 	group  by orb.address
 ) as rp2`;
+
       this.logger.log(`Calculating rune stat ${rune.rune_id} ...`);
+
       const [runeStats, stats, runeIndex] = await Promise.all([
         this.runeStatRepository.findOne({
           where: { rune_id: rune.rune_id },
@@ -280,6 +282,13 @@ from (
         this.transactionRepository.query(query),
         this.indexersService.getRuneDetails(rune.rune_id),
       ]);
+      if (runeIndex) {
+        // Cache rune details
+        await this.redis.set(
+          `rune-info:${rune.rune_id}`,
+          JSON.stringify(runeIndex),
+        );
+      }
 
       const payload = {} as any;
       for (let index = 0; index < stats.length; index++) {
