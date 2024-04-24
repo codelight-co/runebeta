@@ -55,7 +55,6 @@ export class MarketsService implements OnModuleInit {
   }
 
   async getRunes(marketRuneFilterDto: MarketRuneFilterDto) {
-    console.log('marketRuneFilterDto :>> ', marketRuneFilterDto);
     const builder = this.runeStatRepository
       .createQueryBuilder('rune_stat')
       .offset(marketRuneFilterDto.offset)
@@ -139,6 +138,7 @@ export class MarketsService implements OnModuleInit {
         token_holders: rune?.total_holders,
         id: rune.id,
         rune_id: rune.rune_id,
+        divisibility: runeEntrys[rune.rune_id]?.divisibility,
         rune_hex: runeEntrys[rune.rune_id]?.rune_hex,
         rune_name: runeEntrys[rune.rune_id]?.spaced_rune,
         total_supply: rune?.total_supply,
@@ -293,6 +293,7 @@ export class MarketsService implements OnModuleInit {
         received_address:
           order.status === 'completed' ? order.buyerRuneAddress : '',
         confirmed: order.status === 'completed',
+        divisibility: rune.divisibility,
         rune_id: order.runeItem.id,
         rune_name: rune.spaced_rune,
         rune_hex: rune.rune_hex,
@@ -449,6 +450,7 @@ export class MarketsService implements OnModuleInit {
     if (orders.length !== body.orderIds.length) {
       throw new BadRequestException('Invalid order ids');
     }
+
     const seller_items = await Promise.all(
       orders.map(async (order) => {
         const outputValue = await this.outpoinBalanceRepository
@@ -556,6 +558,7 @@ export class MarketsService implements OnModuleInit {
 
   async selectUTXOsForBuying(body: BuyerOrderDto, user: User): Promise<any> {
     const utxos = await this.usersService.getMyUtxo(user);
+
     // Get order by ids
     const orders = await this.orderRepository
       .createQueryBuilder('order')

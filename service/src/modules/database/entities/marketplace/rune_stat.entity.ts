@@ -1,11 +1,4 @@
-import {
-  Column,
-  Entity,
-  Index,
-  OneToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
-import { TransactionRuneEntry } from '../indexer/rune-entry.entity';
+import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 import { IEntry } from 'src/common/interfaces/rune.interface';
 import BaseTable from '../../base-table';
 
@@ -28,10 +21,16 @@ export class RuneStat extends BaseTable {
   rune_name: string;
 
   @Column({ type: 'decimal', nullable: true })
+  block: bigint;
+
+  @Column({ type: 'decimal', nullable: true })
   total_transactions: bigint;
 
   @Column({ type: 'decimal', nullable: true, default: 0 })
   total_mints: bigint;
+
+  @Column({ type: 'decimal', nullable: true, default: 0 })
+  number: bigint;
 
   @Column({ type: 'decimal', nullable: true, default: 0 })
   total_burns: bigint;
@@ -147,7 +146,4 @@ export class RuneStat extends BaseTable {
 
   @Column({ type: 'varchar', nullable: true })
   mint_type: string;
-
-  // @OneToOne(() => TransactionRuneEntry, (runeEntry) => runeEntry.stat)
-  // rune: TransactionRuneEntry;
 }

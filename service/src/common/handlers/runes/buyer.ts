@@ -247,6 +247,7 @@ export namespace BuyerHandler {
     if (!runeId) {
       throw new Error('Invalid Rune ID');
     }
+
     const sellerEdict = new Edict({
       id: runeId as RuneId,
       amount: _seller_total_tokens - _seller_listing_item,
@@ -291,6 +292,7 @@ export namespace BuyerHandler {
     for (let i = 0; i < _all_outputs_except_change.length; i++) {
       psbt.addOutput(_all_outputs_except_change[i] as any);
     }
+
     /// Adding change fee:
     const fee = await calculateTxBytesFee(
       psbt.txInputs.length > 2 ? psbt.txInputs.length : 4,
@@ -307,6 +309,7 @@ export namespace BuyerHandler {
       fee -
       _platform_fee -
       DUST_AMOUNT;
+
     if (changeValue < 0) {
       throw new Error(`Your wallet address doesn't have enough funds to buy this rune.
   Price:      ${satToBtc(_seller_listing_prices)} BTC

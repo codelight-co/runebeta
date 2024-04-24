@@ -16,6 +16,7 @@ import { FeesRecommended } from '@mempool/mempool.js/lib/interfaces/bitcoin/fees
 import { TxidRune } from '../database/entities/indexer/txid-rune.entity';
 import { Order } from '../database/entities/marketplace/order.entity';
 import { RuneStat } from '../database/entities/marketplace/rune_stat.entity';
+import * as dayjs from 'dayjs';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
@@ -47,22 +48,24 @@ export class StatsService {
     return res.data;
   }
 
-  async getDailyTransactionCount(): Promise<string> {
-    const res = await this.transactionRepository
-      .createQueryBuilder('transaction')
-      .innerJoinAndMapOne(
-        'transaction.block',
-        'transaction.block',
-        'block',
-        'block.block_height = transaction.block_height',
-      )
-      .select('COUNT(*)')
-      .where(
-        `date_trunc('day', to_timestamp(block.block_time)) = date_trunc('day', now())`,
-      )
-      .getRawOne();
+  async getDailyTransactionCount(): Promise<any> {
+    const res = await this.transactionRepository.query(`
+    select DATE_TRUNC('day', to_timestamp(b.block_time)) as date, count(t.id) as total 
+    from transactions t
+    inner join blocks b on b.block_height = t.block_height
+    where  to_timestamp(b.block_time) >= current_date - interval '6 days' 
+    group by date
+    order by date asc`);
 
-    return res.count;
+    const data = [];
+    const labels = [];
+    for (let index = 0; index < res.length; index++) {
+      const item = res[index];
+      data.push(parseInt(item.total));
+      labels.push(dayjs(item.date).format('MM/DD'));
+    }
+
+    return { data, labels };
   }
 
   async getBlockSyncNumber() {
@@ -159,7 +162,7 @@ export class StatsService {
     return { total: result.length };
   }
 
-  async calculateNetworkStats(): Promise<void> {
+  async getBlockIndex(): Promise<number> {
     let blockHeight = null;
 
     try {
@@ -167,6 +170,7 @@ export class StatsService {
     } catch (error) {
       this.logger.error('Error getting block index', error);
     }
+
     if (!blockHeight) {
       try {
         blockHeight = await this.indexersService.getBlockHeight(false);
@@ -176,8 +180,22 @@ export class StatsService {
       }
     }
 
+    return parseInt(blockHeight);
+  }
+
+  async getCurrentBlockIndex(): Promise<number> {
     const currentBlockHeight = await this.redis.get('currentBlockHeight');
-    if (parseInt(currentBlockHeight) >= parseInt(blockHeight)) {
+    if (currentBlockHeight) {
+      return parseInt(currentBlockHeight);
+    }
+
+    return null;
+  }
+
+  async calculateNetworkStats(): Promise<void> {
+    const blockHeight = await this.getBlockIndex();
+    const currentBlockHeight = await this.getCurrentBlockIndex();
+    if (currentBlockHeight >= blockHeight) {
       return;
     }
 
@@ -188,7 +206,6 @@ export class StatsService {
       let runeIds = [];
 
       if (!currentBlockHeight) {
-        console.log('here ==============');
         const runes = await this.runeEntryRepository.find();
         if (runes?.length) {
           runeIds = runes.map((rune) => rune.rune_id);
@@ -212,6 +229,9 @@ export class StatsService {
       if (runeIds?.length) {
         for (let index = 0; index < runeIds.length; index++) {
           const id = runeIds[index];
+          if (id !== '2628115:32') {
+            continue;
+          }
           await this.statQueue.add(
             PROCESS.STAT_QUEUE.CALCULATE_RUNE_STAT,
             {
@@ -255,7 +275,9 @@ from (
 	where tre.rune_id = '${rune.rune_id}' and CAST(orb.balance_value  AS DECIMAL) > 0
 	group  by orb.address
 ) as rp2`;
+
       this.logger.log(`Calculating rune stat ${rune.rune_id} ...`);
+
       const [runeStats, stats, runeIndex] = await Promise.all([
         this.runeStatRepository.findOne({
           where: { rune_id: rune.rune_id },
@@ -263,6 +285,13 @@ from (
         this.transactionRepository.query(query),
         this.indexersService.getRuneDetails(rune.rune_id),
       ]);
+      if (runeIndex) {
+        // Cache rune details
+        await this.redis.set(
+          `rune-info:${rune.rune_id}`,
+          JSON.stringify(runeIndex),
+        );
+      }
 
       const payload = {} as any;
       for (let index = 0; index < stats.length; index++) {
@@ -270,9 +299,11 @@ from (
         payload[stat.name] = stat.total;
       }
 
+      const block = runeIndex?.entry?.block || BigInt(0);
       const rune_name = runeIndex?.entry?.spaced_rune
         ? String(runeIndex?.entry?.spaced_rune).replace(/•/g, '')
         : '';
+      const number = runeIndex?.entry?.number || BigInt(0);
       const premine = runeIndex?.entry.premine
         ? BigInt(runeIndex?.entry.premine)
         : BigInt(0);
@@ -339,7 +370,9 @@ from (
       const change_24h =
         diffVolume === BigInt(0)
           ? BigInt(0)
-          : (diffVolume * BigInt(100)) / prev_volume_24h;
+          : prev_volume_24h > BigInt(0)
+            ? (diffVolume * BigInt(100)) / prev_volume_24h
+            : BigInt(0);
       let price = BigInt(0);
       const dataPrice = await this.orderRepository.query(`
       select price 
@@ -367,7 +400,6 @@ from (
         ma_price = BigInt(dataMAPrice[0]?.price || 0);
         market_cap = BigInt(dataMAPrice[0].price || 0) * supply;
       }
-
       let order_sold = BigInt(0);
       const dataOrderSold = await this.orderRepository.query(
         `select count(*) as total from orders o where rune_id = '${rune.rune_id}' and status = 'completed'`,
@@ -375,7 +407,6 @@ from (
       if (dataOrderSold.length) {
         order_sold = BigInt(dataOrderSold[0]?.total);
       }
-
       await this.runeStatRepository.save(
         new RuneStat({
           id: runeStats?.id,
@@ -387,6 +418,7 @@ from (
           change_24h,
           volume_24h,
           prev_volume_24h,
+          block,
           price,
           ma_price,
           order_sold,
@@ -394,6 +426,7 @@ from (
           market_cap,
           mintable: runeIndex?.mintable || false,
           term,
+          number,
           start_block:
             runeIndex?.entry?.terms?.height &&
             runeIndex?.entry?.terms?.height.length > 0
@@ -417,8 +450,7 @@ from (
         }),
       );
     } catch (error) {
-      console.log('rune.rune_id, :>> ', rune.rune_id);
-      this.logger.error('Error calculating rune stat', error);
+      this.logger.error(rune.rune_id, 'Error calculating rune stat', error);
     }
   }
 }

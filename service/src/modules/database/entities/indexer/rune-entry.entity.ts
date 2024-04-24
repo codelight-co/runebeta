@@ -58,6 +58,12 @@ export class TransactionRuneEntry {
   @Column({ type: 'text' })
   rune: string;
 
+  @Column({ type: 'int8', nullable: true, default: 0, name: 'height_start' })
+  start_block: number;
+
+  @Column({ type: 'int8', nullable: true, default: 0, name: 'height_end' })
+  end_block: number;
+
   @Column({ type: 'int4' })
   spacers: number;
 
