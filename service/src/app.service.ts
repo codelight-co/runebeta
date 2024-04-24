@@ -16,11 +16,11 @@ export class AppService implements OnModuleInit {
   async onModuleInit() {
     if (MODE === EAppMode.SCHEDULER) {
       // Continue processing etching every 5 seconds
-      this.taskService.addNewJob(
-        'processEtching',
-        async () => await this.runeService.processEtching(),
-        '*/5',
-      );
+      // this.taskService.addNewJob(
+      //   'processEtching',
+      //   async () => await this.runeService.processEtching(),
+      //   '*/5',
+      // );
 
       // Calculate rune stats every 5 seconds
       this.taskService.addNewJob(
