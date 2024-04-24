@@ -6,10 +6,10 @@ import {
 } from '@nestjs/common';
 import { RuneFilterDto } from './dto';
 import { Repository } from 'typeorm';
-import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
+import { TransactionRuneEntry } from '../database/entities/indexer/rune-entry.entity';
 import { EtchRuneDto } from './dto/etch-rune-filter.dto';
-import { EtchRune, RuneStat } from '../database/entities';
-import { User } from '../database/entities/user.entity';
+import { EtchRune, RuneStat } from '../database/entities/indexer';
+import { User } from '../database/entities/marketplace/user.entity';
 import { EEtchRuneStatus } from 'src/common/enums';
 import { StatsService } from '../stats/stats.service';
 import { TransactionsService } from '../transactions/transactions.service';
@@ -27,6 +27,8 @@ export class RunesService {
     private runeEntryRepository: Repository<TransactionRuneEntry>,
     @Inject('ETCH_RUNE_REPOSITORY')
     private etchRuneEntryRepository: Repository<EtchRune>,
+    @Inject('RUNE_STAT_REPOSITORY')
+    private runeStatRepository: Repository<RuneStat>,
     private readonly indexersService: IndexersService,
   ) {}
 
@@ -41,14 +43,8 @@ export class RunesService {
       return cachedData;
     }
 
-    const builder = this.runeEntryRepository
-      .createQueryBuilder('rune')
-      .innerJoinAndMapOne(
-        'rune.stat',
-        RuneStat,
-        'rune_stat',
-        'rune_stat.rune_id = rune.rune_id',
-      )
+    const builder = this.runeStatRepository
+      .createQueryBuilder('rune_stat')
       .offset(runeFilterDto.offset)
       .limit(runeFilterDto.limit);
 
@@ -57,7 +53,6 @@ export class RunesService {
         type: runeFilterDto.type,
       });
     }
-
     if (runeFilterDto.search) {
       const search = runeFilterDto.search.replace(/•/g, '');
       builder.andWhere(`rune_stat.rune_name ILIKE '%${search}%'`);
@@ -91,18 +86,15 @@ export class RunesService {
           );
           break;
 
-        case 'created_at':
+        default:
           builder.orderBy(
-            `rune.timestamp`,
+            `rune_stat.block`,
             runeFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
               ? 'DESC'
               : 'ASC',
           );
-          break;
-
-        default:
-          builder.orderBy(
-            `rune.rune_id`,
+          builder.addOrderBy(
+            `rune_stat.number`,
             runeFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
               ? 'DESC'
               : 'ASC',
@@ -110,42 +102,74 @@ export class RunesService {
           break;
       }
     } else {
-      builder
-        .orderBy(`rune.block_height`, 'ASC')
-        .addOrderBy('rune.tx_index', 'ASC');
+      builder.orderBy(`rune_stat.block`, 'ASC');
+      builder.addOrderBy(`rune_stat.number`, 'ASC');
     }
 
     const runes = await builder.getMany();
+    const runeIds = runes.map((rune) => rune.rune_id);
+    const runeEntries = {};
+    if (runeIds.length) {
+      const arrRuneEntries = await this.runeEntryRepository
+        .createQueryBuilder('rune')
+        .where('rune.rune_id IN (:...runeIds)', { runeIds })
+        .getMany();
+      for (let index = 0; index < arrRuneEntries.length; index++) {
+        const entry = arrRuneEntries[index];
+
+        runeEntries[entry.rune_id] = entry;
+      }
+    }
+
+    const runeData = await Promise.all(
+      runes.map(async (rune) => {
+        let entry = runeEntries[rune.rune_id];
+        if (!entry) {
+          const runeInfo = (await this.cacheService.get(
+            `rune:${rune.rune_id}`,
+          )) as any;
+          if (runeInfo) {
+            entry = {
+              ...runeInfo?.entry,
+              mint_type: runeInfo?.entry?.terms ? 'fairmint' : 'fixed-cap',
+            };
+          }
+        }
+
+        return {
+          id: rune.id,
+          rune_id: rune.rune_id,
+          rune_hex: entry?.rune_hex,
+          supply: entry?.supply || 0,
+          deploy_transaction: entry?.etching,
+          divisibility: entry?.divisibility,
+          start_block:
+            entry?.terms?.height?.length === 2 ? entry?.terms?.height[0] : null,
+          end_block:
+            entry?.terms?.height?.length === 2 ? entry?.terms?.height[1] : null,
+          holder_count: rune?.total_holders || '0',
+          rune: entry?.spaced_rune,
+          symbol: entry?.symbol,
+          premine: entry?.premine || '0',
+          timestamp: entry?.timestamp || 1000,
+          transaction_count: rune?.total_transactions || '0',
+          mint_type: entry?.mint_type || '',
+          terms: entry?.terms || null,
+          etching: entry?.etching || null,
+          parent: rune?.parent || null,
+          mints: entry?.mints || '0',
+          remaining: entry?.remaining || null,
+          burned: entry?.burned || '0',
+          limit: entry?.terms?.amount || '0',
+          mintable: entry?.mintable || false,
+        };
+      }),
+    );
     const result = {
       total: await builder.getCount(),
       limit: runeFilterDto.limit,
       offset: runeFilterDto.offset,
-      runes: runes.map((rune) => ({
-        id: rune.id,
-        rune_id: rune.rune_id,
-        rune_hex: rune.rune_hex,
-        supply: rune?.stat?.total_supply || rune.supply || 0,
-        deploy_transaction: rune.tx_hash,
-        divisibility: rune.divisibility,
-        end_block: rune?.stat?.end_block || null,
-        start_block: rune.stat?.start_block || null,
-        holder_count: rune?.stat?.total_holders || '0',
-        rune: rune.spaced_rune,
-        symbol: rune.symbol,
-        premine: rune?.stat?.premine || '0',
-        term: rune?.stat?.term || 0,
-        timestamp: rune.timestamp,
-        transaction_count: rune?.stat?.total_transactions || '0',
-        mint_type: rune?.stat?.mint_type || '',
-        terms: rune?.stat?.entry?.terms || null,
-        etching: rune?.stat?.etching || null,
-        parent: rune?.stat?.parent || null,
-        mints: rune?.stat?.total_mints || '0',
-        remaining: rune?.stat?.entry.remaining || null,
-        burned: rune?.stat?.total_burns || '0',
-        limit: rune?.stat?.limit || '0',
-        mintable: rune?.stat?.mintable || false,
-      })),
+      runes: runeData,
     };
 
     await this.cacheService.set(
@@ -158,16 +182,16 @@ export class RunesService {
   }
 
   async getRuneById(id: string): Promise<any> {
-    const rune = await this.runeEntryRepository
-      .createQueryBuilder('rune')
-      .leftJoinAndMapOne(
-        'rune.stat',
-        RuneStat,
-        'rune_stat',
-        'rune_stat.rune_id = rune.rune_id',
-      )
-      .where('rune.rune_id = :id', { id })
-      .getOne();
+    const [rune, runeStat] = await Promise.all([
+      this.runeEntryRepository
+        .createQueryBuilder('rune')
+        .where('rune.rune_id = :id', { id })
+        .getOne(),
+      this.runeStatRepository
+        .createQueryBuilder('rune_stat')
+        .where('rune_stat.rune_id = :id', { id })
+        .getOne(),
+    ]);
     if (!rune) {
       throw new BadRequestException('Rune not found');
     }
@@ -176,28 +200,29 @@ export class RunesService {
       rows: {
         id: rune.id,
         rune_id: rune.rune_id,
-        rune_hex: rune.rune_hex,
-        supply: rune?.stat?.total_supply || rune.supply || 0,
+        rune_hex: rune?.rune_hex,
+        supply: runeStat?.total_supply || rune.supply || 0,
         deploy_transaction: rune.etching,
         divisibility: rune.divisibility,
-        end_block: rune?.stat?.end_block || null,
-        start_block: rune.stat?.start_block || null,
-        holder_count: rune?.stat?.total_holders || '0',
+        start_block:
+          rune?.terms?.height?.length === 2 ? rune?.terms?.height[0] : null,
+        end_block:
+          rune?.terms?.height?.length === 2 ? rune?.terms?.height[1] : null,
+        holder_count: runeStat?.total_holders || '0',
         rune: rune.spaced_rune,
         symbol: rune.symbol,
-        premine: rune?.stat?.premine || '0',
-        term: rune?.stat?.term || 0,
+        premine: rune?.premine || '0',
         timestamp: rune.timestamp,
-        transaction_count: rune?.stat?.total_transactions || '0',
-        mint_type: rune?.stat?.mint_type || '',
-        terms: rune?.stat?.entry?.terms || null,
-        etching: rune?.stat?.etching || null,
-        parent: rune?.stat?.parent || null,
-        mints: rune?.stat?.total_mints || '0',
-        remaining: rune?.stat?.entry.remaining || null,
-        burned: rune?.stat?.total_burns || '0',
-        limit: rune?.stat?.limit || '0',
-        mintable: rune?.stat?.mintable || false,
+        transaction_count: runeStat?.total_transactions || '0',
+        mint_type: rune?.mint_type || '',
+        terms: rune?.terms || null,
+        etching: rune?.etching || null,
+        parent: runeStat?.parent || null,
+        mints: rune?.mints || '0',
+        remaining: rune?.remaining || null,
+        burned: rune?.burned || '0',
+        limit: rune?.terms?.amount || '0',
+        mintable: rune?.mintable || false,
       },
     };
   }
@@ -207,7 +232,7 @@ export class RunesService {
     select orb.address, sum(orb.balance_value) as amount, min(tre.spaced_rune) as spaced_rune, min(tre.rune_id) as rune_id 
     from outpoint_rune_balances orb
     inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id 
-    where orb.spent = false and orb.address is not null and tre.rune_id = '${id}'
+    where orb.address is not null and tre.rune_id = '${id}'
     group by orb.address 
     order by amount desc
     limit 10`);
@@ -258,14 +283,22 @@ export class RunesService {
           for (const etchRune of etchRunes) {
             try {
               this.logger.log('Processing etching', etchRune.id);
-              const tx = await this.transactionsService.broadcastTransaction({
-                rawTransaction: etchRune.mint_tx_hex,
-              } as BroadcastTransactionDto);
 
-              console.log('tx :>> ', tx);
-              await this.etchRuneEntryRepository.update(etchRune.id, {
-                status: EEtchRuneStatus.MINTED,
-              });
+              const tx = await this.transactionsService.broadcastTransaction(
+                {
+                  rawTransaction: etchRune.mint_tx_hex,
+                } as BroadcastTransactionDto,
+                [0.1, 1],
+              );
+
+              if (tx.result) {
+                await this.etchRuneEntryRepository.update(etchRune.id, {
+                  mint_tx_id: tx?.result || '',
+                  status: EEtchRuneStatus.MINTED,
+                });
+              } else {
+                this.logger.error('Error processing etching', tx.error);
+              }
             } catch (error) {
               this.logger.error('Error processing etching', error);
 
@@ -293,12 +326,11 @@ export class RunesService {
     }
 
     const data = await this.runeEntryRepository.query(`
-    select to2.tx_hash as utxo_tx_hash, to2.vout as utxo_vout, to2.value as utxo_value, tre.* ,orb.*, rs.*
-    from transaction_outs to2 
+    select to2.tx_hash as utxo_tx_hash, to2.vout as utxo_vout, to2.value as utxo_value, tre.* , orb.*
+    from transaction_outs to2
     inner join outpoint_rune_balances orb on orb.tx_hash = to2.tx_hash and orb.vout = to2.vout
     inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id
-    left join rune_stats rs on rs.rune_id = tre.rune_id
-    where orb.spent = false and orb.address is not null and to2.address = '${address}'
+    where orb.address is not null and orb.address = '${address}'
     order by orb.balance_value desc`);
 
     const result = data.map((d: any) => ({
@@ -316,13 +348,13 @@ export class RunesService {
         rune_id: d.rune_id,
         deploy_transaction: d.etching,
         divisibility: d.divisibility,
-        end_block: d?.end_block,
-        start_block: d?.start_block,
-        mints: d?.entry?.mints,
-        terms: d?.entry?.terms,
-        turbo: d?.entry?.turbo,
-        burned: d?.entry?.burned,
-        premine: d?.entry?.premine,
+        start_block: d?.height_start,
+        end_block: d?.height_end,
+        mints: d?.mints,
+        terms: d?.terms,
+        turbo: d?.turbo,
+        burned: d?.burned,
+        premine: d?.premine,
         rune: d.spaced_rune,
         symbol: d.symbol ? d.symbol : '¤',
         timestamp: d.timestamp,

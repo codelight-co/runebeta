@@ -2,7 +2,7 @@ import { InjectQueue, Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Job, Queue } from 'bull';
 import { PROCESS, PROCESSOR } from 'src/common/enums';
-import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
+import { TransactionRuneEntry } from '../database/entities/indexer/rune-entry.entity';
 import { StatsService } from '../stats/stats.service';
 
 @Processor(PROCESSOR.STAT_QUEUE)

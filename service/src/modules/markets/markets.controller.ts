@@ -17,7 +17,7 @@ import {
 import { CoreTransformInterceptor } from 'src/common/interceptors/coreTransform.interceptor';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { UserDecorator } from 'src/common/decorators/user.decorator';
-import { User } from '../database/entities/user.entity';
+import { User } from '../database/entities/marketplace/user.entity';
 import {
   IRuneListingState,
   ISelectPaymentUtxo,

@@ -14,7 +14,7 @@ import { CoreTransformInterceptor } from 'src/common/interceptors/coreTransform.
 import { EtchRuneDto } from './dto/etch-rune-filter.dto';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { UserDecorator } from 'src/common/decorators/user.decorator';
-import { User } from '../database/entities/user.entity';
+import { User } from '../database/entities/marketplace/user.entity';
 import { ParseRuneIdPipe } from 'src/common/pipes';
 
 @Controller('runes')

@@ -1,15 +1,15 @@
 import { DataSource } from 'typeorm';
-import { User } from '../database/entities/user.entity';
-import { TransactionOut } from '../database/entities/transaction-out.entity';
-import { Transaction } from '../database/entities/transaction.entity';
-import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
-import { Order } from '../database/entities/order.entity';
+import { User } from '../database/entities/marketplace/user.entity';
+import { TransactionOut } from '../database/entities/indexer/transaction-out.entity';
+import { Transaction } from '../database/entities/indexer/transaction.entity';
+import { TransactionRuneEntry } from '../database/entities/indexer/rune-entry.entity';
+import { Order } from '../database/entities/marketplace/order.entity';
 
 export const userProviders = [
   {
     provide: 'USER_REPOSITORY',
     useFactory: (dataSource: DataSource) => dataSource.getRepository(User),
-    inject: ['DATA_SOURCE'],
+    inject: ['MARKETPLACE_DATA_SOURCE'],
   },
   {
     provide: 'TRANSACTION_OUT_REPOSITORY',
@@ -32,6 +32,6 @@ export const userProviders = [
   {
     provide: 'ORDER_REPOSITORY',
     useFactory: (dataSource: DataSource) => dataSource.getRepository(Order),
-    inject: ['DATA_SOURCE'],
+    inject: ['MARKETPLACE_DATA_SOURCE'],
   },
 ];

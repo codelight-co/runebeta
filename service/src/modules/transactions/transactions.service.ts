@@ -11,20 +11,20 @@ import {
 } from './dto';
 import { HttpService } from '@nestjs/axios';
 import { Repository, SelectQueryBuilder } from 'typeorm';
-import { Transaction } from '../database/entities/transaction.entity';
+import { Transaction } from '../database/entities/indexer/transaction.entity';
 import {
   BITCOIN_RPC_HOST,
   BITCOIN_RPC_PASS,
   BITCOIN_RPC_PORT,
   BITCOIN_RPC_USER,
 } from 'src/environments';
-import { TransactionOut } from '../database/entities/transaction-out.entity';
-import { OutpointRuneBalance } from '../database/entities/outpoint-rune-balance.entity';
-import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
+import { TransactionOut } from '../database/entities/indexer/transaction-out.entity';
+import { OutpointRuneBalance } from '../database/entities/indexer/outpoint-rune-balance.entity';
+import { TransactionRuneEntry } from '../database/entities/indexer/rune-entry.entity';
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import { IndexersService } from '../indexers/indexers.service';
-import { TxidRune } from '../database/entities/txid-rune.entity';
-import { Block } from '../database/entities/block.entity';
+import { TxidRune } from '../database/entities/indexer/txid-rune.entity';
+import { Block } from '../database/entities/indexer/block.entity';
 
 @Injectable()
 export class TransactionsService {
@@ -181,23 +181,31 @@ export class TransactionsService {
   }
 
   async getTransactionById(tx_hash: string): Promise<any> {
-    const rawTransaction = await this.httpService
-      .post(
-        `${BITCOIN_RPC_HOST}:${BITCOIN_RPC_PORT}`,
-        {
-          jsonrpc: '1.0',
-          id: 'curltest',
-          method: 'getrawtransaction',
-          params: [tx_hash, true],
-        },
-        {
-          auth: {
-            username: BITCOIN_RPC_USER,
-            password: BITCOIN_RPC_PASS,
+    let rawTransaction = null;
+    try {
+      rawTransaction = await this.httpService
+        .post(
+          `${BITCOIN_RPC_HOST}:${BITCOIN_RPC_PORT}`,
+          {
+            jsonrpc: '1.0',
+            id: 'curltest',
+            method: 'getrawtransaction',
+            params: [tx_hash, true],
           },
-        },
-      )
-      .toPromise();
+          {
+            auth: {
+              username: BITCOIN_RPC_USER,
+              password: BITCOIN_RPC_PASS,
+            },
+          },
+        )
+        .toPromise();
+    } catch (error) {
+      this.logger.error('Error getting raw transaction', error);
+
+      throw new BadRequestException('Error getting transaction');
+    }
+
     const voutValues = rawTransaction.data.result.vout.map(
       (vout) => vout.value,
     );
@@ -450,7 +458,10 @@ export class TransactionsService {
     }
   }
 
-  async broadcastTransaction(txDto: BroadcastTransactionDto) {
+  async broadcastTransaction(
+    txDto: BroadcastTransactionDto,
+    config: Array<any> = [],
+  ) {
     try {
       const response = await this.httpService
         .post(
@@ -459,7 +470,7 @@ export class TransactionsService {
             jsonrpc: '1.0',
             id: 'codelight',
             method: 'sendrawtransaction',
-            params: [txDto.rawTransaction],
+            params: [txDto.rawTransaction, ...config],
           },
           {
             auth: {
@@ -500,20 +511,40 @@ export class TransactionsService {
         }
 
         try {
-          const transaction = await this.outpointRuneBalanceRepository.find({
-            where: { tx_hash: arrLocation[0], vout: parseInt(arrLocation[1]) },
-            relations: ['rune', 'rune.stat'],
-          });
+          const outpointRuneBalances =
+            await this.outpointRuneBalanceRepository.find({
+              where: {
+                tx_hash: arrLocation[0],
+                vout: parseInt(arrLocation[1]),
+              },
+              relations: ['rune'],
+            });
 
-          if (transaction?.length) {
+          if (outpointRuneBalances?.length) {
+            await Promise.all(
+              outpointRuneBalances.map(async (outpoint, index) => {
+                const runeInfo: any = await this.cacheService.get(
+                  `rune-info:${outpoint.rune_id}`,
+                );
+                if (runeInfo) {
+                  outpointRuneBalances[index].rune.parent =
+                    runeInfo?.parent || null;
+                  outpointRuneBalances[index].rune.mintable =
+                    runeInfo?.mintable || false;
+                }
+
+                return;
+              }),
+            );
+            // Get stat data
             await this.cacheService.set(
               `${blockHeight}:retrive-transaction:${location}`,
-              transaction,
+              outpointRuneBalances,
               900,
             );
           }
 
-          return transaction;
+          return outpointRuneBalances;
         } catch (error) {
           this.logger.error('Error retrieving rune by tx id', error);
           return null;
@@ -523,19 +554,7 @@ export class TransactionsService {
 
     return runeData.map((rune) => {
       if (rune?.length) {
-        return rune.map((r) => ({
-          ...r,
-          rune: {
-            ...r.rune,
-            mints: r.rune?.stat?.entry?.mints,
-            premine: r.rune?.stat?.premine,
-            burned: r.rune?.stat?.entry?.burned,
-            supply: r.rune?.stat?.total_supply || r.rune?.supply,
-            minable: r.rune?.stat?.mintable,
-            terms: r.rune?.stat?.entry?.terms,
-            stat: null,
-          },
-        }));
+        return rune;
       }
 
       return null;

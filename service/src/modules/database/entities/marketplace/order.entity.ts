@@ -8,7 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from './user.entity';
-import { TransactionRuneEntry } from './rune-entry.entity';
+import { TransactionRuneEntry } from '../indexer/rune-entry.entity';
 
 @Entity()
 export class Order {

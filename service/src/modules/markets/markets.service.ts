@@ -10,9 +10,9 @@ import {
   MarketRuneFilterDto,
   MarketRuneOrderFilterDto,
 } from './dto';
-import { User } from '../database/entities/user.entity';
+import { User } from '../database/entities/marketplace/user.entity';
 import { Repository } from 'typeorm';
-import { Order } from '../database/entities/order.entity';
+import { Order } from '../database/entities/marketplace/order.entity';
 import {
   IRuneListingState,
   IRunePostPSBTListing,
@@ -25,22 +25,23 @@ import { BASE_URL } from 'src/environments';
 import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
 import { BuyerOrderDto } from './dto/buyer-order.dto';
 import { MergeSingers } from 'src/common/handlers/runes/merge';
-import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
+import { TransactionRuneEntry } from '../database/entities/indexer/rune-entry.entity';
 import { UsersService } from '../users/users.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { BroadcastTransactionDto } from '../transactions/dto';
-import { RuneStat } from '../database/entities';
 import { EOrderStatus } from 'src/common/enums';
-import { OutpointRuneBalance } from '../database/entities/outpoint-rune-balance.entity';
+import { OutpointRuneBalance } from '../database/entities/indexer/outpoint-rune-balance.entity';
+import { RuneStat } from '../database/entities/indexer';
 
 @Injectable()
 export class MarketsService implements OnModuleInit {
   constructor(
-    private readonly httpService: HttpService,
     @Inject('ORDER_REPOSITORY')
     private orderRepository: Repository<Order>,
     @Inject('RUNE_ENTRY_REPOSITORY')
     private runeEntryRepository: Repository<TransactionRuneEntry>,
+    @Inject('RUNE_STAT_REPOSITORY')
+    private runeStatRepository: Repository<RuneStat>,
     @Inject('OUTPOINT_RUNE_BALANCE_REPOSITORY')
     private outpoinBalanceRepository: Repository<OutpointRuneBalance>,
     private readonly usersService: UsersService,
@@ -54,9 +55,8 @@ export class MarketsService implements OnModuleInit {
   }
 
   async getRunes(marketRuneFilterDto: MarketRuneFilterDto) {
-    const builder = this.runeEntryRepository
-      .createQueryBuilder('rune')
-      .leftJoinAndSelect('rune.stat', 'rune_stat')
+    const builder = this.runeStatRepository
+      .createQueryBuilder('rune_stat')
       .offset(marketRuneFilterDto.offset)
       .limit(marketRuneFilterDto.limit);
 
@@ -91,7 +91,7 @@ export class MarketsService implements OnModuleInit {
 
         case 'created_at':
           builder.orderBy(
-            `rune.timestamp`,
+            `rune_stat.rune_id`,
             marketRuneFilterDto.sortOrder?.toLocaleUpperCase() === 'DESC'
               ? 'DESC'
               : 'ASC',
@@ -101,32 +101,48 @@ export class MarketsService implements OnModuleInit {
         default:
           break;
       }
+    } else {
+      builder.orderBy('rune_stat.rune_id', 'ASC');
     }
 
     if (marketRuneFilterDto.search) {
-      builder.andWhere('spaced_rune ILIKE :search', {
-        search: `%${marketRuneFilterDto.search.split(' ').join('_')}%`,
-      });
+      builder.andWhere(
+        `rune_stat.rune_name ILIKE '%${marketRuneFilterDto.search.replace(/•/g, '')}%'`,
+      );
     }
 
     const runes = await builder.getMany();
+    const runeIds = runes.map((rune) => rune.rune_id);
+    const runeEntrys = {};
+    if (runeIds.length) {
+      const arrRuneEntrys = await this.runeEntryRepository
+        .createQueryBuilder('rune')
+        .where('rune.rune_id IN (:...ids)', { ids: runeIds })
+        .getMany();
+      for (let index = 0; index < arrRuneEntrys.length; index++) {
+        const entry = arrRuneEntrys[index];
+        runeEntrys[entry.rune_id] = entry;
+      }
+    }
+
     return {
       total: await builder.getCount(),
       limit: marketRuneFilterDto.limit,
       offset: marketRuneFilterDto.offset,
       runes: runes.map((rune) => ({
-        change_24h: rune?.stat?.change_24h,
-        floor_price: rune?.stat?.price,
-        last_price: rune?.stat?.ma_price,
-        marketcap: rune?.stat?.market_cap,
-        order_sold: rune?.stat?.order_sold,
-        token_holders: rune?.stat?.total_holders,
+        change_24h: rune?.change_24h,
+        floor_price: rune?.price,
+        last_price: rune?.ma_price,
+        marketcap: rune?.market_cap,
+        order_sold: rune?.order_sold,
+        token_holders: rune?.total_holders,
         id: rune.id,
         rune_id: rune.rune_id,
-        rune_hex: rune.rune_hex,
-        rune_name: rune.spaced_rune,
-        total_supply: rune?.stat?.total_supply,
-        total_volume: rune?.stat?.total_volume,
+        divisibility: runeEntrys[rune.rune_id]?.divisibility,
+        rune_hex: runeEntrys[rune.rune_id]?.rune_hex,
+        rune_name: runeEntrys[rune.rune_id]?.spaced_rune,
+        total_supply: rune?.total_supply,
+        total_volume: rune?.total_volume,
       })),
     };
   }
@@ -137,18 +153,6 @@ export class MarketsService implements OnModuleInit {
   ): Promise<any> {
     const builder = this.orderRepository
       .createQueryBuilder('order')
-      .innerJoinAndMapOne(
-        'order.runeInfo',
-        TransactionRuneEntry,
-        'runeInfo',
-        `runeInfo.rune_id = order.rune_id`,
-      )
-      .leftJoinAndMapOne(
-        'order.runeStat',
-        RuneStat,
-        'rune_stat',
-        'rune_stat.rune_id = order.rune_id',
-      )
       .where(`order.rune_id = :id`, { id });
 
     if (marketRuneOrderFilterDto.status) {
@@ -256,6 +260,15 @@ export class MarketsService implements OnModuleInit {
       builder.orderBy('order.createdAt', 'DESC');
     }
 
+    const rune = await this.runeEntryRepository.findOne({
+      where: {
+        rune_id: id,
+      },
+    });
+    if (!rune) {
+      throw new BadRequestException('Rune not found');
+    }
+
     const orders = await builder.getMany();
     return {
       total,
@@ -280,9 +293,10 @@ export class MarketsService implements OnModuleInit {
         received_address:
           order.status === 'completed' ? order.buyerRuneAddress : '',
         confirmed: order.status === 'completed',
-        rune_hex: order.runeInfo.rune_hex,
+        divisibility: rune.divisibility,
         rune_id: order.runeItem.id,
-        rune_name: order.runeInfo.spaced_rune,
+        rune_name: rune.spaced_rune,
+        rune_hex: rune.rune_hex,
         rune_utxo: [
           {
             id: order.runeItem.id,
@@ -378,7 +392,6 @@ export class MarketsService implements OnModuleInit {
       .andWhere('outpoint.vout = :vout', {
         vout: body.seller.runeItem.vout,
       })
-      .andWhere('txOut.spent = false')
       .getOne();
     if (!outputValue) {
       throw new BadRequestException('No output value found');
@@ -437,6 +450,7 @@ export class MarketsService implements OnModuleInit {
     if (orders.length !== body.orderIds.length) {
       throw new BadRequestException('Invalid order ids');
     }
+
     const seller_items = await Promise.all(
       orders.map(async (order) => {
         const outputValue = await this.outpoinBalanceRepository
@@ -448,7 +462,6 @@ export class MarketsService implements OnModuleInit {
           .andWhere('outpoint.vout = :vout', {
             vout: order.runeItem.vout,
           })
-          .andWhere('txOut.spent = false')
           .getOne();
 
         return {
@@ -545,6 +558,7 @@ export class MarketsService implements OnModuleInit {
 
   async selectUTXOsForBuying(body: BuyerOrderDto, user: User): Promise<any> {
     const utxos = await this.usersService.getMyUtxo(user);
+
     // Get order by ids
     const orders = await this.orderRepository
       .createQueryBuilder('order')

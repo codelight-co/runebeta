@@ -15,9 +15,6 @@ export class TxidRune {
   @Column({ type: 'int8' })
   tx_index: number;
 
-  @Column({ type: 'varchar' })
-  rune_id: string;
-
   @OneToMany(
     () => OutpointRuneBalance,
     (outpointRuneBalance) => outpointRuneBalance.rune,

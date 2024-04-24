@@ -26,6 +26,14 @@ export class IndexersService {
     return res.data;
   }
 
+  async getBlockIndex() {
+    const res = await this.httpService
+      .get(`${ODR_URL}:${ODR_PORT}/extend/blockindexed`)
+      .toPromise();
+
+    return res.data;
+  }
+
   async getBlockSyncNumber() {
     const res = await this.httpService
       .get(`${ODR_URL}:${ODR_PORT}/blockcount`)

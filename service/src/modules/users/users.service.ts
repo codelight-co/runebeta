@@ -1,15 +1,16 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
-import { User } from '../database/entities/user.entity';
+import { User } from '../database/entities/marketplace/user.entity';
 import { Repository } from 'typeorm';
 import mempoolJS from '@mempool/mempool.js';
 import { BITCOIN_NETWORK } from 'src/environments';
 import { MempoolReturn } from '@mempool/mempool.js/lib/interfaces/index';
 import { AddressTxsUtxo } from '@mempool/mempool.js/lib/interfaces/bitcoin/addresses';
-import { TransactionOut } from '../database/entities/transaction-out.entity';
+import { TransactionOut } from '../database/entities/indexer/transaction-out.entity';
 import { TransactionsService } from '../transactions/transactions.service';
-import { TransactionRuneEntry } from '../database/entities/rune-entry.entity';
-import { Order } from '../database/entities/order.entity';
+import { TransactionRuneEntry } from '../database/entities/indexer/rune-entry.entity';
+import { Order } from '../database/entities/marketplace/order.entity';
 import { MarketRuneOrderFilterDto } from '../markets/dto';
+import { IndexersService } from '../indexers/indexers.service';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -23,6 +24,7 @@ export class UsersService implements OnModuleInit {
     @Inject('ORDER_REPOSITORY')
     private orderRepository: Repository<Order>,
     private readonly transactionsService: TransactionsService,
+    private readonly indexersService: IndexersService,
   ) {}
 
   private mempoolClient: MempoolReturn['bitcoin'];
@@ -62,7 +64,6 @@ export class UsersService implements OnModuleInit {
       select rune_id, sum(balance_value) as balance_value
       from outpoint_rune_balances orb 
       where orb.address = '${user.walletAddress}'
-      and orb.spent = false
       group by rune_id
     ) as rb on rb.rune_id = tre.rune_id `);
 
@@ -74,14 +75,13 @@ export class UsersService implements OnModuleInit {
     select tre.spaced_rune ,orb.*
     from outpoint_rune_balances orb
     inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id 
-    where orb.spent = false and orb.address is not null and tre.rune_id = '${id}' and orb.address = '${user.walletAddress}'
+    where orb.address is not null and tre.rune_id = '${id}' and orb.address = '${user.walletAddress}'
     order by orb.balance_value desc`);
 
     return data;
   }
 
   async search(query: string): Promise<any> {
-    console.log('query :>> ', query);
     // Is transaction hash
     if (query.length === 64) {
       const transaction =
@@ -146,12 +146,6 @@ export class UsersService implements OnModuleInit {
   ): Promise<any> {
     const builder = this.orderRepository
       .createQueryBuilder('order')
-      .innerJoinAndMapOne(
-        'order.runeInfo',
-        TransactionRuneEntry,
-        'runeInfo',
-        'order.rune_id = runeInfo.rune_id',
-      )
       .where('order.user_id = :userId', { userId: user.id });
 
     if (marketRuneOrderFilterDto.status) {
@@ -181,6 +175,18 @@ export class UsersService implements OnModuleInit {
     }
 
     const orders = await builder.getMany();
+    const runeIds = orders.map((order) => order.rune_id);
+    const runeEntries = runeIds.length
+      ? await this.runeEntryRepository
+          .createQueryBuilder('rune')
+          .where('rune.rune_id IN (:...runeIds)', { runeIds })
+          .getMany()
+      : [];
+    const runeEntriesMap = {};
+    for (let index = 0; index < runeEntries.length; index++) {
+      const entry = runeEntries[index];
+      runeEntriesMap[entry.rune_id] = entry;
+    }
 
     return {
       total,
@@ -201,9 +207,9 @@ export class UsersService implements OnModuleInit {
         owner_id: order.userId,
         price_per_unit: order.price,
         received_address: null,
-        rune_hex: '',
+        rune_hex: runeEntriesMap[order.rune_id]?.rune_hex || '',
         rune_id: order?.runeItem.id,
-        rune_name: order?.runeInfo.spaced_rune,
+        rune_name: runeEntriesMap[order.rune_id].spaced_rune,
         rune_utxo: [
           {
             id: order?.runeItem.id,

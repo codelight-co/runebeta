@@ -31,6 +31,9 @@ export class EtchRune {
   @Column({ type: 'text' })
   mint_tx_hex: string;
 
+  @Column({ type: 'text', nullable: true })
+  mint_tx_id: string;
+
   @Column({ type: 'varchar' })
   status: EEtchRuneStatus;
 
