@@ -108,7 +108,7 @@ export namespace BuyerHandler {
       voutsLength,
       feeRateTier,
     );
-    console.log('buyerFee :>> ', buyerFee);
+
     for (const utxo of utxos) {
       // Never spend a utxo that contains an atoms for cardinal purposes
       if (
@@ -191,7 +191,7 @@ export namespace BuyerHandler {
       _seller_listing_prices +=
         seller.seller.price * Number(seller.seller.runeItem.tokenValue);
     }
-    console.log('3------------------');
+
     /// Step 5, add buyer BTC input
     let total_buyer_inputs_value = 0;
     const _buyers_inputs: SellerInput[] = [];
@@ -248,7 +248,6 @@ export namespace BuyerHandler {
       throw new Error('Invalid Rune ID');
     }
 
-    console.log('4------------------');
     const sellerEdict = new Edict({
       id: runeId as RuneId,
       amount: _seller_total_tokens - _seller_listing_item,
@@ -277,7 +276,7 @@ export namespace BuyerHandler {
       address: PLATFORM_FEE_ADDRESS,
       value: _platform_fee,
     };
-    console.log('5------------------');
+
     /// Adding all Inputs:
     const _all_inputs = [..._seller_inputs, ..._buyers_inputs];
     for (let i = 0; i < _all_inputs.length; i++) {
@@ -294,7 +293,6 @@ export namespace BuyerHandler {
       psbt.addOutput(_all_outputs_except_change[i] as any);
     }
 
-    console.log('calculateTxBytesFee-----');
     /// Adding change fee:
     const fee = await calculateTxBytesFee(
       psbt.txInputs.length > 2 ? psbt.txInputs.length : 4,
@@ -311,11 +309,7 @@ export namespace BuyerHandler {
       fee -
       _platform_fee -
       DUST_AMOUNT;
-    console.log('total_buyer_inputs_value :>> ', total_buyer_inputs_value);
-    console.log('_seller_listing_prices :>> ', _seller_listing_prices);
-    console.log('fee :>> ', fee);
-    console.log('_platform_fee :>> ', _platform_fee);
-    console.log('changeValue :>> ', changeValue);
+
     if (changeValue < 0) {
       throw new Error(`Your wallet address doesn't have enough funds to buy this rune.
   Price:      ${satToBtc(_seller_listing_prices)} BTC
@@ -329,7 +323,7 @@ export namespace BuyerHandler {
         value: changeValue,
       });
     }
-    console.log('6------------------');
+
     buyer_state.buyer.unsignedBuyingPSBTBase64 = psbt.toBase64();
     buyer_state.buyer.unsignedBuyingPSBTInputSize = psbt.data.inputs.length;
     buyer_state.buyer.itemMapping = _seller_outputs.map((e, i) => {

@@ -55,7 +55,6 @@ export class MarketsService implements OnModuleInit {
   }
 
   async getRunes(marketRuneFilterDto: MarketRuneFilterDto) {
-    console.log('marketRuneFilterDto :>> ', marketRuneFilterDto);
     const builder = this.runeStatRepository
       .createQueryBuilder('rune_stat')
       .offset(marketRuneFilterDto.offset)
@@ -558,9 +557,8 @@ export class MarketsService implements OnModuleInit {
   }
 
   async selectUTXOsForBuying(body: BuyerOrderDto, user: User): Promise<any> {
-    console.log('selectUTXOsForBuying ----');
     const utxos = await this.usersService.getMyUtxo(user);
-    console.log('utxos :>> ', utxos);
+
     // Get order by ids
     const orders = await this.orderRepository
       .createQueryBuilder('order')

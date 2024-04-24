@@ -206,7 +206,6 @@ export class StatsService {
       let runeIds = [];
 
       if (!currentBlockHeight) {
-        console.log('all ===============:>> ');
         const runes = await this.runeEntryRepository.find();
         if (runes?.length) {
           runeIds = runes.map((rune) => rune.rune_id);
@@ -279,7 +278,6 @@ from (
 
       this.logger.log(`Calculating rune stat ${rune.rune_id} ...`);
 
-      console.log('1----------------');
       const [runeStats, stats, runeIndex] = await Promise.all([
         this.runeStatRepository.findOne({
           where: { rune_id: rune.rune_id },
@@ -294,7 +292,7 @@ from (
           JSON.stringify(runeIndex),
         );
       }
-      console.log('2----------------');
+
       const payload = {} as any;
       for (let index = 0; index < stats.length; index++) {
         const stat = stats[index];
@@ -312,7 +310,6 @@ from (
       const mints = runeIndex?.entry.mints
         ? BigInt(runeIndex?.entry.mints)
         : BigInt(0);
-      console.log('3----------------');
       const burned = BigInt(runeIndex?.entry.burned);
       const amount = runeIndex?.entry.terms?.amount
         ? BigInt(runeIndex?.entry.terms?.amount)
@@ -339,7 +336,6 @@ from (
       ) {
         term = runeIndex?.entry?.offset[1];
       }
-      console.log('4----------------');
 
       // Calculate market stats
       let total_volume = BigInt(0);
@@ -360,7 +356,6 @@ from (
       if (dataVolume24h.length) {
         volume_24h = BigInt(dataVolume24h[0]?.total);
       }
-      console.log('5----------------');
       let prev_volume_24h = BigInt(0);
       const dataPrevVolume24h = await this.runeStatRepository.query(
         `select volume_24h as total  from rune_stats rs  where rune_id  = '${rune.rune_id}'`,
@@ -375,7 +370,9 @@ from (
       const change_24h =
         diffVolume === BigInt(0)
           ? BigInt(0)
-          : (diffVolume * BigInt(100)) / prev_volume_24h;
+          : prev_volume_24h > BigInt(0)
+            ? (diffVolume * BigInt(100)) / prev_volume_24h
+            : BigInt(0);
       let price = BigInt(0);
       const dataPrice = await this.orderRepository.query(`
       select price 
@@ -384,7 +381,6 @@ from (
       order by price asc
       limit 1
       `);
-      console.log('6----------------');
       if (dataPrice.length) {
         price = BigInt(dataPrice[0]?.price);
       }
@@ -404,7 +400,6 @@ from (
         ma_price = BigInt(dataMAPrice[0]?.price || 0);
         market_cap = BigInt(dataMAPrice[0].price || 0) * supply;
       }
-      console.log('7----------------');
       let order_sold = BigInt(0);
       const dataOrderSold = await this.orderRepository.query(
         `select count(*) as total from orders o where rune_id = '${rune.rune_id}' and status = 'completed'`,
@@ -412,7 +407,6 @@ from (
       if (dataOrderSold.length) {
         order_sold = BigInt(dataOrderSold[0]?.total);
       }
-      console.log('done ======================');
       await this.runeStatRepository.save(
         new RuneStat({
           id: runeStats?.id,

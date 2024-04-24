@@ -146,7 +146,6 @@ export namespace SellerHandler {
 
     const serviceFee =
       req.price * Number(runeItem.tokenValue) * SELLER_SERVICE_FEE;
-    console.log('serviceFee :>> ', serviceFee);
     // verify that the ordItem's selling price matches the output value with makerFeeBp
     const output = psbt.txOutputs[0];
     const expectedOutput = getSellerRuneOutputValue(
