@@ -139,6 +139,7 @@ export class MarketsService implements OnModuleInit {
         token_holders: rune?.total_holders,
         id: rune.id,
         rune_id: rune.rune_id,
+        divisibility: runeEntrys[rune.rune_id]?.divisibility,
         rune_hex: runeEntrys[rune.rune_id]?.rune_hex,
         rune_name: runeEntrys[rune.rune_id]?.spaced_rune,
         total_supply: rune?.total_supply,

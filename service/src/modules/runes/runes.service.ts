@@ -326,8 +326,6 @@ export class RunesService {
     where orb.address is not null and orb.address = '${address}'
     order by orb.balance_value desc`);
 
-    console.log('data :>> ', data);
-
     const result = data.map((d: any) => ({
       address: d.address,
       amount: d.balance_value,
