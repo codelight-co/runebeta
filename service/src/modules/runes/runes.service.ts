@@ -36,12 +36,12 @@ export class RunesService {
 
   async getRunes(runeFilterDto: RuneFilterDto): Promise<any> {
     const blockHeight = await this.indexersService.getBlockHeight();
-    // const cachedData = await this.cacheService.get(
-    //   `${blockHeight}:list-rune:${Object.values(runeFilterDto).join('-')}`,
-    // );
-    // if (cachedData) {
-    //   return cachedData;
-    // }
+    const cachedData = await this.cacheService.get(
+      `${blockHeight}:list-rune:${Object.values(runeFilterDto).join('-')}`,
+    );
+    if (cachedData) {
+      return cachedData;
+    }
 
     const builder = this.runeStatRepository
       .createQueryBuilder('rune_stat')
@@ -326,6 +326,8 @@ export class RunesService {
     where orb.address is not null and orb.address = '${address}'
     order by orb.balance_value desc`);
 
+    console.log('data :>> ', data);
+
     const result = data.map((d: any) => ({
       address: d.address,
       amount: d.balance_value,
@@ -341,8 +343,8 @@ export class RunesService {
         rune_id: d.rune_id,
         deploy_transaction: d.etching,
         divisibility: d.divisibility,
-        end_block: d?.end_block,
-        start_block: d?.start_block,
+        start_block: d?.height_start,
+        end_block: d?.height_end,
         mints: d?.mints,
         terms: d?.terms,
         turbo: d?.turbo,
