@@ -829,9 +829,9 @@ describe('Issue/Mint/Transfer/Burn', () => {
             let ok = false;
             for (let utxo of rune.utxos) {
                 inputRuneValue += utxo.runeValue;
+                inputs.push(utxo);
                 if (inputRuneValue >= spentAmount) {
                     remainingRuneValue = inputRuneValue - spentAmount;
-                    inputs.push(utxo);
                     ok = true;
                     break;
                 }
@@ -952,7 +952,6 @@ describe('Issue/Mint/Transfer/Burn', () => {
             });
             const rawhex = tx.toHex();
             console.log(rawhex);
-
         }
     });
 });
