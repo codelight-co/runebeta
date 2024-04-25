@@ -7,6 +7,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { OutpointRuneBalance } from './outpoint-rune-balance.entity';
+import { SpentOutpointRuneBalance } from './spent-outpoint-rune-balance.entity';
 
 @Entity({ synchronize: false })
 export class TransactionRuneEntry {
@@ -93,6 +94,9 @@ export class TransactionRuneEntry {
   )
   @JoinColumn({ name: 'rune_id', referencedColumnName: 'rune_id' })
   outpointRuneBalances: OutpointRuneBalance[];
+
+  @JoinColumn({ name: 'rune_id', referencedColumnName: 'rune_id' })
+  spentOutpointRuneBalances: SpentOutpointRuneBalance[];
 
   // @OneToOne(() => RuneStat, (runeStat) => runeStat.rune)
   // @JoinColumn({ name: 'rune_id', referencedColumnName: 'rune_id' })

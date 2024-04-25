@@ -25,20 +25,25 @@ import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import { IndexersService } from '../indexers/indexers.service';
 import { TxidRune } from '../database/entities/indexer/txid-rune.entity';
 import { Block } from '../database/entities/indexer/block.entity';
+import { SpentOutpointRuneBalance } from '../database/entities/indexer/spent-outpoint-rune-balance.entity';
+import { SpentTransactionOut } from '../database/entities/indexer/spent-transaction-out.entity';
+import { TransactionIns } from '../database/entities/indexer/transaction-ins.entity';
 
 @Injectable()
 export class TransactionsService {
   constructor(
     @Inject(CACHE_MANAGER) private cacheService: Cache,
     private readonly httpService: HttpService,
-    @Inject('TRANSACTION_REPOSITORY')
-    private transactionRepository: Repository<Transaction>,
     @Inject('TRANSACTION_OUT_REPOSITORY')
     private transactionOutRepository: Repository<TransactionOut>,
-    @Inject('RUNE_ENTRY_REPOSITORY')
-    private runeEntryRepository: Repository<TransactionRuneEntry>,
+    @Inject('TRANSACTION_IN_REPOSITORY')
+    private transactionInsRepository: Repository<TransactionIns>,
+    @Inject('SPENT_TRANSACTION_OUT_REPOSITORY')
+    private spentTransactionOutRepository: Repository<SpentTransactionOut>,
     @Inject('OUTPOINT_RUNE_BALANCE_REPOSITORY')
     private outpointRuneBalanceRepository: Repository<OutpointRuneBalance>,
+    @Inject('SPENT_OUTPOINT_RUNE_BALANCE_REPOSITORY')
+    private spentOutpointRuneBalanceRepository: Repository<SpentOutpointRuneBalance>,
     @Inject('TX_ID_RUNE_REPOSITORY')
     private txidRuneRepository: Repository<TxidRune>,
     private readonly indexersService: IndexersService,
@@ -181,97 +186,30 @@ export class TransactionsService {
   }
 
   async getTransactionById(tx_hash: string): Promise<any> {
-    let rawTransaction = null;
-    try {
-      rawTransaction = await this.httpService
-        .post(
-          `${BITCOIN_RPC_HOST}:${BITCOIN_RPC_PORT}`,
-          {
-            jsonrpc: '1.0',
-            id: 'curltest',
-            method: 'getrawtransaction',
-            params: [tx_hash, true],
+    const rawTransaction = await this.httpService
+      .post(
+        `${BITCOIN_RPC_HOST}:${BITCOIN_RPC_PORT}`,
+        {
+          jsonrpc: '1.0',
+          id: 'curltest',
+          method: 'getrawtransaction',
+          params: [tx_hash, true],
+        },
+        {
+          auth: {
+            username: BITCOIN_RPC_USER,
+            password: BITCOIN_RPC_PASS,
           },
-          {
-            auth: {
-              username: BITCOIN_RPC_USER,
-              password: BITCOIN_RPC_PASS,
-            },
-          },
-        )
-        .toPromise();
-    } catch (error) {
-      this.logger.error('Error getting raw transaction', error);
+        },
+      )
+      .toPromise();
+    const transaction = rawTransaction.data.result;
 
-      throw new BadRequestException('Error getting transaction');
-    }
-
-    const voutValues = rawTransaction.data.result.vout.map(
-      (vout) => vout.value,
-    );
+    const voutValues = transaction.vout.map((vout) => vout.value);
     const totalVoutValues = voutValues.reduce((acc, value) => acc + value, 0);
     const vinValues = await Promise.all(
-      rawTransaction.data.result.vin.map(async (input) => {
-        const response = await this.httpService
-          .post(
-            `${BITCOIN_RPC_HOST}:${BITCOIN_RPC_PORT}`,
-            {
-              jsonrpc: '1.0',
-              id: 'curltest',
-              method: 'getrawtransaction',
-              params: [input.txid, true],
-            },
-            {
-              auth: {
-                username: BITCOIN_RPC_USER,
-                password: BITCOIN_RPC_PASS,
-              },
-            },
-          )
-          .toPromise();
-        return response.data.result.vout[input.vout].value;
-      }),
-    );
-    const totalVinValues = vinValues.reduce((acc, value) => acc + value, 0);
-    const fee = (totalVinValues - totalVoutValues).toFixed(8);
-    const transaction = await this.transactionRepository
-      .createQueryBuilder()
-      .innerJoinAndSelect('Transaction.vin', 'TransactionIns')
-      .innerJoinAndSelect('Transaction.vout', 'TransactionOut')
-      .leftJoinAndSelect('TransactionOut.outpointRuneBalances', 'Outpoint')
-      .leftJoinAndSelect('Outpoint.rune', 'rune')
-      .innerJoinAndMapOne(
-        'Transaction.block',
-        'Transaction.block',
-        'Block',
-        'Block.block_height = Transaction.block_height',
-      )
-      .where('Transaction.tx_hash = :tx_hash', { tx_hash })
-      .getOne();
-    if (!transaction) {
-      const response = await this.httpService
-        .post(
-          `${BITCOIN_RPC_HOST}:${BITCOIN_RPC_PORT}`,
-          {
-            jsonrpc: '1.0',
-            id: 'curltest',
-            method: 'getrawtransaction',
-            params: [tx_hash, true],
-          },
-          {
-            auth: {
-              username: BITCOIN_RPC_USER,
-              password: BITCOIN_RPC_PASS,
-            },
-          },
-        )
-        .toPromise();
-
-      if (!response.data?.result) {
-        throw new BadRequestException('Transaction not found');
-      }
-      const vins = await Promise.all(
-        response.data.result.vin.map(async (input) => {
+      transaction.vin.map(async (input) => {
+        try {
           const response = await this.httpService
             .post(
               `${BITCOIN_RPC_HOST}:${BITCOIN_RPC_PORT}`,
@@ -289,18 +227,70 @@ export class TransactionsService {
               },
             )
             .toPromise();
-          if (!response.data?.result) {
-            return input;
+
+          return response.data.result.vout[input.vout].value;
+        } catch (error) {
+          this.logger.error('Error getting vin value', error);
+
+          return null;
+        }
+      }),
+    );
+
+    const totalVinValues = vinValues.reduce((acc, value) => acc + value, 0);
+    const fee = (totalVinValues - totalVoutValues).toFixed(8);
+
+    // Get vout rune data
+    if (transaction?.vout.length > 0) {
+      transaction.vout = await Promise.all(
+        transaction.vout.map(async (vout) => {
+          let isSpent = false;
+
+          // Get rune stone on vout
+          let transactionOut = await this.transactionOutRepository
+            .createQueryBuilder('out')
+            .leftJoinAndSelect('out.outpointRuneBalances', 'outpoint')
+            .leftJoinAndSelect('outpoint.rune', 'rune')
+            .where('out.tx_hash = :tx_hash', { tx_hash })
+            .andWhere('out.vout = :vout', { vout: vout?.n })
+            .getOne();
+          if (!transactionOut) {
+            isSpent = true;
+            transactionOut = await this.spentTransactionOutRepository
+              .createQueryBuilder('out')
+              .leftJoinAndSelect('out.spentOutpointRuneBalances', 'outpoint')
+              .leftJoinAndSelect('outpoint.rune', 'rune')
+              .where('out.tx_hash = :tx_hash', { tx_hash })
+              .andWhere('out.vout = :vout', { vout: vout?.n })
+              .getOne();
           }
-          const outpoints = await this.outpointRuneBalanceRepository.find({
-            where: { tx_hash: input.txid, vout: input.vout },
-            relations: ['rune'],
-          });
+
+          let rune_stone = null;
+          if (transactionOut.rune_stone) {
+            try {
+              rune_stone = JSON.parse(transactionOut.rune_stone as any);
+            } catch (error) {
+              this.logger.error('Error parsing rune stone', error);
+            }
+          }
+
+          // Get rune inject
+          const runeBalances = transactionOut?.outpointRuneBalances?.length
+            ? transactionOut.outpointRuneBalances
+            : transactionOut?.spentOutpointRuneBalances?.length
+              ? transactionOut?.spentOutpointRuneBalances
+              : [];
+          const value = (transactionOut?.value / 100000000).toFixed(8);
 
           return {
-            ...input,
-            runeInject: outpoints?.length
-              ? outpoints.map((outpoint) => ({
+            ...vout,
+            rune_stone: rune_stone,
+            address: transactionOut?.address,
+            value: transactionOut?.value ? value.toString() : 0,
+            isSpent,
+            runeInject: runeBalances?.length
+              ? runeBalances.map((outpoint) => ({
+                  address: transactionOut.address,
                   rune_id: outpoint.rune_id,
                   deploy_transaction: outpoint.rune.tx_hash,
                   timestamp: outpoint.rune.timestamp,
@@ -313,126 +303,56 @@ export class TransactionsService {
                   is_claim: false,
                 }))
               : null,
-            address: response.data.result.vout[input.vout].scriptPubKey.address,
-            value: response.data.result.vout[input.vout].value,
-          };
+          } as any;
         }),
       );
-      const vouts = await Promise.all(
-        response.data.result.vout.map(async (output) => {
-          const outpoints = await this.outpointRuneBalanceRepository.find({
-            where: { tx_hash, vout: output.n },
-            relations: ['rune'],
-          });
+    }
+
+    // Get vin rune data
+    if (transaction?.vin.length > 0) {
+      transaction.vin = await Promise.all(
+        transaction.vin.map(async (vin) => {
+          const vout = await this.spentTransactionOutRepository
+            .createQueryBuilder('out')
+            .leftJoinAndSelect('out.spentOutpointRuneBalances', 'outpoint')
+            .leftJoinAndSelect('outpoint.rune', 'rune')
+            .where('out.tx_hash = :tx_hash', {
+              tx_hash: vin.txid,
+            })
+            .andWhere('out.vout = :vout', {
+              vout: vin.vout,
+            })
+            .getOne();
+          const value = (vout?.value / 100000000).toFixed(8);
 
           return {
-            ...output,
-            address: output.scriptPubKey.address,
-            value: output.value,
-            runeInject: outpoints?.length
-              ? outpoints.map((outpoint) => ({
+            ...vin,
+            address: vout?.address,
+            value: vout?.value ? value.toString() : 0,
+            runeInject: vout?.spentOutpointRuneBalances?.length
+              ? vout.spentOutpointRuneBalances.map((outpoint) => ({
                   rune_id: outpoint.rune_id,
                   deploy_transaction: outpoint.rune.tx_hash,
                   timestamp: outpoint.rune.timestamp,
                   rune: outpoint.rune.spaced_rune,
                   divisibility: outpoint.rune.divisibility,
                   symbol: outpoint.rune.symbol,
+                  utxo_type: 'claim',
                   amount: outpoint.balance_value,
                   is_etch: false,
                   is_claim: false,
                 }))
               : null,
-          };
+          } as any;
         }),
       );
-
-      const _response = { ...response.data.result, vin: vins, vout: vouts };
-
-      return _response;
-    }
-
-    if (transaction?.vout.length > 0) {
-      for (let index = 0; index < transaction.vout.length; index++) {
-        const vout = transaction.vout[index];
-
-        let rune_stone = null;
-        if (vout.rune_stone) {
-          try {
-            rune_stone = JSON.parse(vout.rune_stone as any);
-          } catch (error) {
-            this.logger.error('Error parsing rune stone', error);
-          }
-        }
-        const value = (vout?.value / 100000000).toFixed(8);
-        transaction.vout[index] = {
-          ...vout,
-          rune_stone: rune_stone,
-          address: vout?.address,
-          value: vout?.value ? value.toString() : 0,
-          runeInject: vout?.outpointRuneBalances?.length
-            ? vout.outpointRuneBalances.map((outpoint) => ({
-                address: vout.address,
-                rune_id: outpoint.rune_id,
-                deploy_transaction: outpoint.rune.tx_hash,
-                timestamp: outpoint.rune.timestamp,
-                rune: outpoint.rune.spaced_rune,
-                divisibility: outpoint.rune.divisibility,
-                symbol: outpoint.rune.symbol,
-                utxo_type: 'transfer',
-                amount: outpoint.balance_value,
-                is_etch: false,
-                is_claim: false,
-              }))
-            : null,
-        } as any;
-      }
-    }
-    if (transaction?.vin.length > 0) {
-      for (let index = 0; index < transaction.vin.length; index++) {
-        const vin = transaction.vin[index];
-
-        const vout = await this.transactionOutRepository
-          .createQueryBuilder('out')
-          .leftJoinAndSelect('out.outpointRuneBalances', 'outpoint')
-          .leftJoinAndSelect('outpoint.rune', 'rune')
-          .where('out.tx_hash = :tx_hash', {
-            tx_hash: vin.previous_output_hash,
-          })
-          .andWhere('out.vout = :vout', {
-            vout: vin.previous_output_vout,
-          })
-          .getOne();
-
-        const value = (vout?.value / 100000000).toFixed(8);
-        transaction.vin[index] = {
-          ...vin,
-          address: vout?.address,
-          value: vout?.value ? value.toString() : 0,
-          runeInject: vout?.outpointRuneBalances?.length
-            ? vout.outpointRuneBalances.map((outpoint) => ({
-                rune_id: outpoint.rune_id,
-                deploy_transaction: outpoint.rune.tx_hash,
-                timestamp: outpoint.rune.timestamp,
-                rune: outpoint.rune.spaced_rune,
-                divisibility: outpoint.rune.divisibility,
-                symbol: outpoint.rune.symbol,
-                utxo_type: 'claim',
-                amount: outpoint.balance_value,
-                is_etch: false,
-                is_claim: false,
-              }))
-            : null,
-        } as any;
-      }
     }
 
     return {
       ...transaction,
-      timestamp: transaction?.block?.block_time,
+      timestamp: transaction?.blocktime,
+      confirmations: transaction?.confirmations,
       fee,
-      vsize: rawTransaction.data.result.vsize,
-      weight: rawTransaction.data.result.weight,
-      txid: transaction.tx_hash,
     };
   }
 
