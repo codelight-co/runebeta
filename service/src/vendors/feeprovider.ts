@@ -47,7 +47,7 @@ export function getSellerRuneOutputValue(
 ): number {
   return (
     price - // listing price
-    Math.floor((price * makerFeeBp) / 10000) + // less maker fees, seller implicitly pays this
+    makerFeeBp + // less maker fees, seller implicitly pays this
     prevUtxoValue // seller should get the rest of Rune utxo back
   );
 }

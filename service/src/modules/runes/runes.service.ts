@@ -397,10 +397,6 @@ export class RunesService {
   }
 
   async checkRuneName(name: string): Promise<any> {
-    if (!name || name.length < 13 || name.length > 30) {
-      return { exist: false };
-    }
-
     const rune = await this.runeEntryRepository
       .createQueryBuilder('rune')
       .where('rune.spaced_rune = :name', {
