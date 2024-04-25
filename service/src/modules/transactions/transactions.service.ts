@@ -58,12 +58,12 @@ export class TransactionsService {
     }
 
     const blockHeight = await this.indexersService.getBlockHeight();
-    // const cachedData = await this.cacheService.get(
-    //   `${blockHeight}:${Object.values(transactionFilterDto).join('-')}`,
-    // );
-    // if (cachedData) {
-    //   return cachedData;
-    // }
+    const cachedData = await this.cacheService.get(
+      `${blockHeight}:${Object.values(transactionFilterDto).join('-')}`,
+    );
+    if (cachedData) {
+      return cachedData;
+    }
 
     const builderTotal = this.txidRuneRepository.createQueryBuilder('txrune');
     let total = 0;
