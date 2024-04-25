@@ -333,6 +333,14 @@ export class MarketsService implements OnModuleInit {
     };
   }
 
+  async getStatsById(id: string): Promise<RuneStat> {
+    const runeStat = await this.runeStatRepository.findOne({
+      where: { rune_id: id },
+    });
+
+    return runeStat;
+  }
+
   async createSellOrder(body: IRuneListingState, user: User): Promise<Order> {
     const { seller } = body;
     if (!seller) {
