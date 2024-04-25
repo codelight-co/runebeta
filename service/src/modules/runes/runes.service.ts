@@ -395,4 +395,19 @@ export class RunesService {
 
     return selectedUtxos;
   }
+
+  async checkRuneName(name: string): Promise<any> {
+    if (!name || name.length < 13 || name.length > 30) {
+      return { exist: false };
+    }
+
+    const rune = await this.runeEntryRepository
+      .createQueryBuilder('rune')
+      .where('rune.spaced_rune = :name', {
+        name: name.replace('.', '•').toLocaleUpperCase(),
+      })
+      .getOne();
+
+    return { exist: !!rune };
+  }
 }
