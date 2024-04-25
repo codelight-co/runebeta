@@ -400,7 +400,7 @@ export class RunesService {
     const rune = await this.runeEntryRepository
       .createQueryBuilder('rune')
       .where('rune.spaced_rune = :name', {
-        name: name.replace('.', '•').toLocaleUpperCase(),
+        name: name.replace(/./g, '•').toLocaleUpperCase(),
       })
       .getOne();
 
