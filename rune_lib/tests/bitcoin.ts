@@ -21,6 +21,9 @@ export function logToJSON(any: any) {
                 if (k === 'network') {
                     return v === bitcoin.networks.bitcoin ? 'bitcoin' : 'testnet';
                 }
+                if (typeof v == "bigint") {
+                    return v.toString(10);
+                }
                 return v;
             },
             2,

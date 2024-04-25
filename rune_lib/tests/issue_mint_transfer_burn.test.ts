@@ -28,7 +28,7 @@ describe('Issue/Mint/Transfer/Burn', () => {
     const network = bitcoin.networks.testnet;
 
     // replace with your own fee rate
-    const feeRate = 16;
+    const feeRate = 1;
     const signer = ECPair.fromWIF(wif, network);
     let pubkey = signer.publicKey;
 
@@ -778,6 +778,181 @@ describe('Issue/Mint/Transfer/Burn', () => {
             });
             const rawhex = tx.toHex();
             console.log(rawhex);
+        }
+    });
+
+    function prepareBatchRunesTx(
+        runesBalances: Map<string, RuneBalanceItemWithUTXOs>,
+        regularUTXOs: UTXO[],
+        receivers: {
+            runeId: string;
+            runeAmount: bigint;
+            receiver: string;
+        }[]) {
+        const runesSpent = new Map<string, bigint>();
+        const outputs: Output[] = [];
+        const edicts: Edict[] = [];
+        for (let i = 0; i < receivers.length; i++) {
+            let receiver = receivers[i];
+            let receiverOutput: Buffer;
+            try {
+                receiverOutput = addressToOutputScript(receiver.receiver);
+            } catch (e) {
+                throw new Error(`Invalid address: ${receiver.receiver}`);
+            }
+            if (!runesSpent.has(receiver.runeId)) {
+                runesSpent.set(receiver.runeId, BigInt(0));
+            }
+            runesSpent.set(receiver.runeId, runesSpent.get(receiver.runeId)! + BigInt(receiver.runeAmount));
+            outputs.push({
+                script: receiverOutput,
+                value: dustAmount,
+            });
+            let strings = receiver.runeId.split(':');
+            edicts.push(new Edict({
+                id: new RuneId(BigInt(strings[0]), BigInt(strings[1])),
+                amount: BigInt(receiver.runeAmount),
+                output: BigInt(i),
+            }));
+        }
+        let inputs: UTXO[] = [];
+        for (let [runeId, spentAmount] of Array.from(runesSpent.entries())) {
+            if (!runesBalances.has(runeId)) {
+                throw new Error(`Insufficient ${runeId} funds`);
+            }
+            let rune = runesBalances.get(runeId)!;
+            if (spentAmount > rune.runeValue) {
+                throw new Error(`Insufficient ${rune.rune} funds`);
+            }
+            let inputRuneValue = BigInt(0);
+            let remainingRuneValue = BigInt(0);
+            let ok = false;
+            for (let utxo of rune.utxos) {
+                inputRuneValue += utxo.runeValue;
+                if (inputRuneValue >= spentAmount) {
+                    remainingRuneValue = inputRuneValue - spentAmount;
+                    inputs.push(utxo);
+                    ok = true;
+                    break;
+                }
+            }
+            if (!ok) {
+                // unreachable, double check
+                throw new Error(`Insufficient ${rune.rune} funds`);
+            }
+            console.log({
+                inputRuneValue,
+                spentAmount,
+                remainingRuneValue,
+            })
+            if (remainingRuneValue > BigInt(0)) {
+                // rune value remaining
+                outputs.push({
+                    script: addressToOutputScript(address),
+                    value: dustAmount,
+                });
+                let splitRuneId = runeId.split(':');
+                edicts.push(new Edict({
+                    id: new RuneId(BigInt(splitRuneId[0]), BigInt(splitRuneId[1])),
+                    amount: remainingRuneValue,
+                    output: BigInt(outputs.length - 1),
+                }));
+            }
+        }
+        console.log(edicts);
+        let script = new RuneStone({
+            edicts
+        }).encipher();
+        if (script.length > 83) {
+            throw new Error("Please reduce the number of receivers");
+        }
+        outputs.push({
+            script: script,
+            value: 0,
+        });
+        let amount = outputs.reduce((a, b) => a + b.value, 0) - inputs.reduce((a, b) => a + b.value, 0);
+        let txResult = prepareTx({
+            inputs,
+            outputs,
+            regularUTXOs,
+            feeRate,
+            address,
+            amount
+        });
+        if (txResult.error) {
+            throw new Error(txResult.error);
+        }
+        logToJSON(txResult.ok);
+        return txResult.ok!;
+    }
+
+    it('test batch send multiple runes', async () => {
+        let allUTXOs = await getUTXOs(address, network);
+        let allUTXOsMap = new Map<string, UTXO>();
+        for (let utxo of allUTXOs) {
+            allUTXOsMap.set(utxo.txid + ':' + utxo.vout, utxo);
+        }
+        let url = `https://apis.supersats.xyz/testnet/runes/utxo/${address}`;
+        console.log(url);
+        let resp = await fetch(url).then((res) => res.json());
+        let runes = resp.data;
+        if (Array.isArray(runes)) {
+            const balances = new Map<string, RuneBalanceItemWithUTXOs>();
+            for (const item of runes) {
+                const key = item.rune_id;
+                if (!balances.has(key)) {
+                    balances.set(key, {
+                        divisibility: item.rune.divisibility,
+                        rune: item.rune.rune,
+                        runeId: key,
+                        symbol: item.rune.symbol,
+                        utxos: [],
+                        runeValue: BigInt(0),
+                    });
+                }
+                const runeValue = BigInt(item.amount);
+                const vout = Number(item.utxo.vout);
+                balances.get(key)!.utxos.push({
+                    txid: item.utxo.tx_hash,
+                    vout: vout,
+                    index: vout,
+                    value: Number(item.utxo.value),
+                    runeValue,
+                } as any);
+                balances.get(key)!.runeValue += runeValue;
+                allUTXOsMap.delete(item.utxo.tx_hash + ':' + item.utxo.vout);
+            }
+
+            console.log(balances);
+
+            let prepareTx = prepareBatchRunesTx(balances, Array.from(allUTXOsMap.values()), [
+                {
+                    // transfer 1e5 rune value
+                    runeAmount: BigInt(456789000),
+                    // receiver address
+                    receiver: address,
+                    runeId: "2587804:2477"
+                },
+                {
+                    // transfer 1e5 rune value
+                    runeAmount: BigInt(12345),
+                    // receiver address
+                    receiver: address,
+                    runeId: "2584503:2",
+                }
+            ]);
+            let psbt = toPsbt({tx: prepareTx, pubkey, rbf: true});
+            let wallet = new Wallet(wif, network, addressType);
+            let signed = wallet.signPsbt(psbt);
+            let tx = signed.extractTransaction(true);
+            console.table({
+                txid: tx.getId(),
+                fee: psbt.getFee(),
+                feeRate: psbt.getFeeRate(),
+            });
+            const rawhex = tx.toHex();
+            console.log(rawhex);
+
         }
     });
 });
