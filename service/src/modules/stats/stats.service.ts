@@ -298,7 +298,7 @@ from (
 
       const block = runeIndex?.entry?.block || BigInt(0);
       const rune_name = runeIndex?.entry?.spaced_rune
-        ? String(runeIndex?.entry?.spaced_rune).replace(/•/g, '')
+        ? String(runeIndex?.entry?.spaced_rune).replaceAll('•', '')
         : '';
       const number = runeIndex?.entry?.number || BigInt(0);
       const premine = runeIndex?.entry.premine

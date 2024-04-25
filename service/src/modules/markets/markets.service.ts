@@ -107,7 +107,7 @@ export class MarketsService implements OnModuleInit {
 
     if (marketRuneFilterDto.search) {
       builder.andWhere(
-        `rune_stat.rune_name ILIKE '%${marketRuneFilterDto.search.replace(/•/g, '')}%'`,
+        `rune_stat.rune_name ILIKE '%${marketRuneFilterDto.search.replaceAll('•', '')}%'`,
       );
     }
 
