@@ -11,7 +11,6 @@ import {
 } from './dto';
 import { HttpService } from '@nestjs/axios';
 import { Repository, SelectQueryBuilder } from 'typeorm';
-import { Transaction } from '../database/entities/indexer/transaction.entity';
 import {
   BITCOIN_RPC_HOST,
   BITCOIN_RPC_PASS,
@@ -25,9 +24,7 @@ import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import { IndexersService } from '../indexers/indexers.service';
 import { TxidRune } from '../database/entities/indexer/txid-rune.entity';
 import { Block } from '../database/entities/indexer/block.entity';
-import { SpentOutpointRuneBalance } from '../database/entities/indexer/spent-outpoint-rune-balance.entity';
 import { SpentTransactionOut } from '../database/entities/indexer/spent-transaction-out.entity';
-import { TransactionIns } from '../database/entities/indexer/transaction-ins.entity';
 
 @Injectable()
 export class TransactionsService {
@@ -36,14 +33,10 @@ export class TransactionsService {
     private readonly httpService: HttpService,
     @Inject('TRANSACTION_OUT_REPOSITORY')
     private transactionOutRepository: Repository<TransactionOut>,
-    @Inject('TRANSACTION_IN_REPOSITORY')
-    private transactionInsRepository: Repository<TransactionIns>,
     @Inject('SPENT_TRANSACTION_OUT_REPOSITORY')
     private spentTransactionOutRepository: Repository<SpentTransactionOut>,
     @Inject('OUTPOINT_RUNE_BALANCE_REPOSITORY')
     private outpointRuneBalanceRepository: Repository<OutpointRuneBalance>,
-    @Inject('SPENT_OUTPOINT_RUNE_BALANCE_REPOSITORY')
-    private spentOutpointRuneBalanceRepository: Repository<SpentOutpointRuneBalance>,
     @Inject('TX_ID_RUNE_REPOSITORY')
     private txidRuneRepository: Repository<TxidRune>,
     private readonly indexersService: IndexersService,
@@ -65,12 +58,12 @@ export class TransactionsService {
     }
 
     const blockHeight = await this.indexersService.getBlockHeight();
-    const cachedData = await this.cacheService.get(
-      `${blockHeight}:${Object.values(transactionFilterDto).join('-')}`,
-    );
-    if (cachedData) {
-      return cachedData;
-    }
+    // const cachedData = await this.cacheService.get(
+    //   `${blockHeight}:${Object.values(transactionFilterDto).join('-')}`,
+    // );
+    // if (cachedData) {
+    //   return cachedData;
+    // }
 
     const builderTotal = this.txidRuneRepository.createQueryBuilder('txrune');
     let total = 0;
