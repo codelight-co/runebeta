@@ -379,7 +379,7 @@ export class MarketsService implements OnModuleInit {
       userId: user.id,
       rune_id: String(seller.runeItem.id),
       ...body.seller,
-      status: 'listing',
+      status: EOrderStatus.LISTING,
     } as Order);
   }
 
