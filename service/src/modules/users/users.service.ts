@@ -11,6 +11,7 @@ import { TransactionRuneEntry } from '../database/entities/indexer/rune-entry.en
 import { Order } from '../database/entities/marketplace/order.entity';
 import { MarketRuneOrderFilterDto } from '../markets/dto';
 import { IndexersService } from '../indexers/indexers.service';
+import { EOrderStatus } from 'src/common/enums';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -57,17 +58,33 @@ export class UsersService implements OnModuleInit {
   }
 
   async getMyRunes(user: User): Promise<any> {
-    const data = await this.transactionOutRepository.query(`
-    select * 
-    from transaction_rune_entries tre 
-    inner join (
-      select rune_id, sum(balance_value) as balance_value
-      from outpoint_rune_balances orb 
-      where orb.address = '${user.walletAddress}'
-      group by rune_id
-    ) as rb on rb.rune_id = tre.rune_id `);
+    const orders = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('order.rune_id as rune_id')
+      .where('order.user_id = :userId', { userId: user.id })
+      // .andWhere('order.status = :status', { status: EOrderStatus.LISTING })
+      .getRawMany();
+    const mapOrderIds = orders.map((order) => `'${order.rune_id}'`);
 
-    return data;
+    const query = `
+    select *
+    from transaction_rune_entries tre 
+      inner join (
+        select rune_id, sum(balance_value) as balance_value, true as is_lock
+        from outpoint_rune_balances orb 
+        where orb.address = 'tb1p3s9cj93hsl8guh8r7ynzw3gzfjg6deyg47uflqaxej42fkmyky6sskyur8'
+        and orb.rune_id in (${mapOrderIds.join(',')})
+        group by rune_id
+        union all
+        select rune_id, sum(balance_value) as balance_value, false as is_lock
+        from outpoint_rune_balances orb 
+        where orb.address = 'tb1p3s9cj93hsl8guh8r7ynzw3gzfjg6deyg47uflqaxej42fkmyky6sskyur8'
+        and orb.rune_id not in (${mapOrderIds.join(',')})
+        group by rune_id
+      ) as ba on ba.rune_id = tre.rune_id 
+      `;
+
+    return this.transactionOutRepository.query(query);
   }
 
   async getMyRuneById(user: User, id: string): Promise<TransactionOut> {
