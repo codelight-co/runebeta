@@ -70,12 +70,6 @@ export class UsersService implements OnModuleInit {
     select *
     from transaction_rune_entries tre 
       inner join (
-        select rune_id, sum(balance_value) as balance_value, true as is_lock
-        from outpoint_rune_balances orb 
-        where orb.address = '${user.walletAddress}'
-        ${mapOrderIds.length ? `and orb.rune_id in (${mapOrderIds.join(',')})` : ''}
-        group by rune_id
-        union all
         select rune_id, sum(balance_value) as balance_value, false as is_lock
         from outpoint_rune_balances orb 
         where orb.address = '${user.walletAddress}'
