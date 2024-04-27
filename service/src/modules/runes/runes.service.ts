@@ -54,7 +54,7 @@ export class RunesService {
       });
     }
     if (runeFilterDto.search) {
-      const search = runeFilterDto.search.replace(/•/g, '');
+      const search = runeFilterDto.search.replaceAll('•', '');
       builder.andWhere(`rune_stat.rune_name ILIKE '%${search}%'`);
     }
     if (runeFilterDto.sortBy) {
@@ -394,5 +394,16 @@ export class RunesService {
     }
 
     return selectedUtxos;
+  }
+
+  async checkRuneName(name: string): Promise<any> {
+    const rune = await this.runeEntryRepository
+      .createQueryBuilder('rune')
+      .where('rune.spaced_rune = :name', {
+        name: name.replaceAll('.', '•'),
+      })
+      .getOne();
+
+    return { exist: !!rune };
   }
 }

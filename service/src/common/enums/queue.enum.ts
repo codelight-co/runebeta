@@ -5,5 +5,6 @@ export const PROCESSOR = {
 export const PROCESS = {
   STAT_QUEUE: {
     CALCULATE_RUNE_STAT: 'calculate-rune-stat',
+    CALCULATE_ORDER_STAT: 'calculate-order-stat',
   },
 };

@@ -24,6 +24,7 @@ import {
 } from 'src/common/interfaces/rune.interface';
 import { BuyerOrderDto } from './dto/buyer-order.dto';
 import { ParseRuneIdPipe } from 'src/common/pipes';
+import { RuneStat } from '../database/entities/indexer';
 
 @Controller('markets')
 @UseInterceptors(CoreTransformInterceptor)
@@ -47,8 +48,16 @@ export class MarketsController {
 
   // Get market stats
   @Get('stats')
-  async getStats() {
+  async getStats(): Promise<any> {
     return this.marketsService.getStats();
+  }
+
+  // Get market stats by rune id
+  @Get('stats/:id')
+  async getStatsById(
+    @Param('id', ParseRuneIdPipe) id: string,
+  ): Promise<RuneStat> {
+    return this.marketsService.getStatsById(id);
   }
 
   // Generate unsigned listing PSBT

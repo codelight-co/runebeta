@@ -62,7 +62,6 @@ export namespace SellerHandler {
             ),
         );
       }
-
       psbt.addInput(input);
 
       const serviceFee =
