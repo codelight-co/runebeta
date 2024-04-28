@@ -83,10 +83,10 @@ export class StatsService {
 
   async getBtcPrice() {
     const res = await this.httpService
-      .get('https://api2.runealpha.xyz/stats/btc-price')
+      .get('https://mempool.space/api/v1/prices')
       .toPromise();
 
-    return res.data?.data;
+    return res.data?.USD ? parseInt(res.data?.USD) : 0;
   }
 
   async getStats() {
