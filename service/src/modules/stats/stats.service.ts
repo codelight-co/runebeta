@@ -86,7 +86,7 @@ export class StatsService {
       .get('https://mempool.space/api/v1/prices')
       .toPromise();
 
-    return res.data?.data?.USD ? parseInt(res.data?.data?.USD) : 0;
+    return res.data?.USD ? parseInt(res.data?.USD) : 0;
   }
 
   async getStats() {
