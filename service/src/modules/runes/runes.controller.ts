@@ -64,4 +64,10 @@ export class RunesController {
   ) {
     return this.runesService.selectRuneUtxo(address, body);
   }
+
+  // Check exist rune name
+  @Post('check-name')
+  async checkRuneName(@Body('name') name: string): Promise<{ exist: boolean }> {
+    return this.runesService.checkRuneName(name);
+  }
 }

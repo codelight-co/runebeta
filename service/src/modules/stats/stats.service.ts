@@ -7,7 +7,7 @@ import { Repository } from 'typeorm';
 import { TransactionRuneEntry } from '../database/entities/indexer/rune-entry.entity';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
-import { PROCESS, PROCESSOR } from 'src/common/enums';
+import { EOrderStatus, PROCESS, PROCESSOR } from 'src/common/enums';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import { IndexersService } from '../indexers/indexers.service';
@@ -17,6 +17,7 @@ import { TxidRune } from '../database/entities/indexer/txid-rune.entity';
 import { Order } from '../database/entities/marketplace/order.entity';
 import { RuneStat } from '../database/entities/marketplace/rune_stat.entity';
 import * as dayjs from 'dayjs';
+import { SpentOutpointRuneBalance } from '../database/entities/indexer/spent-outpoint-rune-balance.entity';
 
 @Injectable()
 @UseInterceptors(CacheInterceptor)
@@ -34,6 +35,10 @@ export class StatsService {
     private orderRepository: Repository<Order>,
     @Inject('TX_ID_RUNE_REPOSITORY')
     private txidRuneRepository: Repository<TxidRune>,
+    @Inject('SPENT_TRANSACTION_OUT_REPOSITORY')
+    private spentOutpointRuneBalanceRepository: Repository<
+      [SpentOutpointRuneBalance]
+    >,
     @InjectQueue(PROCESSOR.STAT_QUEUE) private statQueue: Queue,
     private readonly indexersService: IndexersService,
   ) {}
@@ -78,10 +83,10 @@ export class StatsService {
 
   async getBtcPrice() {
     const res = await this.httpService
-      .get('https://api2.runealpha.xyz/stats/btc-price')
+      .get('https://mempool.space/api/v1/prices')
       .toPromise();
 
-    return res.data?.data;
+    return res.data?.USD ? parseInt(res.data?.USD) : 0;
   }
 
   async getStats() {
@@ -198,10 +203,36 @@ export class StatsService {
     if (currentBlockHeight >= blockHeight) {
       return;
     }
-
     await this.redis.set('currentBlockHeight', blockHeight);
+
     this.logger.log(`Calculating network stats on block ${blockHeight} ...`);
 
+    // Start calculating order stats
+    const orders = await this.orderRepository
+      .createQueryBuilder('order')
+      .where('status = :status', { status: EOrderStatus.LISTING })
+      .getMany();
+    if (orders?.length) {
+      for (let index = 0; index < orders.length; index++) {
+        const order = orders[index];
+        await this.statQueue.add(
+          PROCESS.STAT_QUEUE.CALCULATE_ORDER_STAT,
+          {
+            blockHeight,
+            order,
+          },
+          {
+            jobId: `${order.id}`,
+            attempts: 0,
+            backoff: 0,
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        );
+      }
+    }
+
+    // Start calculating network stats
     try {
       let runeIds = [];
 
@@ -298,7 +329,7 @@ from (
 
       const block = runeIndex?.entry?.block || BigInt(0);
       const rune_name = runeIndex?.entry?.spaced_rune
-        ? String(runeIndex?.entry?.spaced_rune).replace(/•/g, '')
+        ? String(runeIndex?.entry?.spaced_rune).replaceAll('•', '')
         : '';
       const number = runeIndex?.entry?.number || BigInt(0);
       const premine = runeIndex?.entry.premine
@@ -448,6 +479,24 @@ from (
       );
     } catch (error) {
       this.logger.error(rune.rune_id, 'Error calculating rune stat', error);
+    }
+  }
+
+  async calculateOrderStats(blockHeight: number, order: Order): Promise<void> {
+    try {
+      const spentOutpoinRuneBalances =
+        await this.spentOutpointRuneBalanceRepository
+          .createQueryBuilder('spent')
+          .where('spent.tx_hash = :tx_hash', { tx_hash: order.runeItem.txid })
+          .andWhere('spent.vout = :vout', { vout: order.runeItem.vout })
+          .getMany();
+      if (spentOutpoinRuneBalances?.length) {
+        await this.orderRepository.update(order.id, {
+          status: EOrderStatus.SPENT_OUT,
+        });
+      }
+    } catch (error) {
+      this.logger.error(order.id, 'Error calculating order stats', error);
     }
   }
 }

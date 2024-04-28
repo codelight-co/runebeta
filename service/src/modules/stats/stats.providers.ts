@@ -4,6 +4,7 @@ import { TransactionRuneEntry } from '../database/entities/indexer/rune-entry.en
 import { TxidRune } from '../database/entities/indexer/txid-rune.entity';
 import { Order } from '../database/entities/marketplace/order.entity';
 import { RuneStat } from '../database/entities/marketplace/rune_stat.entity';
+import { SpentTransactionOut } from '../database/entities/indexer/spent-transaction-out.entity';
 
 export const statsProviders = [
   {
@@ -32,5 +33,11 @@ export const statsProviders = [
     provide: 'ORDER_REPOSITORY',
     useFactory: (dataSource: DataSource) => dataSource.getRepository(Order),
     inject: ['MARKETPLACE_DATA_SOURCE'],
+  },
+  {
+    provide: 'SPENT_TRANSACTION_OUT_REPOSITORY',
+    useFactory: (dataSource: DataSource) =>
+      dataSource.getRepository(SpentTransactionOut),
+    inject: ['DATA_SOURCE'],
   },
 ];

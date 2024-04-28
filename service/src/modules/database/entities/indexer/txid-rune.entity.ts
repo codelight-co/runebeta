@@ -1,5 +1,6 @@
 import { Column, Entity, JoinColumn, OneToMany, PrimaryColumn } from 'typeorm';
 import { OutpointRuneBalance } from './outpoint-rune-balance.entity';
+import { SpentOutpointRuneBalance } from './spent-outpoint-rune-balance.entity';
 
 @Entity({ synchronize: false })
 export class TxidRune {
@@ -21,4 +22,11 @@ export class TxidRune {
   )
   @JoinColumn({ name: 'tx_hash', referencedColumnName: 'tx_hash' })
   outpointRuneBalances: OutpointRuneBalance[];
+
+  @OneToMany(
+    () => SpentOutpointRuneBalance,
+    (spentOutpointRuneBalance) => spentOutpointRuneBalance.rune,
+  )
+  @JoinColumn({ name: 'tx_hash', referencedColumnName: 'tx_hash' })
+  spentOutpointRuneBalances: SpentOutpointRuneBalance[];
 }

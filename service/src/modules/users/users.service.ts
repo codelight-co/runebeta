@@ -11,6 +11,7 @@ import { TransactionRuneEntry } from '../database/entities/indexer/rune-entry.en
 import { Order } from '../database/entities/marketplace/order.entity';
 import { MarketRuneOrderFilterDto } from '../markets/dto';
 import { IndexersService } from '../indexers/indexers.service';
+import { EOrderStatus } from 'src/common/enums';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -57,28 +58,50 @@ export class UsersService implements OnModuleInit {
   }
 
   async getMyRunes(user: User): Promise<any> {
-    const data = await this.transactionOutRepository.query(`
-    select * 
-    from transaction_rune_entries tre 
-    inner join (
-      select rune_id, sum(balance_value) as balance_value
-      from outpoint_rune_balances orb 
-      where orb.address = '${user.walletAddress}'
-      group by rune_id
-    ) as rb on rb.rune_id = tre.rune_id `);
+    const orders = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('order.rune_id as rune_id')
+      .where('order.user_id = :userId', { userId: user.id })
+      .andWhere('order.status = :status', { status: EOrderStatus.LISTING })
+      .getRawMany();
+    const mapOrderIds = orders.map((order) => `'${order.rune_id}'`);
 
-    return data;
+    const query = `
+    select *
+    from transaction_rune_entries tre 
+      inner join (
+        select rune_id, sum(balance_value) as balance_value, false as is_lock
+        from outpoint_rune_balances orb 
+        where orb.address = '${user.walletAddress}'
+        ${mapOrderIds.length ? `and orb.rune_id not in (${mapOrderIds.join(',')})` : ''}
+        group by rune_id
+      ) as ba on ba.rune_id = tre.rune_id 
+      `;
+
+    return this.transactionOutRepository.query(query);
   }
 
-  async getMyRuneById(user: User, id: string): Promise<TransactionOut> {
-    const data = await this.transactionOutRepository.query(`
-    select tre.spaced_rune ,orb.*
-    from outpoint_rune_balances orb
-    inner join transaction_rune_entries tre on tre.rune_id = orb.rune_id 
-    where orb.address is not null and tre.rune_id = '${id}' and orb.address = '${user.walletAddress}'
-    order by orb.balance_value desc`);
+  async getMyRuneById(user: User, id: string): Promise<any> {
+    const orders = await this.orderRepository
+      .createQueryBuilder('order')
+      .where('order.user_id = :userId', { userId: user.id })
+      .andWhere('order.status = :status', { status: EOrderStatus.LISTING })
+      .andWhere('order.rune_id = :runeId', { runeId: id })
+      .getMany();
 
-    return data;
+    const query = `
+    select *
+    from transaction_rune_entries tre 
+      inner join (
+        select rune_id, sum(balance_value) as balance_value, ${orders.length ? 'true' : false} as is_lock
+        from outpoint_rune_balances orb 
+        where orb.address = '${user.walletAddress}'
+        and orb.rune_id = '${id}'
+        group by rune_id
+      ) as ba on ba.rune_id = tre.rune_id 
+      `;
+
+    return this.transactionOutRepository.query(query);
   }
 
   async search(query: string): Promise<any> {

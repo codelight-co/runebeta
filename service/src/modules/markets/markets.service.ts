@@ -107,7 +107,7 @@ export class MarketsService implements OnModuleInit {
 
     if (marketRuneFilterDto.search) {
       builder.andWhere(
-        `rune_stat.rune_name ILIKE '%${marketRuneFilterDto.search.replace(/•/g, '')}%'`,
+        `rune_stat.rune_name ILIKE '%${marketRuneFilterDto.search.replaceAll('•', '')}%'`,
       );
     }
 
@@ -333,6 +333,14 @@ export class MarketsService implements OnModuleInit {
     };
   }
 
+  async getStatsById(id: string): Promise<RuneStat> {
+    const runeStat = await this.runeStatRepository.findOne({
+      where: { rune_id: id },
+    });
+
+    return runeStat;
+  }
+
   async createSellOrder(body: IRuneListingState, user: User): Promise<Order> {
     const { seller } = body;
     if (!seller) {
@@ -371,7 +379,7 @@ export class MarketsService implements OnModuleInit {
       userId: user.id,
       rune_id: String(seller.runeItem.id),
       ...body.seller,
-      status: 'listing',
+      status: EOrderStatus.LISTING,
     } as Order);
   }
 

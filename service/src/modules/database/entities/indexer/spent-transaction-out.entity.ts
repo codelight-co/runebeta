@@ -12,7 +12,7 @@ import { RuneStone } from 'runes-js';
 import { SpentOutpointRuneBalance } from './spent-outpoint-rune-balance.entity';
 
 @Entity({ synchronize: false })
-export class TransactionOut {
+export class SpentTransactionOut {
   @PrimaryColumn()
   id!: string;
 

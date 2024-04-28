@@ -6,6 +6,8 @@ import { TxidRune } from '../database/entities/indexer/txid-rune.entity';
 import { TransactionRuneEntry } from '../database/entities/indexer/rune-entry.entity';
 import { OutpointRuneBalance } from '../database/entities/indexer/outpoint-rune-balance.entity';
 import { RuneStat } from '../database/entities/indexer';
+import { SpentOutpointRuneBalance } from '../database/entities/indexer/spent-outpoint-rune-balance.entity';
+import { SpentTransactionOut } from '../database/entities/indexer/spent-transaction-out.entity';
 
 export const transactionsProviders = [
   {
@@ -27,6 +29,12 @@ export const transactionsProviders = [
     inject: ['DATA_SOURCE'],
   },
   {
+    provide: 'SPENT_TRANSACTION_OUT_REPOSITORY',
+    useFactory: (dataSource: DataSource) =>
+      dataSource.getRepository(SpentTransactionOut),
+    inject: ['DATA_SOURCE'],
+  },
+  {
     provide: 'TXID_RUNE_REPOSITORY',
     useFactory: (dataSource: DataSource) => dataSource.getRepository(TxidRune),
     inject: ['DATA_SOURCE'],
@@ -41,6 +49,12 @@ export const transactionsProviders = [
     provide: 'OUTPOINT_RUNE_BALANCE_REPOSITORY',
     useFactory: (dataSource: DataSource) =>
       dataSource.getRepository(OutpointRuneBalance),
+    inject: ['DATA_SOURCE'],
+  },
+  {
+    provide: 'SPENT_OUTPOINT_RUNE_BALANCE_REPOSITORY',
+    useFactory: (dataSource: DataSource) =>
+      dataSource.getRepository(SpentOutpointRuneBalance),
     inject: ['DATA_SOURCE'],
   },
   {

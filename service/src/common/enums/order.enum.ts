@@ -3,4 +3,6 @@ export enum EOrderStatus {
   PROCESSING = 'processing',
   CANCELLED = 'cancelled',
   PENDING = 'pending',
+  LISTING = 'listing',
+  SPENT_OUT = 'spent_out',
 }
